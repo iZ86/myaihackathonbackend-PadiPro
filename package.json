@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "npx nodemon", 
     "build": "tsc",
-    "server": "node dist/server.js",
+    "start": "node dist/server.js",
     "watch:build": "tsc --watch",
-    "watch:server": "nodemon ./dist/server.js --watch ./dist"
+    "watch:start": "nodemon ./dist/server.js --watch ./dist"
   },
   "keywords": [],
   "author": "",
