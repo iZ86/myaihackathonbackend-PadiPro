@@ -4,15 +4,19 @@ require('dotenv').config();
  * Every file will reference this area for your dotenv variables if needed.
  */
 export const database = {
-  host: process.env.databaseHost,
-  user: process.env.databaseUser,
-  password: process.env.databasePassword,
-  database: process.env.database,
-  timezone: process.env.timeZone
+  HOST: process.env.DATABASE,
+  USER: process.env.DATABASEUSER,
+  PASSWORD: process.env.DATABASEPASSWORD,
+  DATABASE: process.env.DATABASE,
+  TIMEZONE: process.env.TIMEZONE
 };
 
+export const serverConfig = {
+  PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 8080
+}
+
 export const someServiceConfig = {
-  someServiceToken: process.env.someServiceToken
+  SOMESERVICETOKEN: process.env.SOMESERVICETOKEN
 };
 
 export const geminiServiceConfig = {

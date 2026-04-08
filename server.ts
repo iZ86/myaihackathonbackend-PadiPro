@@ -1,11 +1,10 @@
 import express, { Application } from "express";
 import Server from "./app/index";
-import "dotenv/config";
+import { serverConfig } from "./app/config/config";
 
 const app: Application = express();
 const server: Server = new Server(app);
-const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-
+const PORT: number = serverConfig.PORT;
 app
   .listen(PORT, function () {
     console.log(`Server is running on port ${PORT}.`);
