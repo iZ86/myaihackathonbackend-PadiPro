@@ -15,7 +15,7 @@ class GeminiRoute {
   }
 
   initializeRoutes() {
-    // Standard REST route — goes through controller → service → Result pattern
+    // Might not need .bind
     this.router.post("/", checkAuthTokenHeader, asyncHandler(this.controller.chat.bind(this.controller)));
 
     // Genkit native route — exposes the flow directly (supports streaming via genkit/beta/client)
