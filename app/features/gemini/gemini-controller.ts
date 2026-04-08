@@ -15,4 +15,5 @@ export default class GeminiController {
 
     return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
   }
+
 }
