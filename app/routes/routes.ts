@@ -1,10 +1,10 @@
 import { Application } from "express";
-import userRouters from "../features/user/user-routers";
-import geminiRouters from "../features/gemini/gemini-routers";
+import userRoute from "../features/user/user-route";
+import geminiRoute from "../features/gemini/gemini-route";
 
 export default class Routes {
   constructor(app: Application) {
-    app.use("/api/v1/users", userRouters)
-    app.use("/api/v1/gemini", geminiRouters)
+    app.use("/api/v1/users", userRoute)
+    app.use("/api/v1/gemini", geminiRoute)
   }
 }
