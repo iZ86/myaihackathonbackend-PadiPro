@@ -9,8 +9,12 @@ export const database = {
   password: process.env.databasePassword,
   database: process.env.database,
   timezone: process.env.timeZone
-}
+};
 
-export const someService = {
+export const someServiceConfig = {
   someServiceToken: process.env.someServiceToken
-}
+};
+
+export const geminiServiceConfig = {
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY as string
+};

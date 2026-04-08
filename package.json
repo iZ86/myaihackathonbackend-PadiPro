@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.ts",
   "scripts": {
-    "dev": "npx nodemon", 
+    "dev": "npx nodemon",
     "build": "tsc",
     "start": "node dist/server.js",
     "watch:build": "tsc --watch",
@@ -14,10 +14,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@genkit-ai/express": "^1.31.0",
+    "@genkit-ai/google-genai": "^1.31.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
-    "express-validator": "^7.3.2"
+    "express-validator": "^7.3.2",
+    "genkit": "^1.31.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
