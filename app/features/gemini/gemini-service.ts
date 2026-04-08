@@ -11,7 +11,11 @@ const ai = genkit({
   model: googleAI.model("gemini-2.5-flash"),
 });
 
-class GeminiService {
+interface IGeminiService {
+  chat(input: ChatInput): Promise<Result<ChatOutput>>;
+}
+
+class GeminiService implements IGeminiService {
   public readonly chatFlow = ai.defineFlow(
     {
       name: "chatFlow",
