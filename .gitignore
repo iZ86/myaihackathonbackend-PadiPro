@@ -419,3 +419,6 @@ FodyWeavers.xsd
 
 # NodeJS Build
 dist/
+
+# Third Part APIs
+.genkit
