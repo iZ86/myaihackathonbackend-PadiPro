@@ -5,6 +5,8 @@ import { WeatherData, WeatherApiResponse } from "./weather-model";
 import weatherRepository from "./weather-repository";
 import { weatherServiceConfig } from "../../config/config";
 import userRepository from "../user/user-repository";
+import userService from "../user/user-service";
+import { UserData } from "../user/user-model";
 
 interface IWeatherService {
   getWeatherByMobileNo(mobile_no: string): Promise<Result<WeatherData>>;
@@ -22,11 +24,19 @@ class WeatherService implements IWeatherService {
   
   public async updateWeather(mobile_no: string): Promise<any> {
 
-    // 1. Find coordinates
-    const user = await userRepository.getUserByMobileNo(mobile_no);
-    if (!user || !user.coords) {
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (!userResult.isSuccess()) {
+      Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+    }
+
+    // Make sure user has coords
+    const user: UserData = userResult.getData();
+    if (!user.coords) {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
     }
+
 
     // 2. Check if last updated_at was 4 hours ago
     let lastUpdateMs = 0;
