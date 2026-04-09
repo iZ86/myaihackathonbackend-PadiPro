@@ -29,7 +29,7 @@ class WeatherService implements IWeatherService {
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
     if (!userResult.isSuccess()) {
-      Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
     }
 
     // Make sure user has coords
