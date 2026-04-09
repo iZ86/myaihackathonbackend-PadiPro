@@ -4,7 +4,8 @@ import { WeatherData } from "./weather-model";
 
 interface IWeatherRepostory {
   getWeatherByMobileNo(mobile_no: string): Promise<WeatherData | undefined>;
-  saveWeather(mobile_no: string, data: WeatherData) : Promise<string|undefined>; 
+  saveWeather(mobile_no: string, data: WeatherData) : Promise<string|undefined>;
+  updateWeather(mobile_no: string, data: Partial<WeatherData>): Promise<string | undefined>;
 }
 
 class WeatherRepository implements IWeatherRepostory {
