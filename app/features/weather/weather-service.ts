@@ -49,8 +49,8 @@ class WeatherService implements IWeatherService {
     const weather: WeatherData = weatherResult.getData();
 
     if (weather.updated_at) {
-      const dateObj = (typeof (weather.updated_at as any).toDate === 'function') 
-        ? (weather.updated_at as any).toDate() 
+      const dateObj = (typeof (weather.updated_at as any).toDate === 'function')
+        ? (weather.updated_at as any).toDate()
         : new Date(weather.updated_at);
 
       lastUpdateMs = dateObj.getTime();
