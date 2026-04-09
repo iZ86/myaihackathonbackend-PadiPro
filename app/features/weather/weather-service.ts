@@ -97,7 +97,7 @@ class WeatherService implements IWeatherService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedData, "User weather record updated.");
   }
 
-  public async fetchWeatherApi(apiKey: string, lat: number, lng: number) {
+  private async fetchWeatherApi(apiKey: string, lat: number, lng: number): Promise<Response> {
     const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
 
     try {
