@@ -2,12 +2,12 @@
 import { db } from "../../database/db-connection";
 import { UserData } from "./user-model";
 
-interface IUserRepostory {
+interface IUserRepository {
   getUsers(): Promise<UserData[]>
   getUserByMobileNo(mobile_no: string): Promise<UserData | undefined>;
 }
 
-class UserRepository implements IUserRepostory {
+class UserRepository implements IUserRepository {
   public async getUsers(): Promise<UserData[]> {
     const snapshot = await db.collection('users').get();
     if (snapshot.empty) {
