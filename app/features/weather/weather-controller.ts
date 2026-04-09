@@ -3,10 +3,7 @@ import { Result } from "../../../libs/Result";
 import { WeatherData } from "./weather-model";
 import weatherService from "./weather-service";
 
-/** Used to handle HTTP requests,
- * Organize data to be sent to service.
- * Controls which service method to use.
- */
+
 export default class WeatherController {
 
   async getWeatherByMobileNo(req: Request, res: Response) {
