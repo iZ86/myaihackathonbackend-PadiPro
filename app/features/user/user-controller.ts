@@ -3,10 +3,6 @@ import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
 import userService from "./user-service";
 
-/** Used to handle HTTP requests,
- * Organize data to be sent to service.
- * Controls which service method to use.
- */
 export default class UserController {
 
   async getUsers(req: Request, res: Response) {
