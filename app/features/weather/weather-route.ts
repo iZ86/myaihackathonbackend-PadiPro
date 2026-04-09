@@ -4,7 +4,6 @@ import WeatherController from "./weather-controller";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import { weatherParamValidator } from "./weather-validator"
 
-/** Route for the domain API. */
 class WeatherRoute {
   router = Router();
   controller = new WeatherController();
