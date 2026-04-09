@@ -58,7 +58,7 @@ class WeatherService implements IWeatherService {
     const currentTimeMs = Date.now();
     const isStale = (currentTimeMs - lastUpdateMs) > fourHoursInMs;
     if (!isStale) {
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, {}, "User weather record has already been updated in the past 4 hours.");
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, "User weather record has already been updated in the past 4 hours.");
     }
 
     // 3. Get Weather API response
