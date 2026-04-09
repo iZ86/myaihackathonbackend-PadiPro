@@ -21,7 +21,8 @@
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
-    "genkit": "^1.31.0"
+    "genkit": "^1.31.0",
+    "i": "^0.3.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
