@@ -19,7 +19,7 @@ export default class WeatherController {
   }
 
   async updateWeather(req: Request, res: Response) {
-    const { mobile_no } = req.body;
+    const mobile_no: string = req.body.mobile_no;
     const result: Result<WeatherData> = await weatherService.updateWeather(mobile_no);
     return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
   }
