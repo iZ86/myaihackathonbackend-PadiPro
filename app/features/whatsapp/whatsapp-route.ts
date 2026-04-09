@@ -12,9 +12,6 @@ class WhatsappRoute {
     }
 
     initializeRoutes() {
-         //testtest
-        const app = express(); app.use(express.json()); 
-        const port = process.env.PORT || 3000;
         const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
 
         this.router.get('/', (req, res) => {
@@ -23,9 +20,6 @@ class WhatsappRoute {
         if (mode === 'subscribe' && token === verifyToken) {
             console.log('WEBHOOK VERIFIED');
             res.status(200).send(challenge);
-            app.listen(port, () => {
-                console.log(`\nListening on port ${port}\n`);
-            });
         } else {
             res.status(403).end();
         }

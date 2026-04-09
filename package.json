@@ -10,7 +10,7 @@
     "genkit:ui": "genkit start -- npx tsx --watch app/index.ts",
     "watch:build": "tsc --watch",
     "watch:start": "nodemon ./dist/server.js --watch ./dist",
-    "whatsapp:build": ""
+    "whatsapp:build": "node server.ts"
   },
   "keywords": [],
   "author": "",
