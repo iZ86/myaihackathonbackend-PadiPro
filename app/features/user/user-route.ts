@@ -4,7 +4,7 @@ import UserController from "./user-controller";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import { userParamValidator } from "./user-validator"
 
-/** Route for the domain API. */
+
 class UserRoute {
   router = Router();
   controller = new UserController();
