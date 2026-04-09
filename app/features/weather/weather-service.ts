@@ -1,7 +1,7 @@
 
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
-import { WeatherData, WeatherApiResponse } from "./weather-model";
+import { WeatherData, WeatherApiData } from "./weather-model";
 import weatherRepository from "./weather-repository";
 import { weatherServiceConfig } from "../../config/config";
 import userService from "../user/user-service";
@@ -61,26 +61,36 @@ class WeatherService implements IWeatherService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, "User weather record has already been updated in the past 4 hours.");
     }
 
-    // 3. Get Weather API response
-    const weatherApiResponse: WeatherApiResponse = (await this.fetchWeatherApi(
-      weatherServiceConfig.WEATHER_API_KEY, 
-      user.coords._latitude, 
+    // Get Weather API response
+    const weatherApiResponse: Response = await this.fetchWeatherApi(
+      weatherServiceConfig.WEATHER_API_KEY,
+      user.coords._latitude,
       user.coords._longitude
-    )) as WeatherApiResponse;
+    );
+
+
+    if (!weatherApiResponse.ok) {
+      const errorData = await weatherApiResponse.json();
+      console.error('Google API Error:', errorData);
+      throw new Error(`Weather API responded with status: ${weatherApiResponse.status}`);
+    }
+
+    const weatherApiData: WeatherApiData = await weatherApiResponse.json() as WeatherApiData;
+
 
     // 4. Update weather data
     const updatedData: WeatherData = {
-      ...weather, 
+      ...weather,
       mobile_no: mobile_no,
-      updated_at: new Date().toISOString() ,
-      weatherCondition: weatherApiResponse.weatherCondition.type,
-      temperature: weatherApiResponse.temperature,
-      dewPoint: weatherApiResponse.dewPoint,
-      relativeHumidity: weatherApiResponse.relativeHumidity,
-      precipitation: weatherApiResponse.precipitation,
-      thunderstormProbability: weatherApiResponse.thunderstormProbability,
-      wind: weatherApiResponse.wind,
-      cloudCover: weatherApiResponse.cloudCover,
+      updated_at: new Date().toISOString(),
+      weatherCondition: weatherApiData.weatherCondition.type,
+      temperature: weatherApiData.temperature,
+      dewPoint: weatherApiData.dewPoint,
+      relativeHumidity: weatherApiData.relativeHumidity,
+      precipitation: weatherApiData.precipitation,
+      thunderstormProbability: weatherApiData.thunderstormProbability,
+      wind: weatherApiData.wind,
+      cloudCover: weatherApiData.cloudCover,
     };
 
     await weatherRepository.updateWeather(mobile_no, updatedData);
@@ -91,27 +101,17 @@ class WeatherService implements IWeatherService {
     const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
 
     try {
-      const response = await fetch(url, {
+      return await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Google API Error:', errorData);
-        throw new Error(`Weather API responded with status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
     } catch (error) {
       console.error('Fetch Error:', error);
       throw error;
     }
   }
-
 
   public async saveWeather(mobile_no: string): Promise<Result<WeatherData>> {
 
@@ -134,25 +134,33 @@ class WeatherService implements IWeatherService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.CONFLICT, "Weather record for this user already exists.");
     }
 
-    // 2. Get Weather API response
-    const weatherApiResponse: WeatherApiResponse = (await this.fetchWeatherApi(
-      weatherServiceConfig.WEATHER_API_KEY, 
-      user.coords._latitude, 
+    // Get Weather API response
+    const weatherApiResponse: Response = await this.fetchWeatherApi(
+      weatherServiceConfig.WEATHER_API_KEY,
+      user.coords._latitude,
       user.coords._longitude
-    )) as WeatherApiResponse;
+    );
 
-    // 3. Save weather data
-    const updatedData: WeatherData = {
+    if (!weatherApiResponse.ok) {
+      const errorData = await weatherApiResponse.json();
+      console.error('Google API Error:', errorData);
+      throw new Error(`Weather API responded with status: ${weatherApiResponse.status}`);
+    }
+
+    const weatherApiData: WeatherApiData = await weatherApiResponse.json() as WeatherApiData;
+
+    // Save weather data
+    const savedData: WeatherData = {
       mobile_no: mobile_no,
-      updated_at: new Date().toISOString() ,
-      weatherCondition: weatherApiResponse.weatherCondition.type,
-      temperature: weatherApiResponse.temperature,
-      dewPoint: weatherApiResponse.dewPoint,
-      relativeHumidity: weatherApiResponse.relativeHumidity,
-      precipitation: weatherApiResponse.precipitation,
-      thunderstormProbability: weatherApiResponse.thunderstormProbability,
-      wind: weatherApiResponse.wind,
-      cloudCover: weatherApiResponse.cloudCover,
+      updated_at: new Date().toISOString(),
+      weatherCondition: weatherApiData.weatherCondition.type,
+      temperature: weatherApiData.temperature,
+      dewPoint: weatherApiData.dewPoint,
+      relativeHumidity: weatherApiData.relativeHumidity,
+      precipitation: weatherApiData.precipitation,
+      thunderstormProbability: weatherApiData.thunderstormProbability,
+      wind: weatherApiData.wind,
+      cloudCover: weatherApiData.cloudCover,
     };
 
     await weatherRepository.saveWeather(mobile_no, savedData);

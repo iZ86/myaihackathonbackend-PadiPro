@@ -37,7 +37,7 @@ export interface WeatherData {
 } | undefined;
 }
 
-export interface WeatherApiResponse {
+export interface WeatherApiData {
   currentTime: string;
   timeZone: {
     id: string;
