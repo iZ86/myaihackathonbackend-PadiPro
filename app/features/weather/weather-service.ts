@@ -26,7 +26,7 @@ class WeatherService implements IWeatherService {
 
     const weather: WeatherData | undefined = await weatherRepository.getWeatherByMobileNo(mobile_no);
     if (!weather) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.", { mobile_no: mobile_no } as WeatherData);
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, weather, "User weather record found.");
   }
