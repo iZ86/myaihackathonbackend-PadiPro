@@ -9,6 +9,8 @@ import { UserData } from "../user/user-model";
 
 interface IWeatherService {
   getWeatherByMobileNo(mobile_no: string): Promise<Result<WeatherData>>;
+  updateWeather(mobile_no: string): Promise<Result<WeatherData>>;
+  saveWeather(mobile_no: string): Promise<Result<WeatherData>>;
 }
 
 class WeatherService implements IWeatherService {
