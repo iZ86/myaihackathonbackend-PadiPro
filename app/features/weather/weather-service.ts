@@ -62,7 +62,7 @@ class WeatherService implements IWeatherService {
     }
 
     // 3. Get Weather API response
-    const weatherApiResponse: WeatherApiResponse = (await weatherRepository.fetchWeatherApi(
+    const weatherApiResponse: WeatherApiResponse = (await this.fetchWeatherApi(
       weatherServiceConfig.WEATHER_API_KEY, 
       user.coords._latitude, 
       user.coords._longitude
@@ -86,8 +86,34 @@ class WeatherService implements IWeatherService {
     await weatherRepository.updateWeather(mobile_no, updatedData);
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedData, "User weather record updated.");
   }
-  
-  public async saveWeather(mobile_no: string): Promise<any> {
+
+  public async fetchWeatherApi(apiKey: string, lat: number, lng: number) {
+    const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Google API Error:', errorData);
+        throw new Error(`Weather API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      throw error;
+    }
+  }
+
+
+  public async saveWeather(mobile_no: string): Promise<Result<WeatherData>> {
 
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
@@ -109,7 +135,7 @@ class WeatherService implements IWeatherService {
     }
 
     // 2. Get Weather API response
-    const weatherApiResponse: WeatherApiResponse = (await weatherRepository.fetchWeatherApi(
+    const weatherApiResponse: WeatherApiResponse = (await this.fetchWeatherApi(
       weatherServiceConfig.WEATHER_API_KEY, 
       user.coords._latitude, 
       user.coords._longitude

@@ -34,31 +34,6 @@ class WeatherRepository implements IWeatherRepostory {
     }
   }
 
-  public async fetchWeatherApi(apiKey: string, lat: number, lng: number) {
-    const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
-    
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Google API Error:', errorData);
-        throw new Error(`Weather API responded with status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Fetch Error:', error);
-      throw error;
-    }
-  }
-
   public async saveWeather(mobile_no: string, data: WeatherData): Promise<string | undefined> {
     try {
       const docRef = db.collection('weather').doc(mobile_no);
