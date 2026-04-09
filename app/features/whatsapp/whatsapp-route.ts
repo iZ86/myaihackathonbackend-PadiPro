@@ -5,7 +5,7 @@ import WhatsappController from './whatsapp-controller';
 
 class WhatsappRoute {
     router = Router();
-    controller = new WhatsappController();
+    // controller = new WhatsappController();
 
     constructor() {
         this.initializeRoutes();
@@ -15,8 +15,16 @@ class WhatsappRoute {
         const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
 
         this.router.get('/', (req, res) => {
-            console.log("🔥 ROUTE HIT");
-            res.status(200).send("OK");
+            console.log("META HIT RECEIVED:", req.query);
+
+            const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
+
+            if (mode === 'subscribe' && token === verifyToken) {
+                console.log('WEBHOOK VERIFIED');
+                return res.status(200).send(challenge);
+            }
+
+            return res.status(403).end();
         });
     } 
 }
