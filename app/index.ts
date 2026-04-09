@@ -11,7 +11,6 @@ export default class Server {
 
 
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
-      console.log("test");
       console.error("Error details: " + error);
       res.sendResponse(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "An internal error occured.");
       return;
