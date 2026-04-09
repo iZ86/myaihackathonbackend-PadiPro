@@ -38,12 +38,15 @@ class WeatherService implements IWeatherService {
     }
 
 
-    // 2. Check if last updated_at was 4 hours ago
+    // Check if last updated_at was 4 hours ago
     let lastUpdateMs = 0;
-    const weather = await weatherRepository.getWeatherByMobileNo(mobile_no);
-    if (!weather) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User does not have a weather record linked.");
+    const weatherResult: Result<WeatherData> = await this.getWeatherByMobileNo(mobile_no);
+    if (!weatherResult.isSuccess()) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, weatherResult.getMessage());
     }
+
+    const weather: WeatherData = weatherResult.getData();
+
     if (weather.updated_at) {
       const dateObj = (typeof (weather.updated_at as any).toDate === 'function') 
         ? (weather.updated_at as any).toDate() 
