@@ -9,10 +9,6 @@ interface IUserService {
   getUserByMobileNo(mobile_no: string): Promise<Result<UserData>>;
 }
 
-/** This is where the business logic of the software occurs.
- * Service methods may call other service methods from itself or other domain service methods.
- * External API calls are also done here.
- */
 class UserService implements IUserService {
   public async getUsers(): Promise<Result<UserData[]>> {
     const users: UserData[] = await userRepository.getUsers();
