@@ -1,6 +1,3 @@
-/** Datatypes to be used. 
- * Can be used by other domains.
-*/
 export interface UserData {
   id: string; 
   mobile_no: string;
