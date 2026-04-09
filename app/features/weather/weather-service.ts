@@ -90,10 +90,17 @@ class WeatherService implements IWeatherService {
   
   public async saveWeather(mobile_no: string): Promise<any> {
 
-    // 1. Find coordinates data
-    const user = await userRepository.getUserByMobileNo(mobile_no);
-    if (!user || !user.coords) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User coordinates not found.");
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (!userResult.isSuccess()) {
+      Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+    }
+
+    // Make sure user has coords
+    const user: UserData = userResult.getData();
+    if (!user.coords) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
     }
 
     // 2. Check if weather record already exists
