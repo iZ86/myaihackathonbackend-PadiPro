@@ -8,8 +8,11 @@ export const weatherParamValidator: any = [
     .isString().withMessage("mobile_no must be set"),
   validate,
 ];
+
+export const saveWeatherBodyValidator: any = [
   body('mobile_no')
-    .exists().withMessage("Missing mobile_no.")
+    .trim()
+    .notEmpty().withMessage("Missing mobile_no.")
     .isString().withMessage("mobile_no must be set"),
   validate,
 ];
