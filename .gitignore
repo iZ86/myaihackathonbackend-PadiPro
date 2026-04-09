@@ -422,3 +422,6 @@ dist/
 
 # Third Part APIs
 .genkit
+
+# VSCode API
+.http
