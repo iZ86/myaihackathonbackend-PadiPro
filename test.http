@@ -1,0 +1,23 @@
+### Register Weather Data
+POST http://localhost:3000/api/v1/weather
+Content-Type: application/json
+
+{
+    "mobile_no": "60178290173"
+}
+
+### Update Weather Data
+PUT http://localhost:3000/api/v1/weather
+Content-Type: application/json
+
+{
+    "mobile_no": "60178290173"
+}
+
+### Get All Users
+GET http://localhost:3000/api/v1/users
+Accept: application/json
+
+### Get User via mobile_no
+GET http://localhost:3000/api/v1/users/60178290173
+Accept: application/json

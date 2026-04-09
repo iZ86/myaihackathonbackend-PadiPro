@@ -1,38 +1,40 @@
 
+import { db } from "../../database/db-connection";
 import { UserData } from "./user-model";
 
-const USERSDATA: UserData[] = [
-  {
-    userId: 1,
-    username: "iZ86"
-  },
-  {
-    userId: 2,
-    username: "SkyFoo"
-  }
-]
-
-
 interface IUserRepostory {
-  getUsers(): Promise<UserData[]>;
-  getUserById(userId: number): Promise<UserData | undefined>;
+  getUsers(): Promise<UserData[]>
+  getUserByMobileNo(mobile_no: string): Promise<UserData | undefined>;
 }
 
-
-/** Here you would connect to whatever database you want to use, and the methods here interact with the database. */
 class UserRepository implements IUserRepostory {
   public async getUsers(): Promise<UserData[]> {
-
-    return USERSDATA;
+    const snapshot = await db.collection('users').get();
+    if (snapshot.empty) {
+      return [];
+    }
+  
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as UserData));
   }
 
-  public async getUserById(userId: number): Promise<UserData | undefined> {
-    for (const user of USERSDATA) {
-      if (user.userId === userId) {
-        return user;
-      }
+  public async getUserByMobileNo(mobile_no: string): Promise<UserData | undefined> {
+    const snapshot = await db.collection('users')
+      .where("mobile_no", "==", mobile_no)
+      .limit(1)
+      .get();
+
+    const doc = snapshot.docs[0];
+    if (!doc) {
+      return undefined;
     }
-    return undefined
+    
+    return { 
+      id: doc.id, 
+      ...doc.data() 
+    } as UserData;
   }
 }
 

@@ -17,10 +17,10 @@ export default class UserController {
     
   }
 
-  async getUserById(req: Request, res: Response) {
-    const userId: number = Number(req.params.userId);
+  async getUserByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
 
-    const result: Result<UserData> = await userService.getUserById(userId);
+    const result: Result<UserData> = await userService.getUserByMobileNo(mobileNo);
 
     return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
   }

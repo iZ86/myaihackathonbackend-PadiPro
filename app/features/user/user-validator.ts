@@ -4,9 +4,9 @@ import validate from "../../middlewares/validate";
 /** Used for 400 validation checks. */
 /** May be used in other domains. */
 export const userParamValidator: any = [
-  param('userId')
-    .exists().withMessage("Missing userId.")
-    .isInt().withMessage("userId must be an integer"),
+  param('mobile_no')
+    .exists().withMessage("Missing mobile_no.")
+    .isInt().withMessage("mobile_no must be a set"),
   validate,
 ];
 

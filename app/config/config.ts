@@ -22,3 +22,7 @@ export const someServiceConfig = {
 export const geminiServiceConfig = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY as string
 };
+
+export const weatherServiceConfig = {
+  WEATHER_API_KEY: process.env.WEATHER_API_KEY as string
+};
