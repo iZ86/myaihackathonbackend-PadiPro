@@ -4,7 +4,6 @@ import { Result } from "../../../libs/Result";
 import { WeatherData, WeatherApiResponse } from "./weather-model";
 import weatherRepository from "./weather-repository";
 import { weatherServiceConfig } from "../../config/config";
-import userRepository from "../user/user-repository";
 import userService from "../user/user-service";
 import { UserData } from "../user/user-model";
 
