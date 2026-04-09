@@ -102,10 +102,10 @@ class WeatherService implements IWeatherService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
     }
 
-    // 2. Check if weather record already exists
-    const weather = await weatherRepository.getWeatherByMobileNo(mobile_no);
-    if (weather) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Weather record for this user already exists.");
+    // Check if the weather exists or not
+    const weatherResult: Result<WeatherData> = await this.getWeatherByMobileNo(mobile_no);
+    if (weatherResult.isSuccess()) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.CONFLICT, "Weather record for this user already exists.");
     }
 
     // 2. Get Weather API response
