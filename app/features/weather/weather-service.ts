@@ -129,8 +129,8 @@ class WeatherService implements IWeatherService {
       cloudCover: weatherApiResponse.cloudCover,
     };
 
-    await weatherRepository.saveWeather(mobile_no, updatedData);
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedData, "User weather record saved.");
+    await weatherRepository.saveWeather(mobile_no, savedData);
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedData, "User weather record saved.");
   }
 }
 
