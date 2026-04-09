@@ -20,8 +20,8 @@ class WeatherService implements IWeatherService {
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, weather, "User weather record found.");
   }
-  
-  public async updateWeather(mobile_no: string): Promise<any> {
+
+  public async updateWeather(mobile_no: string): Promise<Result<WeatherData>> {
 
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
