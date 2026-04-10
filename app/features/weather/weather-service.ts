@@ -20,8 +20,8 @@ class WeatherService implements IWeatherService {
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-    if (!userResult.isSuccess()) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+    if (userResult.isFailure()) {
+      return userResult;
     }
 
     const weather: WeatherData | undefined = await weatherRepository.getWeatherByMobileNo(mobile_no);
@@ -36,8 +36,8 @@ class WeatherService implements IWeatherService {
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-    if (!userResult.isSuccess()) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+    if (userResult.isFailure()) {
+      return userResult;
     }
 
     // Make sure user has coords
@@ -50,8 +50,8 @@ class WeatherService implements IWeatherService {
     // Check if last updated_at was 4 hours ago
     let lastUpdateMs = 0;
     const weatherResult: Result<WeatherData> = await this.getWeatherByMobileNo(mobile_no);
-    if (!weatherResult.isSuccess()) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, weatherResult.getMessage());
+    if (weatherResult.isFailure()) {
+      return weatherResult;
     }
 
     const weather: WeatherData = weatherResult.getData();
@@ -128,8 +128,8 @@ class WeatherService implements IWeatherService {
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-    if (!userResult.isSuccess()) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, userResult.getMessage());
+    if (userResult.isFailure()) {
+      return userResult;
     }
 
     // Make sure user has coords
