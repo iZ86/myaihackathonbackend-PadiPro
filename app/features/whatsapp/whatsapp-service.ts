@@ -4,7 +4,7 @@
 // ============================================================
 
 import {
-  WhatsappMessage,
+  WhatsAppMessage,
   TextMessage,
   ImageMessage,
   AudioMessage,
@@ -13,6 +13,8 @@ import {
   RawMessage,
   RawContact,
   RawMetadata,
+  SendTextPayload,
+  SendReplyResponse,
 } from './whatsapp-model';
 
 // ------------------------------------------------------------
@@ -20,6 +22,11 @@ import {
 // ------------------------------------------------------------
 export class MediaService {
   async fetch(mediaId: string, url: string): Promise<Buffer> {
+    // The url in the webhook payload is pre-signed and short-lived.
+    // Alternatively re-fetch via:
+    //   GET https://graph.facebook.com/v18.0/{mediaId}
+    //   → returns { url, mime_type, file_size }
+    // Then download that url with the Bearer token.
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` },
     });
@@ -33,26 +40,44 @@ export class MediaService {
 // ReplyService — send outbound messages via the Cloud API
 // ------------------------------------------------------------
 export class ReplyService {
-  private readonly baseUrl = 'https://graph.facebook.com/v18.0';
+  private readonly baseUrl   = 'https://graph.facebook.com';
+  private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v19.0';
 
-  async sendText(to: string, body: string): Promise<void> {
-    const url = `${this.baseUrl}/${process.env.PHONE_NUMBER_ID}/messages`;
+  private get endpoint(): string {
+    return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
+  }
 
-    const res = await fetch(url, {
+  private async post(payload: SendTextPayload): Promise<SendReplyResponse> {
+    const res = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body },
-      }),
+      body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error(`Reply failed: ${await res.text()}`);
+    if (!res.ok) throw new Error(`Reply failed (${res.status}): ${await res.text()}`);
+    return res.json() as Promise<SendReplyResponse>;
+  }
+
+  async sendText(
+    to:          string,
+    body:        string,
+    previewUrl:  boolean = false,
+  ): Promise<SendReplyResponse> {
+    const payload: SendTextPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type:    'individual',
+      to,
+      type: 'text',
+      text: {
+        body,
+        preview_url: previewUrl,
+      },
+    };
+
+    return this.post(payload);
   }
 }
 
@@ -75,7 +100,7 @@ export class MessageService {
     rawMsg:  RawMessage,
     contact: RawContact | undefined,
     meta:    RawMetadata | undefined,
-  ): WhatsappMessage {
+  ): WhatsAppMessage {
     const base = {
       from:          rawMsg.from,
       messageId:     rawMsg.id,
@@ -142,7 +167,7 @@ export class MessageService {
 
   // --- Dispatch ---------------------------------------------
 
-  async handle(message: WhatsappMessage): Promise<void> {
+  async handle(message: WhatsAppMessage): Promise<void> {
     switch (message.type) {
       case 'text':     return this.handleText(message);
       case 'image':    return this.handleImage(message);
@@ -154,9 +179,10 @@ export class MessageService {
 
   // --- Handlers ---------------------------------------------
 
-  private async handleText(msg:TextMessage): Promise<void> {
+  private async handleText(msg: TextMessage): Promise<void> {
     console.log(`[text] from ${msg.name}: ${msg.body}`);
-    await this.reply.sendText(msg.from, `You said: ${msg.body}`);
+    const result = await this.reply.sendText(msg.from, `You said: ${msg.body}`);
+    console.log(`[reply sent] message id: ${result.messages[0]?.id}`);
   }
 
   private async handleImage(msg: ImageMessage): Promise<void> {
