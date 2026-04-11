@@ -1,8 +1,6 @@
-import express from 'express';
 import { Router } from "express";
 import { asyncHandler } from "../../utils/utils";
 import { WhatsappController } from './whatsapp-controller';
-import { checkAuthTokenHeader } from "../../middlewares/auth";
 
 class WhatsappRoute {
     router = Router();
@@ -13,10 +11,8 @@ class WhatsappRoute {
     }
 
     initializeRoutes() {
+        //request for connection with Whatsapp Cloud API
         this.router.get('/', (req, res) => {
-            const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-            console.log(`\n\nWebhook received ${timestamp}\n`);
-
             const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
 
             if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
@@ -25,7 +21,8 @@ class WhatsappRoute {
             return res.status(403).end();
         });
 
-        this.router.post('/', this.controller.handleWebhook.bind(this.controller));
+        //receive, parse, and response to msg
+        this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
     } 
 }
 

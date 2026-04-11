@@ -1,32 +1,9 @@
-// ============================================================
-// services/whatsapp.service.ts
-// MessageService (parsing + dispatch) + MediaService + ReplyService
-// ============================================================
+import { WhatsappMessage,TextMessage, ImageMessage, AudioMessage, VideoMessage, LocationMessage, 
+         RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse } from './whatsapp-model';
 
-import {
-  WhatsAppMessage,
-  TextMessage,
-  ImageMessage,
-  AudioMessage,
-  VideoMessage,
-  LocationMessage,
-  RawMessage,
-  RawContact,
-  RawMetadata,
-  SendTextPayload,
-  SendReplyResponse,
-} from './whatsapp-model';
-
-// ------------------------------------------------------------
-// MediaService — download media files from the Cloud API
-// ------------------------------------------------------------
+//download media from Whatsapp Cloud API
 export class MediaService {
   async fetch(mediaId: string, url: string): Promise<Buffer> {
-    // The url in the webhook payload is pre-signed and short-lived.
-    // Alternatively re-fetch via:
-    //   GET https://graph.facebook.com/v18.0/{mediaId}
-    //   → returns { url, mime_type, file_size }
-    // Then download that url with the Bearer token.
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` },
     });
@@ -36,9 +13,7 @@ export class MediaService {
   }
 }
 
-// ------------------------------------------------------------
-// ReplyService — send outbound messages via the Cloud API
-// ------------------------------------------------------------
+//currently the token is hardcoded into render server environment
 export class ReplyService {
   private readonly baseUrl   = 'https://graph.facebook.com/v25.0';
 
@@ -63,7 +38,7 @@ export class ReplyService {
   async sendText(
     to:          string,
     body:        string,
-    previewUrl:  boolean = false,
+    previewUrl:  boolean = true,
   ): Promise<SendReplyResponse> {
     const payload: SendTextPayload = {
       messaging_product: 'whatsapp',
@@ -80,10 +55,7 @@ export class ReplyService {
   }
 }
 
-// ------------------------------------------------------------
-// MessageService — parse raw webhook payload → typed model,
-//                  then dispatch to the right handler
-// ------------------------------------------------------------
+//parse request and send to respective handler
 export class MessageService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
@@ -93,13 +65,11 @@ export class MessageService {
     this.reply = new ReplyService();
   }
 
-  // --- Parsing (previously MessageParser) -------------------
-
   parse(
     rawMsg:  RawMessage,
     contact: RawContact | undefined,
     meta:    RawMetadata | undefined,
-  ): WhatsAppMessage {
+  ): WhatsappMessage {
     const base = {
       from:          rawMsg.from,
       messageId:     rawMsg.id,
@@ -164,9 +134,9 @@ export class MessageService {
     }
   }
 
-  // --- Dispatch ---------------------------------------------
-
-  async handle(message: WhatsAppMessage): Promise<void> {
+  
+  //handler to handle business logic regarding to msg type
+  async handle(message: WhatsappMessage): Promise<void> {
     switch (message.type) {
       case 'text':     return this.handleText(message);
       case 'image':    return this.handleImage(message);
@@ -175,8 +145,6 @@ export class MessageService {
       case 'location': return this.handleLocation(message);
     }
   }
-
-  // --- Handlers ---------------------------------------------
 
   private async handleText(msg: TextMessage): Promise<void> {
     console.log(`[text] from ${msg.name}: ${msg.body}`);
@@ -188,7 +156,7 @@ export class MessageService {
     console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
     if (msg.mediaId && msg.url) {
       const file = await this.media.fetch(msg.mediaId, msg.url);
-      // process file buffer...
+      // business logic
     }
   }
 
@@ -196,7 +164,7 @@ export class MessageService {
     console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
     if (msg.mediaId && msg.url) {
       const file = await this.media.fetch(msg.mediaId, msg.url);
-      // transcribe or store...
+      // business logic
     }
   }
 
@@ -204,12 +172,12 @@ export class MessageService {
     console.log(`[video] from ${msg.name}`);
     if (msg.mediaId && msg.url) {
       const file = await this.media.fetch(msg.mediaId, msg.url);
-      // process...
+      // business logic
     }
   }
 
   private async handleLocation(msg: LocationMessage): Promise<void> {
     console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
-    // reverse geocode, store, etc.
+    // business logic
   }
 }

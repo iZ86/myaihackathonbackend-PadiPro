@@ -1,7 +1,3 @@
-// ============================================================
-// controllers/whatsapp.controller.ts
-// ============================================================
-
 import { Request, Response } from 'express';
 import { MessageService } from './whatsapp-service';
 import { RawWebhookBody } from './whatsapp-model';
@@ -15,7 +11,7 @@ export class WhatsappController {
 
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
     try {
-      // Ack immediately — WhatsApp retries if no 200 within 20s
+      // Act immediately — WhatsApp retries if no 200 within 20s
       res.sendStatus(200);
 
       const value = req.body?.entry?.[0]?.changes?.[0]?.value;

@@ -1,7 +1,7 @@
-// ============================================================
-// models/message.model.ts
-// ============================================================
+export type MessageType = 'text' | 'image' | 'audio' | 'video' | 'location';
+export type WhatsappMessage = TextMessage | ImageMessage | AudioMessage | VideoMessage | LocationMessage;
 
+//all parameter with an undefined type is to prevent user sending nothing
 export interface WhatsappBaseMessage {
   from:          string;
   messageId:     string;
@@ -51,17 +51,8 @@ export interface LocationMessage extends WhatsappBaseMessage {
   address:   string | undefined;
 }
 
-export type MessageType = 'text' | 'image' | 'audio' | 'video' | 'location';
 
-export type WhatsAppMessage =
-  | TextMessage
-  | ImageMessage
-  | AudioMessage
-  | VideoMessage
-  | LocationMessage;
-
-// ---- Raw webhook payload types ----------------------------
-
+//the payload format
 export interface RawWebhookBody {
   object: string;
   entry:  RawEntry[];
@@ -120,8 +111,8 @@ export interface RawLocation {
   address?:  string;
 }
 
-// ---- Outbound reply payload types -------------------------
 
+//reply payload format
 export interface SendTextPayload {
   messaging_product: 'whatsapp';
   recipient_type:    'individual';
