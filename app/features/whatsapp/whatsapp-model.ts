@@ -134,6 +134,27 @@ export type SendImagePayload = {
     | { link: string; id?: never;   caption?: string };
 };
 
+export type SendAudioPayload = {
+  messaging_product: 'whatsapp';
+  recipient_type:    'individual';
+  to:                string;
+  type:              'audio';
+  audio:
+    | { id: string;   link?: never }
+    | { link: string; id?: never   };
+};
+ 
+// video supports an optional caption
+export type SendVideoPayload = {
+  messaging_product: 'whatsapp';
+  recipient_type:    'individual';
+  to:                string;
+  type:              'video';
+  video:
+    | { id: string;   link?: never; caption?: string }
+    | { link: string; id?: never;   caption?: string };
+};
+
 export interface SendReplyResponse {
   messaging_product: string;
   contacts: { input: string; wa_id: string }[];

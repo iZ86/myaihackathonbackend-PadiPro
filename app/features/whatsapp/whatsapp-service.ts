@@ -1,5 +1,5 @@
 import { WhatsappMessage,TextMessage, ImageMessage, AudioMessage, VideoMessage, LocationMessage, 
-         RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse, SendImagePayload } from './whatsapp-model';
+         RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse, SendImagePayload, SendAudioPayload, SendVideoPayload } from './whatsapp-model';
 
 //download media from Whatsapp Cloud API
 export class MediaService {
@@ -21,7 +21,7 @@ export class ReplyService {
     return `${this.baseUrl}/${process.env.PHONE_NUMBER_ID}/messages`;
   }
 
-  private async post(payload: SendTextPayload | SendImagePayload): Promise<SendReplyResponse> {
+  private async post(payload: SendTextPayload | SendImagePayload | SendAudioPayload | SendVideoPayload): Promise<SendReplyResponse> {
     const res = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
@@ -71,6 +71,46 @@ export class ReplyService {
       image,
     };
 
+    return this.post(payload);
+  }
+
+  async sendAudio(
+    to:     string,
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+  ): Promise<SendReplyResponse> {
+    const audio = 'mediaId' in source && source.mediaId
+      ? { id: source.mediaId }
+      : { link: source.link! };
+ 
+    const payload: SendAudioPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type:    'individual',
+      to,
+      type: 'audio',
+      audio,
+    };
+ 
+    return this.post(payload);
+  }
+ 
+  // Pass either `mediaId` (previously uploaded) or `link` (public URL), not both.
+  async sendVideo(
+    to:       string,
+    source:   { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    caption?: string,
+  ): Promise<SendReplyResponse> {
+    const video = 'mediaId' in source && source.mediaId
+      ? { id: source.mediaId, ...(caption ? { caption } : {}) }
+      : { link: source.link!,  ...(caption ? { caption } : {}) };
+ 
+    const payload: SendVideoPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type:    'individual',
+      to,
+      type: 'video',
+      video,
+    };
+ 
     return this.post(payload);
   }
 }
@@ -183,17 +223,17 @@ export class MessageService {
 
   private async handleAudio(msg: AudioMessage): Promise<void> {
     console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
-    if (msg.mediaId && msg.url) {
-      const file = await this.media.fetch(msg.mediaId, msg.url);
-      // business logic
+    if (msg.mediaId) {
+      const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
+      console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
     }
   }
-
+ 
   private async handleVideo(msg: VideoMessage): Promise<void> {
     console.log(`[video] from ${msg.name}`);
-    if (msg.mediaId && msg.url) {
-      const file = await this.media.fetch(msg.mediaId, msg.url);
-      // business logic
+    if (msg.mediaId) {
+      const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
+      console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
