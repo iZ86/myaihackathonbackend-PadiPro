@@ -40,11 +40,10 @@ export class MediaService {
 // ReplyService — send outbound messages via the Cloud API
 // ------------------------------------------------------------
 export class ReplyService {
-  private readonly baseUrl   = 'https://graph.facebook.com';
-  private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v19.0';
+  private readonly baseUrl   = 'https://graph.facebook.com/v25.0';
 
   private get endpoint(): string {
-    return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
+    return `${this.baseUrl}/${process.env.PHONE_NUMBER_ID}/messages`;
   }
 
   private async post(payload: SendTextPayload): Promise<SendReplyResponse> {
