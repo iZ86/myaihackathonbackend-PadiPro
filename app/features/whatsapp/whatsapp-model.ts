@@ -124,6 +124,16 @@ export interface SendTextPayload {
   };
 }
 
+export type SendImagePayload = {
+  messaging_product: 'whatsapp';
+  recipient_type:    'individual';
+  to:                string;
+  type:              'image';
+  image:
+    | { id: string;   link?: never; caption?: string }
+    | { link: string; id?: never;   caption?: string };
+};
+
 export interface SendReplyResponse {
   messaging_product: string;
   contacts: { input: string; wa_id: string }[];

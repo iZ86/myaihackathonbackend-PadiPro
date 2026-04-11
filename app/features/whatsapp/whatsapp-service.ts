@@ -1,5 +1,5 @@
 import { WhatsappMessage,TextMessage, ImageMessage, AudioMessage, VideoMessage, LocationMessage, 
-         RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse } from './whatsapp-model';
+         RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse, SendImagePayload } from './whatsapp-model';
 
 //download media from Whatsapp Cloud API
 export class MediaService {
@@ -21,7 +21,7 @@ export class ReplyService {
     return `${this.baseUrl}/${process.env.PHONE_NUMBER_ID}/messages`;
   }
 
-  private async post(payload: SendTextPayload): Promise<SendReplyResponse> {
+  private async post(payload: SendTextPayload | SendImagePayload): Promise<SendReplyResponse> {
     const res = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
@@ -30,7 +30,7 @@ export class ReplyService {
       },
       body: JSON.stringify(payload),
     });
-
+ 
     if (!res.ok) throw new Error(`Reply failed (${res.status}): ${await res.text()}`);
     return res.json() as Promise<SendReplyResponse>;
   }
@@ -49,6 +49,26 @@ export class ReplyService {
         body,
         preview_url: previewUrl,
       },
+    };
+
+    return this.post(payload);
+  }
+
+  async sendImage(
+    to:       string,
+    source:   { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    caption?: string,
+  ): Promise<SendReplyResponse> {
+    const image = 'mediaId' in source && source.mediaId
+      ? { id: source.mediaId, ...(caption ? { caption } : {}) }
+      : { link: source.link!,  ...(caption ? { caption } : {}) };
+
+    const payload: SendImagePayload = {
+      messaging_product: 'whatsapp',
+      recipient_type:    'individual',
+      to,
+      type: 'image',
+      image,
     };
 
     return this.post(payload);
@@ -155,11 +175,9 @@ export class MessageService {
 
   private async handleImage(msg: ImageMessage): Promise<void> {
     console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
-    if (msg.mediaId && msg.url) {
-      const file = await this.media.fetch(msg.mediaId, msg.url);
-      // business logic
-      const base64 = file.toString("base64");
-      console.log(`data:image/jpeg;base64,${base64}`);
+    if (msg.mediaId) {
+      const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
+      console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
