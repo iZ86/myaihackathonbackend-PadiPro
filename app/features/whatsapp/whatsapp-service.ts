@@ -134,7 +134,7 @@ export class MessageService {
     }
   }
 
-  
+
   //handler to handle business logic regarding to msg type
   async handle(message: WhatsappMessage): Promise<void> {
     switch (message.type) {
@@ -143,6 +143,7 @@ export class MessageService {
       case 'audio':    return this.handleAudio(message);
       case 'video':    return this.handleVideo(message);
       case 'location': return this.handleLocation(message);
+      //remember to add a default case ltr to show unsupported media
     }
   }
 
@@ -157,6 +158,8 @@ export class MessageService {
     if (msg.mediaId && msg.url) {
       const file = await this.media.fetch(msg.mediaId, msg.url);
       // business logic
+      const base64 = file.toString("base64");
+      console.log(`data:image/jpeg;base64,${base64}`);
     }
   }
 
