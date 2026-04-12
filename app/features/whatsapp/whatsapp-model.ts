@@ -1,5 +1,5 @@
 export type MessageType = 'text' | 'image' | 'audio' | 'video' | 'location';
-export type WhatsappMessage = TextMessage | ImageMessage | AudioMessage | VideoMessage | LocationMessage;
+export type WhatsappMessage = ITextMessage | IImageMessage | IAudioMessage | IVideoMessage | ILocationMessage;
 
 //all parameter with an undefined type is to prevent user sending nothing
 export interface WhatsappBaseMessage {
@@ -12,12 +12,12 @@ export interface WhatsappBaseMessage {
   type:          MessageType;
 }
 
-export interface TextMessage extends WhatsappBaseMessage {
+export interface ITextMessage extends WhatsappBaseMessage {
   type: 'text';
   body: string | undefined;
 }
 
-export interface ImageMessage extends WhatsappBaseMessage {
+export interface IImageMessage extends WhatsappBaseMessage {
   type:     'image';
   mediaId:  string | undefined;
   url:      string | undefined;
@@ -26,7 +26,7 @@ export interface ImageMessage extends WhatsappBaseMessage {
   sha256:   string | undefined;
 }
 
-export interface AudioMessage extends WhatsappBaseMessage {
+export interface IAudioMessage extends WhatsappBaseMessage {
   type:     'audio';
   mediaId:  string | undefined;
   url:      string | undefined;
@@ -35,7 +35,7 @@ export interface AudioMessage extends WhatsappBaseMessage {
   sha256:   string | undefined;
 }
 
-export interface VideoMessage extends WhatsappBaseMessage {
+export interface IVideoMessage extends WhatsappBaseMessage {
   type:     'video';
   mediaId:  string | undefined;
   url:      string | undefined;
@@ -43,7 +43,7 @@ export interface VideoMessage extends WhatsappBaseMessage {
   sha256:   string | undefined;
 }
 
-export interface LocationMessage extends WhatsappBaseMessage {
+export interface ILocationMessage extends WhatsappBaseMessage {
   type:      'location';
   latitude:  number | undefined;
   longitude: number | undefined;

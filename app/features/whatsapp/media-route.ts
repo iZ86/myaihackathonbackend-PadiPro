@@ -1,8 +1,4 @@
-// ============================================================
-// debug/media-debug.route.ts
-// TEMPORARY — delete this file before prod
-// ============================================================
-
+// TEMPORARY — delete before prod
 import { Router, Request, Response } from 'express';
 import { MediaDebugController } from './media-controller';
 
