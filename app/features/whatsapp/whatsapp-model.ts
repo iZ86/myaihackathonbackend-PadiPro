@@ -9,7 +9,7 @@ export interface WhatsappBaseMessage {
   name:          string | undefined;
   waId:          string | undefined;
   phoneNumberId: string | undefined;
-  type:          MessageType;
+
 }
 
 export interface ITextMessage extends WhatsappBaseMessage {
@@ -159,4 +159,10 @@ export interface SendReplyResponse {
   messaging_product: string;
   contacts: { input: string; wa_id: string }[];
   messages: { id: string }[];
+}
+
+export interface WhatsappImageData extends IImageMessage {
+  storage_path: string;
+  download_url: string;
+  created_at:   string;
 }

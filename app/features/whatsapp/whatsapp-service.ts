@@ -14,6 +14,7 @@ import {
   SendVideoPayload,
   SendReplyResponse,
 } from './whatsapp-model';
+import whatsappRepository from './whatsapp-repository';
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -115,9 +116,7 @@ export class ReplyService {
   }
 }
 
-// ------------------------------------------------------------
-// MessageService — parse + dispatch
-// ------------------------------------------------------------
+// parsing msg 
 export class MessageService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
@@ -210,13 +209,19 @@ export class MessageService {
 
   private async handleImage(msg: IImageMessage): Promise<void> {
     console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
-    if (msg.mediaId) {
-      const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
-      console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
-    }
 
     if (msg.mediaId && msg.url) {
       const buffer = await this.media.fetch(msg.mediaId, msg.url);
+
+      await whatsappRepository.saveImage(msg.from, buffer, {
+        mediaId:  msg.mediaId,
+        mimeType: msg.mimeType ?? 'image/jpeg',
+        ...(msg.caption && { caption: msg.caption }),
+        ...(msg.sha256  && { sha256:  msg.sha256  }),
+      });
+
+      const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
+      console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
