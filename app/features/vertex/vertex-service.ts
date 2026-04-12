@@ -1,9 +1,32 @@
+import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import { Result } from "../../../libs/Result";
 import { vertexServiceConfig } from "../../config/config";
+import { VertexSessionData, VertexSessionInfoData } from "./vertex-model";
 
 interface IVertexService {
+  createVertexSession(): Promise<Result<VertexSessionInfoData>>;
 }
 
 class VertexService implements IVertexService {
+
+  public async createVertexSession(): Promise<Result<VertexSessionInfoData>> {
+    const createVertexSessionResponse: Response = await this.fetchCreateVertexSessionAPI();
+
+    if (!createVertexSessionResponse.ok) {
+      const errorData = await createVertexSessionResponse.json();
+      console.error('Vertex API Error:', errorData);
+      throw new Error(`Vertex API responded with status: ${createVertexSessionResponse.status}`);
+    }
+
+    const createVertexSessionData: VertexSessionData = await createVertexSessionResponse.json() as VertexSessionData;
+
+    const vertexSessionInfo: VertexSessionInfoData = {
+      session: createVertexSessionData.sessionInfo.name,
+      queryId: createVertexSessionData.sessionInfo.queryId
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, vertexSessionInfo, "Successfully created Vertex AI Search session.");
+  }
 
   private async fetchCreateVertexSessionAPI(): Promise<Response> {
     const url: string = vertexServiceConfig.VERTEX_CREATE_SESSION_URL;
