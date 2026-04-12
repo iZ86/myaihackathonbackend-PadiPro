@@ -16,4 +16,7 @@ export const vertexServiceConfig = {
   VERTEX_GCLOUD_AUTH_KEY: process.env.VERTEX_GCLOUD_AUTH_KEY as string,
   VERTEX_SESSION_URL: process.env.VERTEX_SESSION_URL as string,
   VERTEX_CREATE_SESSION_URL: process.env.VERTEX_CREATE_SESSION_URL as string,
+  VERTEX_SEND_QUERY_URL: process.env.VERTEX_SEND_QUERY_URL as string,
+  VERTEX_PROMPT_SEC: process.env.VERTEX_PROMPT_SEC as string,
+  VERTEX_MODEL_VERSION: process.env.VERTEX_MODEL_VERSION as string
 }
