@@ -15,9 +15,7 @@ import {
   SendReplyResponse,
 } from './whatsapp-model';
 
-// ------------------------------------------------------------
-// MediaService — download media files from the Cloud API
-// ------------------------------------------------------------
+//downloading img sent by user and saved into buffer
 export class MediaService {
   async fetch(mediaId: string, url: string): Promise<Buffer> {
     const response = await fetch(url, {
@@ -28,12 +26,9 @@ export class MediaService {
   }
 }
 
-// ------------------------------------------------------------
-// ReplyService — send outbound messages via the Cloud API
-// ------------------------------------------------------------
 export class ReplyService {
   private readonly baseUrl    = 'https://graph.facebook.com';
-  private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v19.0';
+  private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v25.0';
 
   private get endpoint(): string {
     return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
