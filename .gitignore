@@ -424,5 +424,4 @@ dist/
 .genkit
 
 # VSCode API
-.http
-test.http
+*.http
