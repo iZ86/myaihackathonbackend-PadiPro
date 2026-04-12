@@ -13,6 +13,6 @@ export const saveWeatherBodyValidator: any = [
   body('mobile_no')
     .trim()
     .notEmpty().withMessage("Missing mobile_no.")
-    .isString().withMessage("mobile_no must be set"),
+    .isString().withMessage("mobile_no must be a string."),
   validate,
 ];
