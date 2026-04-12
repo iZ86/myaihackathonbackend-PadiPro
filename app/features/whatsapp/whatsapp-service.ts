@@ -19,7 +19,7 @@ import {
 export class MediaService {
   async fetch(mediaId: string, url: string): Promise<Buffer> {
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` },
+      headers: { Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}` },
     });
     if (!response.ok) throw new Error(`Media fetch failed: ${response.status}`);
     return Buffer.from(await response.arrayBuffer());
@@ -39,7 +39,7 @@ export class ReplyService {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        'Authorization': `Bearer ${process.env.WHATSAPP_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });
