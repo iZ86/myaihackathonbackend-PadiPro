@@ -13,6 +13,7 @@ class VertexRoute {
   }
 
   initializeRoutes() {
+    this.router.post("/session", checkAuthTokenHeader, asyncHandler(this.controller.createVertexSession));
   }
 }
 
