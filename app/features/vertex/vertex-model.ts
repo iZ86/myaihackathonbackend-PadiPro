@@ -27,3 +27,8 @@ export interface VertexSessionData {
   },
   semanticState: string
 }
+
+export interface VertexSessionInfoData {
+  session: string;
+  queryId: string;
+}
