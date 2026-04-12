@@ -1,6 +1,8 @@
 import { WhatsappMessage,TextMessage, ImageMessage, AudioMessage, VideoMessage, LocationMessage, 
          RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse, SendImagePayload, SendAudioPayload, SendVideoPayload } from './whatsapp-model';
-import * as fs from "fs";
+import fs   from 'fs';
+import path from 'path';
+import os   from 'os';
 
 //download media from Whatsapp Cloud API
 export class MediaService {
@@ -249,5 +251,107 @@ export class MessageService {
   private async handleLocation(msg: LocationMessage): Promise<void> {
     console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
     // business logic
+  }
+}
+
+
+
+
+
+
+export interface StoredMedia {
+  filePath: string;
+  mediaId:  string;
+  mimeType: string | undefined;
+  savedAt:  number;
+}
+
+export class MediaStore {
+  private readonly tmpDir: string;
+  private readonly index = new Map<string, StoredMedia>();
+ 
+  constructor(
+    tmpDir: string = path.join(os.tmpdir(), 'whatsapp-media'),
+  ) {
+    this.tmpDir = tmpDir;
+    fs.mkdirSync(this.tmpDir, { recursive: true });
+    console.log(`[MediaStore] storing files in: ${this.tmpDir}`);
+  }
+ 
+  // Save a buffer to disk keyed by mediaId. Returns the stored metadata.
+  async save(
+    mediaId:  string,
+    buffer:   Buffer,
+    mimeType: string | undefined,
+  ): Promise<StoredMedia> {
+    const ext      = this.extFromMime(mimeType);
+    const fileName = `${mediaId}${ext}`;
+    const filePath = path.join(this.tmpDir, fileName);
+ 
+    await fs.promises.writeFile(filePath, buffer);
+ 
+    const entry: StoredMedia = { filePath, mediaId, mimeType, savedAt: Date.now() };
+    this.index.set(mediaId, entry);
+    console.log(`[MediaStore] saved → ${filePath}`);
+    return entry;
+  }
+ 
+  // Retrieve metadata for a stored file (undefined if never saved).
+  get(mediaId: string): StoredMedia | undefined {
+    return this.index.get(mediaId);
+  }
+ 
+  // Read the raw file buffer back from disk.
+  async read(mediaId: string): Promise<Buffer | undefined> {
+    const entry = this.index.get(mediaId);
+    if (!entry) return undefined;
+    try {
+      return await fs.promises.readFile(entry.filePath);
+    } catch {
+      return undefined;
+    }
+  }
+ 
+  // Delete a single file and remove it from the index.
+  async delete(mediaId: string): Promise<void> {
+    const entry = this.index.get(mediaId);
+    if (!entry) return;
+    try {
+      await fs.promises.unlink(entry.filePath);
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+    this.index.delete(mediaId);
+    console.log(`[MediaStore] deleted → ${entry.filePath}`);
+  }
+ 
+  // Delete all stored files and clear the index.
+  async clear(): Promise<void> {
+    for (const mediaId of this.index.keys()) {
+      await this.delete(mediaId);
+    }
+    console.log('[MediaStore] cleared all files');
+  }
+ 
+  // List all currently stored entries.
+  list(): StoredMedia[] {
+    return Array.from(this.index.values());
+  }
+ 
+  // Derive a file extension from a MIME type.
+  private extFromMime(mimeType: string | undefined): string {
+    if (!mimeType) return '';
+    const map: Record<string, string> = {
+      'image/jpeg':             '.jpg',
+      'image/png':              '.png',
+      'image/webp':             '.webp',
+      'video/mp4':              '.mp4',
+      'video/3gpp':             '.3gp',
+      'audio/ogg; codecs=opus': '.ogg',
+      'audio/ogg':              '.ogg',
+      'audio/mpeg':             '.mp3',
+      'audio/mp4':              '.m4a',
+    };
+    return map[mimeType] ?? '';
   }
 }
