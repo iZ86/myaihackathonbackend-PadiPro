@@ -1,10 +1,11 @@
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { vertexServiceConfig } from "../../config/config";
-import { VertexSessionData, VertexSessionInfoData } from "./vertex-model";
+import { VertexAnswerData, VertexAnswerQueryData, VertexSessionData, VertexSessionInfoData } from "./vertex-model";
 
 interface IVertexService {
   createVertexSession(): Promise<Result<VertexSessionInfoData>>;
+  sendQueryVertex(text: string, session: string): Promise<Result<VertexAnswerQueryData>>;
 }
 
 class VertexService implements IVertexService {
@@ -26,6 +27,30 @@ class VertexService implements IVertexService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, vertexSessionInfo, "Successfully created Vertex AI Search session.");
+  }
+
+  public async sendQueryVertex(text: string, session: string): Promise<Result<VertexAnswerQueryData>> {
+    const sendQueryVertexResponse: Response = await this.fetchSendQueryVertexAPI(text, session);
+
+    if (!sendQueryVertexResponse.ok) {
+      const errorData = await sendQueryVertexResponse.json();
+      console.error('Vertex API Error:', errorData);
+      throw new Error(`Vertex API responded with status: ${sendQueryVertexResponse.status}`);
+    }
+
+    const searchQueryVertexData: VertexAnswerData = await sendQueryVertexResponse.json() as VertexAnswerData;
+
+    const vertexAnswerQuery: VertexAnswerQueryData = {
+      answer: {
+        answerText: searchQueryVertexData.answer.answerText,
+        state: searchQueryVertexData.answer.state
+      },
+      relatedQuestions: searchQueryVertexData.answer.relatedQuestions,
+      session: session,
+      query: text
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, vertexAnswerQuery, "Successfully sent query to Vertex AI Search.");
   }
 
   private async fetchCreateVertexSessionAPI(): Promise<Response> {
