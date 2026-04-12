@@ -11,3 +11,9 @@ export const geminiServiceConfig = {
 export const weatherServiceConfig = {
   WEATHER_API_KEY: process.env.WEATHER_API_KEY as string
 };
+
+export const vertexServiceConfig = {
+  VERTEX_GCLOUD_AUTH_KEY: process.env.VERTEX_GCLOUD_AUTH_KEY as string,
+  VERTEX_SESSION_URL: process.env.VERTEX_SESSION_URL as string,
+  VERTEX_CREATE_SESSION_URL: process.env.VERTEX_CREATE_SESSION_URL as string,
+}
