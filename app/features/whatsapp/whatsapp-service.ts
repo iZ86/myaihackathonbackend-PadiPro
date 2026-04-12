@@ -1,5 +1,6 @@
 import { WhatsappMessage,TextMessage, ImageMessage, AudioMessage, VideoMessage, LocationMessage, 
          RawMessage, RawContact, RawMetadata, SendTextPayload, SendReplyResponse, SendImagePayload, SendAudioPayload, SendVideoPayload } from './whatsapp-model';
+import * as fs from "fs";
 
 //download media from Whatsapp Cloud API
 export class MediaService {
@@ -208,32 +209,49 @@ export class MessageService {
   }
 
   private async handleText(msg: TextMessage): Promise<void> {
-    console.log(`[text] from ${msg.name}: ${msg.body}`);
-    const result = await this.reply.sendText(msg.from, `You said: ${msg.body}`);
-    console.log(`[reply sent] message id: ${result.messages[0]?.id}`);
-  }
+      console.log(`[text] from ${msg.name}: ${msg.body}`);
+      const result = await this.reply.sendText(msg.from, `You said: ${msg.body}`);
+      console.log(`[reply sent] message id: ${result.messages[0]?.id}`);
+    }
 
-  private async handleImage(msg: ImageMessage): Promise<void> {
+    private async handleImage(msg: ImageMessage, res?: any): Promise<void> {
     console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
-    if (msg.mediaId) {
-      const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
-      console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
+
+    if (!msg.mediaId || !msg.url) return;
+
+    const buffer = await this.media.fetch(msg.mediaId, msg.url);
+
+    const base64 = buffer.toString("base64");
+
+    const html = `
+      <html>
+        <body>
+          <h2>Debug Image</h2>
+          <p>From: ${msg.name}</p>
+          <img src="data:image/jpeg;base64,${base64}" style="max-width:100%;" />
+        </body>
+      </html>
+    `;
+
+    // If response object exists → show in browser
+    if (res) {
+      res.send(html);
     }
   }
 
   private async handleAudio(msg: AudioMessage): Promise<void> {
     console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
     if (msg.mediaId) {
-      const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
-      console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
+      // const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
+      // console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
     }
   }
  
   private async handleVideo(msg: VideoMessage): Promise<void> {
     console.log(`[video] from ${msg.name}`);
     if (msg.mediaId) {
-      const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
-      console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
+      // const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
+      // console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
