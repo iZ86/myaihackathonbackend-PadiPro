@@ -5,7 +5,7 @@ import validate from "../../middlewares/validate";
 export const weatherParamValidator: any = [
   param('mobile_no')
     .notEmpty().withMessage("Missing mobile_no.")
-    .isString().withMessage("mobile_no must be set"),
+    .isString().withMessage("mobile_no must be a string."),
   validate,
 ];
 
