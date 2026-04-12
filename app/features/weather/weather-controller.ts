@@ -7,8 +7,8 @@ import weatherService from "./weather-service";
 export default class WeatherController {
 
   async getWeatherByMobileNo(req: Request, res: Response) {
-    const mobileNo: string = String(req.params.mobile_no);
-    const result: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobileNo);
+    const mobile_no: string = String(req.params.mobile_no);
+    const result: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
     } else if (result.isFailure()) {
@@ -27,7 +27,7 @@ export default class WeatherController {
   }
 
   async updateWeather(req: Request, res: Response) {
-    const mobile_no: string = req.body.mobile_no;
+    const mobile_no: string = String(req.params.mobile_no);
     const result: Result<WeatherData> = await weatherService.updateWeather(mobile_no);
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
