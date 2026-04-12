@@ -425,3 +425,4 @@ dist/
 
 # VSCode API
 .http
+test.http
