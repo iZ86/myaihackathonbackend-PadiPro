@@ -122,10 +122,12 @@ export class ReplyService {
 export class MessageService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
+  private readonly store: MediaStore;
 
-  constructor() {
+  constructor(store?: MediaStore) {
     this.media = new MediaService();
     this.reply = new ReplyService();
+    this.store = store ?? new MediaStore();
   }
 
   parse(
