@@ -219,6 +219,10 @@ export class MessageService {
       const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
       console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
     }
+
+    if (msg.mediaId && msg.url) {
+      const buffer = await this.media.fetch(msg.mediaId, msg.url);
+    }
   }
 
   private async handleAudio(msg: IAudioMessage): Promise<void> {
