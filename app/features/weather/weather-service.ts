@@ -1,0 +1,181 @@
+
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import { Result } from "../../../libs/Result";
+import { WeatherData, WeatherApiData } from "./weather-model";
+import weatherRepository from "./weather-repository";
+import { weatherServiceConfig } from "../../config/config";
+import userService from "../user/user-service";
+import { UserData } from "../user/user-model";
+
+interface IWeatherService {
+  getWeatherByMobileNo(mobile_no: string): Promise<Result<WeatherData>>;
+  updateWeather(mobile_no: string): Promise<Result<WeatherData>>;
+  saveWeather(mobile_no: string): Promise<Result<WeatherData>>;
+}
+
+class WeatherService implements IWeatherService {
+
+  public async getWeatherByMobileNo(mobile_no: string): Promise<Result<WeatherData>> {
+
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const weather: WeatherData | undefined = await weatherRepository.getWeatherByMobileNo(mobile_no);
+    if (!weather) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
+    }
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, weather, "User weather record found.");
+  }
+
+  public async updateWeather(mobile_no: string): Promise<Result<WeatherData>> {
+
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    // Make sure user has coords
+    const user: UserData = userResult.getData();
+    if (!user.coords) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
+    }
+
+
+    // Check if last updated_at was 4 hours ago
+    let lastUpdateMs = 0;
+    const weatherResult: Result<WeatherData> = await this.getWeatherByMobileNo(mobile_no);
+    if (weatherResult.isFailure()) {
+      return weatherResult;
+    }
+
+    const weather: WeatherData = weatherResult.getData();
+
+    if (weather.updated_at) {
+      const dateObj = (typeof (weather.updated_at as any).toDate === 'function')
+        ? (weather.updated_at as any).toDate()
+        : new Date(weather.updated_at);
+
+      lastUpdateMs = dateObj.getTime();
+    }
+
+    const fourHoursInMs = 4 * 60 * 60 * 1000;
+    const currentTimeMs = Date.now();
+    const isStale = (currentTimeMs - lastUpdateMs) > fourHoursInMs;
+    if (!isStale) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, "User weather record has already been updated in the past 4 hours.");
+    }
+
+    // Get Weather API response
+    const weatherApiResponse: Response = await this.fetchWeatherApi(
+      weatherServiceConfig.WEATHER_API_KEY,
+      user.coords._latitude,
+      user.coords._longitude
+    );
+
+
+    if (!weatherApiResponse.ok) {
+      const errorData = await weatherApiResponse.json();
+      console.error('Google API Error:', errorData);
+      throw new Error(`Weather API responded with status: ${weatherApiResponse.status}`);
+    }
+
+    const weatherApiData: WeatherApiData = await weatherApiResponse.json() as WeatherApiData;
+
+
+    // 4. Update weather data
+    const updatedData: WeatherData = {
+      ...weather,
+      mobile_no: mobile_no,
+      updated_at: new Date().toISOString(),
+      weatherCondition: weatherApiData.weatherCondition.type,
+      temperature: weatherApiData.temperature,
+      dewPoint: weatherApiData.dewPoint,
+      relativeHumidity: weatherApiData.relativeHumidity,
+      precipitation: weatherApiData.precipitation,
+      thunderstormProbability: weatherApiData.thunderstormProbability,
+      wind: weatherApiData.wind,
+      cloudCover: weatherApiData.cloudCover,
+    };
+
+    await weatherRepository.updateWeather(mobile_no, updatedData);
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedData, "User weather record updated.");
+  }
+
+  private async fetchWeatherApi(apiKey: string, lat: number, lng: number): Promise<Response> {
+    const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
+
+    try {
+      return await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      throw error;
+    }
+  }
+
+  public async saveWeather(mobile_no: string): Promise<Result<WeatherData>> {
+
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    // Make sure user has coords
+    const user: UserData = userResult.getData();
+    if (!user.coords) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
+    }
+
+    // Check if the weather exists or not
+    const weatherResult: Result<WeatherData> = await this.getWeatherByMobileNo(mobile_no);
+    if (weatherResult.isSuccess()) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.CONFLICT, "Weather record for this user already exists.");
+    }
+
+    // Get Weather API response
+    const weatherApiResponse: Response = await this.fetchWeatherApi(
+      weatherServiceConfig.WEATHER_API_KEY,
+      user.coords._latitude,
+      user.coords._longitude
+    );
+
+    if (!weatherApiResponse.ok) {
+      const errorData = await weatherApiResponse.json();
+      console.error('Google API Error:', errorData);
+      throw new Error(`Weather API responded with status: ${weatherApiResponse.status}`);
+    }
+
+    const weatherApiData: WeatherApiData = await weatherApiResponse.json() as WeatherApiData;
+
+    // Save weather data
+    const savedData: WeatherData = {
+      mobile_no: mobile_no,
+      updated_at: new Date().toISOString(),
+      weatherCondition: weatherApiData.weatherCondition.type,
+      temperature: weatherApiData.temperature,
+      dewPoint: weatherApiData.dewPoint,
+      relativeHumidity: weatherApiData.relativeHumidity,
+      precipitation: weatherApiData.precipitation,
+      thunderstormProbability: weatherApiData.thunderstormProbability,
+      wind: weatherApiData.wind,
+      cloudCover: weatherApiData.cloudCover,
+    };
+
+    await weatherRepository.saveWeather(mobile_no, savedData);
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedData, "User weather record saved.");
+  }
+}
+
+export default new WeatherService();

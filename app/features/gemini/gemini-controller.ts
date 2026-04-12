@@ -13,7 +13,11 @@ export default class GeminiController {
 
     const result: Result<ChatOutput> = await geminiService.chat(input);
 
-    return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
   }
 
 }

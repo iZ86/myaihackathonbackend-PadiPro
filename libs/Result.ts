@@ -3,48 +3,79 @@ import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from "./status-c
 /** This class follows the result pattern used in web development.
  * It's always used to return data from the service layer to the controller layer.
  */
-export class Result<T> {
+export abstract class Result<T> {
 
   protected constructor(
-    readonly success: boolean,
-    readonly data: T,
-    readonly statusCode: ENUM_STATUS_CODES_SUCCESS | ENUM_STATUS_CODES_FAILURE,
-    readonly message: string
+    readonly _tag: "Success" | "Failure",
+    protected readonly value: T,
+    protected readonly message: string
   ) { }
 
   static succeed<T>(statusCode: ENUM_STATUS_CODES_SUCCESS, data: T, message: string): Success<T> {
-    return new Result(true, data, statusCode, message) as Success<T>;
+    return new Success(statusCode, data, message);
   }
 
-  // ---- FAIL OVERLOADS ----
-  static fail(statusCode: ENUM_STATUS_CODES_FAILURE, message: string): Failure;
-  static fail<T>(statusCode: ENUM_STATUS_CODES_FAILURE, message: string, data: T): FailureWithData<T>;
-
-  static fail<T>(statusCode: ENUM_STATUS_CODES_FAILURE, message: string, data?: T): Failure | FailureWithData<T> {
-    if (data) {
-      return new Result(false, data, statusCode, message);
-    }
-    return new Result(false, null, statusCode, message) as Failure;
+  static fail(statusCode: ENUM_STATUS_CODES_FAILURE, message: string): Failure {
+    return new Failure(statusCode, message);
   }
 
-  isSuccess(): boolean {
-    return this.success;
-  }
+  abstract isSuccess(): this is Success<T>;
+  abstract isFailure(): this is Failure;
 
   getData(): T {
-    return this.data;
-  }
-
-  getStatusCode(): ENUM_STATUS_CODES_SUCCESS | ENUM_STATUS_CODES_FAILURE {
-    return this.statusCode;
+    if (this.isSuccess()) return this.value;
+    throw new Error("Cannot get data from a Failure");
   }
 
   getMessage(): string {
     return this.message;
   }
-
 }
 
-export type Success<T> = Result<T>;
-export type Failure = Result<never>;
-export type FailureWithData<T> = Result<T>;
+export class Success<T> extends Result<T> {
+
+  protected readonly statusCode: ENUM_STATUS_CODES_SUCCESS;
+
+  constructor(statusCode: ENUM_STATUS_CODES_SUCCESS, data: T, message: string) {
+    super("Success", data, message);
+
+    this.statusCode = statusCode;
+  }
+
+  isSuccess(): this is Success<T> {
+    return true;
+  }
+
+  isFailure(): this is Failure {
+    return false;
+  }
+
+  getStatusCode(): ENUM_STATUS_CODES_SUCCESS {
+    return this.statusCode;
+  }
+}
+
+export class Failure extends Result<never> {
+
+  protected readonly statusCode: ENUM_STATUS_CODES_FAILURE;
+
+
+  constructor(statusCode: ENUM_STATUS_CODES_FAILURE, message: string) {
+    super("Failure", null as never, message);
+    this.statusCode = statusCode;
+  }
+
+  isSuccess(): this is Success<never> {
+    return false;
+  }
+
+  isFailure(): this is Failure {
+    return true;
+  }
+
+  getStatusCode(): ENUM_STATUS_CODES_FAILURE {
+    return this.statusCode;
+  }
+}
+
+

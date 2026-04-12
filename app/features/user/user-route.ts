@@ -4,7 +4,7 @@ import UserController from "./user-controller";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import { userParamValidator } from "./user-validator"
 
-/** Route for the domain API. */
+
 class UserRoute {
   router = Router();
   controller = new UserController();
@@ -15,7 +15,7 @@ class UserRoute {
 
   initializeRoutes() {
     this.router.get("/", checkAuthTokenHeader, asyncHandler(this.controller.getUsers));
-    this.router.get("/:userId", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getUserById));
+    this.router.get("/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getUserByMobileNo));
   }
 }
 

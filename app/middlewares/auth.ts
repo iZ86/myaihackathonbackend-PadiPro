@@ -10,9 +10,9 @@ export const checkAuthTokenHeader = (req: Request, res: Response, next: NextFunc
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    res.setHeader('WWW-Authentiate', 'Bearer realm="test"');
-    return res.sendResponse(ENUM_STATUS_CODES_FAILURE.UNAUTHORIZED, "Invalid credentials");
-  }
+  // if (!token) {
+  //   res.setHeader('WWW-Authentiate', 'Bearer realm="test"');
+  //   return res.sendResponse(ENUM_STATUS_CODES_FAILURE.UNAUTHORIZED, "Invalid credentials");
+  // }
   return next();
 };
