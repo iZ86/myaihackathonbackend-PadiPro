@@ -425,3 +425,6 @@ dist/
 
 # VSCode API
 *.http
+
+# REST extension
+*.rest
