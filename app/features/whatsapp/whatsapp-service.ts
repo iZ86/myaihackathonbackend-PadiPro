@@ -1,7 +1,3 @@
-import fs   from 'fs';
-import path from 'path';
-import os   from 'os';
-
 import {
   WhatsappMessage,
   ITextMessage,
@@ -29,99 +25,6 @@ export class MediaService {
     });
     if (!response.ok) throw new Error(`Media fetch failed: ${response.status}`);
     return Buffer.from(await response.arrayBuffer());
-  }
-}
-
-// ------------------------------------------------------------
-// MediaStore — save media buffers to tmp/, manual cleanup only
-// ------------------------------------------------------------
-export interface StoredMedia {
-  filePath: string;
-  mediaId:  string;
-  mimeType: string | undefined;
-  savedAt:  number;
-}
-
-export class MediaStore {
-  private readonly tmpDir: string;
-  private readonly index = new Map<string, StoredMedia>();
-
-  constructor(
-    tmpDir: string = path.join(os.tmpdir(), 'whatsapp-media'),
-  ) {
-    this.tmpDir = tmpDir;
-    fs.mkdirSync(this.tmpDir, { recursive: true });
-    console.log(`[MediaStore] storing files in: ${this.tmpDir}`);
-  }
-
-  async save(
-    mediaId:  string,
-    buffer:   Buffer,
-    mimeType: string | undefined,
-  ): Promise<StoredMedia> {
-    const ext      = this.extFromMime(mimeType);
-    const fileName = `${mediaId}${ext}`;
-    const filePath = path.join(this.tmpDir, fileName);
-
-    await fs.promises.writeFile(filePath, buffer);
-
-    const entry: StoredMedia = { filePath, mediaId, mimeType, savedAt: Date.now() };
-    this.index.set(mediaId, entry);
-    console.log(`[MediaStore] saved → ${filePath}`);
-    return entry;
-  }
-
-  get(mediaId: string): StoredMedia | undefined {
-    return this.index.get(mediaId);
-  }
-
-  async read(mediaId: string): Promise<Buffer | undefined> {
-    const entry = this.index.get(mediaId);
-    if (!entry) return undefined;
-    try {
-      return await fs.promises.readFile(entry.filePath);
-    } catch {
-      return undefined;
-    }
-  }
-
-  async delete(mediaId: string): Promise<void> {
-    const entry = this.index.get(mediaId);
-    if (!entry) return;
-    try {
-      await fs.promises.unlink(entry.filePath);
-    } catch (err: any) {
-      if (err.code !== 'ENOENT') throw err;
-    }
-    this.index.delete(mediaId);
-    console.log(`[MediaStore] deleted → ${entry.filePath}`);
-  }
-
-  async clear(): Promise<void> {
-    for (const mediaId of this.index.keys()) {
-      await this.delete(mediaId);
-    }
-    console.log('[MediaStore] cleared all files');
-  }
-
-  list(): StoredMedia[] {
-    return Array.from(this.index.values());
-  }
-
-  private extFromMime(mimeType: string | undefined): string {
-    if (!mimeType) return '';
-    const map: Record<string, string> = {
-      'image/jpeg':             '.jpg',
-      'image/png':              '.png',
-      'image/webp':             '.webp',
-      'video/mp4':              '.mp4',
-      'video/3gpp':             '.3gp',
-      'audio/ogg; codecs=opus': '.ogg',
-      'audio/ogg':              '.ogg',
-      'audio/mpeg':             '.mp3',
-      'audio/mp4':              '.m4a',
-    };
-    return map[mimeType] ?? '';
   }
 }
 
@@ -223,16 +126,10 @@ export class ReplyService {
 export class MessageService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
-  private readonly store: MediaStore;
 
-  constructor(store?: MediaStore) {
+  constructor() {
     this.media = new MediaService();
     this.reply = new ReplyService();
-    this.store = store ?? new MediaStore();
-  }
-
-  getStore(): MediaStore {
-    return this.store;
   }
 
   parse(
@@ -318,11 +215,7 @@ export class MessageService {
 
   private async handleImage(msg: IImageMessage): Promise<void> {
     console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
-    if (msg.mediaId && msg.url) {
-      const buffer = await this.media.fetch(msg.mediaId, msg.url);
-      const stored = await this.store.save(msg.mediaId, buffer, msg.mimeType);
-      console.log(`[image stored] ${stored.filePath}`);
-
+    if (msg.mediaId) {
       const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
       console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
     }
@@ -330,11 +223,7 @@ export class MessageService {
 
   private async handleAudio(msg: IAudioMessage): Promise<void> {
     console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
-    if (msg.mediaId && msg.url) {
-      const buffer = await this.media.fetch(msg.mediaId, msg.url);
-      const stored = await this.store.save(msg.mediaId, buffer, msg.mimeType);
-      console.log(`[audio stored] ${stored.filePath}`);
-
+    if (msg.mediaId) {
       const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
       console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
     }
@@ -342,11 +231,7 @@ export class MessageService {
 
   private async handleVideo(msg: IVideoMessage): Promise<void> {
     console.log(`[video] from ${msg.name}`);
-    if (msg.mediaId && msg.url) {
-      const buffer = await this.media.fetch(msg.mediaId, msg.url);
-      const stored = await this.store.save(msg.mediaId, buffer, msg.mimeType);
-      console.log(`[video stored] ${stored.filePath}`);
-
+    if (msg.mediaId) {
       const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
       console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
     }

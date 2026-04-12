@@ -1,24 +1,21 @@
 import { Request, Response } from 'express';
 import { MessageService } from './whatsapp-service';
 import { RawWebhookBody } from './whatsapp-model';
-import { debugStore } from './media-controller';
 
 export class WhatsappController {
   private readonly service: MessageService;
 
   constructor() {
-    // Pass the shared debugStore so the dashboard and the webhook handler
-    // both read from the same Map instance.
-    this.service = new MessageService(debugStore);
+    this.service = new MessageService();
   }
 
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
     try {
-      // Ack immediately — WhatsApp retries if no 200 within 20s
+      // Act immediately — WhatsApp retries if no 200 within 20s
       res.sendStatus(200);
 
       const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-      if (!value?.messages?.length) return;
+      if (!value?.messages?.length) return; // status update or empty ping
 
       const rawMsg  = value.messages[0];
       const contact = value.contacts?.[0];
