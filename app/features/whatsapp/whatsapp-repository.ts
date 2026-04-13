@@ -84,18 +84,18 @@ class WhatsappRepository implements IWhatsappRepository {
       await file.makePublic();
       const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
-      // --- 2. Save to Firestore — field names match IImageMessage -----
+      // --- 2. Save to Firestore — only include defined fields ---
       const docRef = db.collection(this.collection).doc(meta.mediaId);
 
-      const data: Omit<WhatsappImageData, 'id' | 'type' | 'messageId' | 'timestamp' | 'name' | 'waId' | 'phoneNumberId' | 'url' | 'voice'> = {
+      const data = {
         from:         mobile_no,
         mediaId:      meta.mediaId,
         mimeType:     meta.mimeType,
-        caption:      meta.caption ?? undefined,
-        sha256:       meta.sha256,
         storage_path: storagePath,
         download_url,
         created_at:   new Date().toISOString(),
+        ...(meta.caption !== undefined && { caption: meta.caption }),
+        ...(meta.sha256  !== undefined && { sha256:  meta.sha256  }),
       };
 
       await docRef.create(data);
@@ -104,7 +104,6 @@ class WhatsappRepository implements IWhatsappRepository {
       return meta.mediaId;
     } catch (error: any) {
       if (error.code === 6) {
-        // Already exists — webhook retry, safe to skip
         console.warn(`[WhatsappRepository] image already exists for mediaId: ${meta.mediaId}`);
         return undefined;
       }
