@@ -3,6 +3,7 @@ import { db } from '../../database/db-connection';
 import { WhatsappImageData } from './whatsapp-model';
 
 interface IWhatsappRepository {
+  //getImagesByxxx are from jim's code and prob can be used in the future, currently it's useless
   getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]>;
   getImageByMediaId(media_id: string): Promise<WhatsappImageData | undefined>;
   saveImage(
@@ -19,8 +20,9 @@ interface IWhatsappRepository {
 
 class WhatsappRepository implements IWhatsappRepository {
   private readonly bucket     = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
-  private readonly collection = 'whatsapp_images';
+  private readonly collection = 'whatsapp';
 
+  //for future 
   public async getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]> {
     try {
       const snapshot = await db.collection(this.collection)
@@ -39,6 +41,7 @@ class WhatsappRepository implements IWhatsappRepository {
     }
   }
 
+  //also for future
   public async getImageByMediaId(media_id: string): Promise<WhatsappImageData | undefined> {
     try {
       const snapshot = await db.collection(this.collection)
@@ -69,7 +72,7 @@ class WhatsappRepository implements IWhatsappRepository {
     },
   ): Promise<string | undefined> {
     try {
-      // --- 1. Upload buffer to Firebase Storage ---------------
+      //upload img to firebase storage
       const ext         = this.extFromMime(meta.mimeType);
       const storagePath = `whatsapp/${mobile_no}/${meta.mediaId}${ext}`;
       const file        = this.bucket.file(storagePath);
@@ -84,8 +87,8 @@ class WhatsappRepository implements IWhatsappRepository {
       await file.makePublic();
       const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
-      // --- 2. Save to Firestore — only include defined fields ---
-      const docRef = db.collection(this.collection).doc(meta.mediaId);
+      //save img data to firestore
+      const docRef = db.collection(this.collection).doc(mobile_no);
 
       const data = {
         from:         mobile_no,

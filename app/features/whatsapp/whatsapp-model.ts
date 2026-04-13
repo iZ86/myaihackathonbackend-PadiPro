@@ -9,7 +9,6 @@ export interface WhatsappBaseMessage {
   name:          string | undefined;
   waId:          string | undefined;
   phoneNumberId: string | undefined;
-
 }
 
 export interface ITextMessage extends WhatsappBaseMessage {
@@ -144,7 +143,6 @@ export type SendAudioPayload = {
     | { link: string; id?: never   };
 };
  
-// video supports an optional caption
 export type SendVideoPayload = {
   messaging_product: 'whatsapp';
   recipient_type:    'individual';
@@ -155,12 +153,14 @@ export type SendVideoPayload = {
     | { link: string; id?: never;   caption?: string };
 };
 
+//response from sending msg for better console logging
 export interface SendReplyResponse {
   messaging_product: string;
   contacts: { input: string; wa_id: string }[];
   messages: { id: string }[];
 }
 
+//additional interface for firebase storage logic
 export interface WhatsappImageData extends IImageMessage {
   storage_path: string;
   download_url: string;

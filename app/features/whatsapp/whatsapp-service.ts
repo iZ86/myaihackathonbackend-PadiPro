@@ -1,18 +1,7 @@
 import {
-  WhatsappMessage,
-  ITextMessage,
-  IImageMessage,
-  IAudioMessage,
-  IVideoMessage,
-  ILocationMessage,
-  RawMessage,
-  RawContact,
-  RawMetadata,
-  SendTextPayload,
-  SendImagePayload,
-  SendAudioPayload,
-  SendVideoPayload,
-  SendReplyResponse,
+  WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
+  RawMessage, RawContact, RawMetadata,
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse,
 } from './whatsapp-model';
 import whatsappRepository from './whatsapp-repository';
 
@@ -27,6 +16,7 @@ export class MediaService {
   }
 }
 
+//sending text to user
 export class ReplyService {
   private readonly baseUrl    = 'https://graph.facebook.com';
   private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? 'v25.0';
@@ -48,7 +38,11 @@ export class ReplyService {
     return res.json() as Promise<SendReplyResponse>;
   }
 
-  async sendText(to: string, body: string, previewUrl: boolean = false): Promise<SendReplyResponse> {
+  async sendText(
+    to: string,
+    body: string, 
+    previewUrl: boolean = false
+  ): Promise<SendReplyResponse> {
     const payload: SendTextPayload = {
       messaging_product: 'whatsapp',
       recipient_type:    'individual',
@@ -116,7 +110,7 @@ export class ReplyService {
   }
 }
 
-// parsing msg 
+//parsing msg 
 export class MessageService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
@@ -243,6 +237,6 @@ export class MessageService {
 
   private async handleLocation(msg: ILocationMessage): Promise<void> {
     console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
-    // reverse geocode, store, etc.
+    //business logic
   }
 }
