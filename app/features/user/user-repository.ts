@@ -1,6 +1,7 @@
 
 import { db } from "../../database/db-connection";
 import { UserData } from "./user-model";
+import { GeoPoint } from "firebase-admin/firestore";
 
 interface IUserRepository {
   getUsers(): Promise<UserData[]>
@@ -35,6 +36,21 @@ class UserRepository implements IUserRepository {
       id: doc.id, 
       ...doc.data() 
     } as UserData;
+  }
+
+  public async createUser(mobile_no: string, name: string): Promise<boolean> {
+    try {
+      await db.collection("users").doc().set({
+        coords: new GeoPoint(0, 0),
+        mobile_no,
+        name
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Create user error:", error);
+      return false;
+    }
   }
 }
 

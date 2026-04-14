@@ -186,6 +186,7 @@ export class MessageService {
   }
 
   async handle(message: WhatsappMessage): Promise<void> {
+    
     switch (message.type) {
       case 'text':     return this.handleText(message);
       case 'image':    return this.handleImage(message);
