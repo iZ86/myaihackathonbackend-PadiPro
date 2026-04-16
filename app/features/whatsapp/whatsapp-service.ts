@@ -193,17 +193,17 @@ export class MessageService {
       await this.reply.sendText(
         message.from,
         `
-        Welcome to PadiPro! 🌾💪 
+Welcome to PadiPro! 🌾💪 
         
-        I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
         
-        You may respond by:
+You may respond by:
         
-        1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-        2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-        3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+ 1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
+ 2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
+ 3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
 
-        I'm able to respond to both text and image messages, now let's get started! 
+I'm able to respond to both text and image messages, now let's get started! 
         `
       )
       return;

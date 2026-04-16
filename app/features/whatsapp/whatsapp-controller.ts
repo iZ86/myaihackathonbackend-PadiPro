@@ -31,7 +31,7 @@ export class WhatsappController {
         const userResult: Result<UserData> = await userService.getUserByMobileNo(contact?.wa_id);
         if(userResult.isFailure()) {
           await userRepository.createUser(contact.wa_id, contact.profile.name);
-          await this.service.handle(message, true);
+          void this.service.handle(message, true);
           return;
         }
       }
