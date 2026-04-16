@@ -29,7 +29,11 @@ export class WhatsappController {
       //check if user exist
       if(contact?.wa_id){
         const userResult: Result<UserData> = await userService.getUserByMobileNo(contact?.wa_id);
-        (userResult.isFailure())? userRepository.createUser(contact.wa_id, contact.profile.name) : ""
+        if(userResult.isFailure()) {
+          await userRepository.createUser(contact.wa_id, contact.profile.name);
+          await this.service.handle(message, true);
+          return;
+        }
       }
       //call service logic
       await this.service.handle(message);
