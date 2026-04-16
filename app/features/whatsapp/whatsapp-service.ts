@@ -185,7 +185,26 @@ export class MessageService {
     }
   }
 
-  async handle(message: WhatsappMessage): Promise<void> {
+  async handle(message: WhatsappMessage, newUser?: boolean): Promise<void> {
+    if(newUser) {
+      await this.reply.sendText(
+        message.from,
+        `
+        Welcome to PadiPro! 🌾💪 
+        \n\n
+        I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+        \n\n
+        You may respond by:
+        \n\n
+        1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 \n
+        2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 \n
+        3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ \n\n
+
+        I'm able to respond to both text and image messages, now let's get started! 
+        `
+      )
+      return;
+    }
     
     switch (message.type) {
       case 'text':     return this.handleText(message);
