@@ -27,7 +27,7 @@ class WhatsappRoute {
         this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
        
         // Get history of images
-        this.router.get("/:mobile_no", checkAuthTokenHeader, historyParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
+        this.router.get("/history/:mobile_no", checkAuthTokenHeader, historyParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
     } 
 }
 
