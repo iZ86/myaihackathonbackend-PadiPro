@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
-import { MessageService } from './whatsapp-service';
-import { RawWebhookBody } from './whatsapp-model';
+import { HistoryService, MessageService } from './whatsapp-service';
+import { RawWebhookBody, WhatsappImageData } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 import userRepository from '../user/user-repository';
@@ -35,6 +35,18 @@ export class WhatsappController {
       await this.service.handle(message);
     } catch (err) {
       console.error('handleWebhook error:', err);
+    }
+  }
+
+  async getImagesByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
+
+    const result: Result<WhatsappImageData[]> = await HistoryService.getImagesbyMobileNo(mobileNo);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
 }

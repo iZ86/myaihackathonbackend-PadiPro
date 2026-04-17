@@ -1,7 +1,10 @@
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import { Result } from "../../../libs/Result";
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
   SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse,
+  WhatsappImageData,
 } from './whatsapp-model';
 import whatsappRepository from './whatsapp-repository';
 
@@ -239,5 +242,14 @@ export class MessageService {
   private async handleLocation(msg: ILocationMessage): Promise<void> {
     console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
     //business logic
+  }
+}
+
+// Get Image History
+export class HistoryService {
+  static async getImagesbyMobileNo(mobile_no: string): Promise<Result<WhatsappImageData[]>> {
+    const images: WhatsappImageData[] = await whatsappRepository.getImagesByMobileNo(mobile_no);
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, images, "Diagnosis history successfully retrieved.");
   }
 }
