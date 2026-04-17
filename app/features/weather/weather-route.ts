@@ -15,6 +15,7 @@ class WeatherRoute {
 
   initializeRoutes() {
     this.router.get("/:mobile_no", checkAuthTokenHeader, weatherParamValidator, asyncHandler(this.controller.getWeatherByMobileNo));
+    this.router.get("/daily/:mobile_no", checkAuthTokenHeader, weatherParamValidator, asyncHandler(this.controller.getWeatherDailyByMobileNo));
     this.router.post("/", checkAuthTokenHeader, saveWeatherBodyValidator, asyncHandler(this.controller.saveWeather));
     this.router.put("/:mobile_no", checkAuthTokenHeader, weatherParamValidator, asyncHandler(this.controller.updateWeather));
   }
