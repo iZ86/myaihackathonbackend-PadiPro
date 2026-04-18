@@ -41,4 +41,23 @@ export class WhatsappController {
       console.error('handleWebhook error:', err);
     }
   }
+
+  async sendMessage(req: Request, res: Response) {
+    const mobile_no: string = req.body.mobile_no;
+    const name: string = req.body.name;
+    const message: string = req.body.message;
+
+    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      userResult = await userService.createUser(mobile_no, name);
+    }
+
+    if (userResult.isSuccess()) {
+      //call service logic
+      await whatsappService.myHandleText(message, userResult.getData());
+    }
+
+
+
+  }
 }
