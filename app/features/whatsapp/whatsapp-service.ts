@@ -197,6 +197,7 @@ export class WhatsappService {
   }
 
   async handle(message: WhatsappMessage, user: UserData): Promise<void> {
+
     switch (message.type) {
       case 'text': return this.handleText(message, user);
       case 'image': return this.handleImage(message, user);
@@ -297,6 +298,7 @@ export class WhatsappService {
       console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
     }
   }
+
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
 
     const mobile_no: string = user.mobile_no;
@@ -441,4 +443,5 @@ export class WhatsappService {
 
   }
 }
+
 export default new WhatsappService();
