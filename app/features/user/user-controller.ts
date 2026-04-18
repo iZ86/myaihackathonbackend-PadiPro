@@ -41,4 +41,18 @@ export default class UserController {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
+
+  async updateUserCoordsByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
+    const lat: number = req.body.lat;
+    const long: number = req.body.long;
+
+    const result: Result<UserData> = await userService.updateUserCoordsByMobileNo(lat, long, mobileNo);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
 }
