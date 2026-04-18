@@ -19,7 +19,7 @@ interface IWhatsappRepository {
 
 class WhatsappRepository implements IWhatsappRepository {
   private readonly bucket     = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
-  private readonly collection = 'whatsapp';
+  private readonly collection = 'images';
 
   public async getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]> {
     try {
@@ -86,7 +86,7 @@ class WhatsappRepository implements IWhatsappRepository {
       const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
       //save img data to firestore
-      const docRef = db.collection(this.collection).doc(mobile_no);
+      const docRef = db.collection(this.collection).doc();
 
       const data = {
         from:         mobile_no,
