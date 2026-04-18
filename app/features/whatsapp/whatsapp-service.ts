@@ -188,11 +188,11 @@ export class WhatsappService {
 
   async handle(message: WhatsappMessage, user: UserData): Promise<void> {
     switch (message.type) {
-      case 'location': return this.handleLocation(message);
       case 'text': return this.handleText(message, user);
       case 'image': return this.handleImage(message, user);
       case 'audio': return this.handleAudio(message, user);
       case 'video': return this.handleVideo(message, user);
+      case 'location': return this.handleLocation(message, user);
     }
   }
 
@@ -236,7 +236,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleLocation(msg: ILocationMessage): Promise<void> {
+  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
     console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
     //business logic
   }
