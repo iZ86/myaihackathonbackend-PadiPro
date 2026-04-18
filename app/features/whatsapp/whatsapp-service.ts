@@ -392,7 +392,7 @@ export class WhatsappService {
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
-    console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
+    // console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
 
     if (msg.mediaId && msg.url) {
       const buffer = await this.media.fetch(msg.mediaId, msg.url);
@@ -405,23 +405,23 @@ export class WhatsappService {
       });
 
       const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
-      console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
+      // console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
-    console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
+    // console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
     if (msg.mediaId) {
       const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
-      console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
+      // console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
-    console.log(`[video] from ${msg.name}`);
+    // console.log(`[video] from ${msg.name}`);
     if (msg.mediaId) {
       const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
-      console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
+      // console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
     }
   }
 
