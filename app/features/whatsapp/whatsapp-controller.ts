@@ -23,13 +23,20 @@ export class WhatsappController {
       const message = whatsappService.parse(rawMsg!, contact, meta);
 
       //check if user exist
-      if(contact?.wa_id){
-        const userResult: Result<UserData> = await userService.getUserByMobileNo(contact?.wa_id);
-        (userResult.isFailure())? userRepository.createUser(contact.wa_id, contact.profile.name) : ""
+      if (contact && contact.wa_id) {
+        const mobile_no: string = contact.wa_id;
+
+        let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+        if (userResult.isFailure()) {
+          userResult = await userService.createUser(contact.wa_id, contact.profile.name);
+        }
+
+        if (userResult.isSuccess()) {
+          //call service logic
+          await whatsappService.handle(message, userResult.getData());
+        }
+
       }
-
-
-      await whatsappService.handle(message);
     } catch (err) {
       console.error('handleWebhook error:', err);
     }
