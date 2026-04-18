@@ -3,6 +3,7 @@ import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../l
 import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
 import userRepository from "./user-repository";
+import { GeoPoint } from "firebase-admin/firestore";
 
 interface IUserService {
   getUsers(): Promise<Result<UserData[]>>;
@@ -46,6 +47,28 @@ class UserService implements IUserService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully created.");
   }
+
+  public async updateUserCoordsByMobileNo(lat: number, long: number, mobile_no: string): Promise<Result<UserData>> {
+    const userResult: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const coords: GeoPoint = new GeoPoint(lat, long);
+    const updateUserResult: boolean = await userRepository.updateUserCoordsByMobileNo(coords, mobile_no);
+    if (!updateUserResult) {
+      throw new Error("updateUserCoordsByMobileNo failed to update user.")
+    }
+
+    const user: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+
+    if (user.isFailure()) {
+      throw new Error("updateUserCoordsByMobileNo failed to get updated user.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully updated.");
+  }
+
 }
 
 export default new UserService();
