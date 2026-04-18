@@ -452,10 +452,11 @@ export class WhatsappService {
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
     // console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
-    if (msg.mediaId) {
-      const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
-      // console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
-    }
+    this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    // if (msg.mediaId) {
+    //   const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
+    //   // console.log(`[audio echoed] message id: ${result.messages[0]?.id}`);
+    // }
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
