@@ -51,6 +51,21 @@ class UserRepository implements IUserRepository {
       return false;
     }
   }
+
+  public async updateUserCoordsByMobileNo(coords: GeoPoint, mobile_no: string): Promise<boolean> {
+    try {
+      const docRef = db.collection('users').doc(mobile_no);
+
+      await docRef.update({
+        coords: coords
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Create user error:", error);
+      return false;
+    }
+  }
 }
 
 export default new UserRepository();
