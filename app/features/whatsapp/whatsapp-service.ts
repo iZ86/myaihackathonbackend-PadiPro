@@ -461,10 +461,11 @@ export class WhatsappService {
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
     // console.log(`[video] from ${msg.name}`);
-    if (msg.mediaId) {
-      const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
-      // console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
-    }
+    this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    // if (msg.mediaId) {
+    //   const result = await this.reply.sendVideo(msg.from, { mediaId: msg.mediaId });
+    //   // console.log(`[video echoed] message id: ${result.messages[0]?.id}`);
+    // }
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
