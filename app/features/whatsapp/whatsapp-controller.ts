@@ -4,7 +4,6 @@ import whatsappService from './whatsapp-service';
 import { RawWebhookBody } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
-import userRepository from '../user/user-repository';
 
 export class WhatsappController {
 
