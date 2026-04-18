@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../utils/utils";
 import { WhatsappController } from './whatsapp-controller';
+import { sendMessageBodyValidator } from "./whatsapp-validator";
 
 class WhatsappRoute {
     router = Router();
@@ -24,7 +25,7 @@ class WhatsappRoute {
         //receive, parse, and response to msg
         this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
 
-        this.router.post("/myMessage", asyncHandler(this.controller.sendMessage))
+        this.router.post("/myMessage", sendMessageBodyValidator, asyncHandler(this.controller.sendMessage))
     } 
 }
 
