@@ -14,7 +14,7 @@ class UserRepository implements IUserRepository {
     if (snapshot.empty) {
       return [];
     }
-  
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -31,10 +31,10 @@ class UserRepository implements IUserRepository {
     if (!doc) {
       return undefined;
     }
-    
-    return { 
-      id: doc.id, 
-      ...doc.data() 
+
+    return {
+      id: doc.id,
+      ...doc.data()
     } as UserData;
   }
 
