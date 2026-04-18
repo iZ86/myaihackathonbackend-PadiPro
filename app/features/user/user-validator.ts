@@ -8,3 +8,15 @@ export const userParamValidator: any = [
     .isInt().withMessage("mobile_no must be a set"),
   validate,
 ];
+
+export const createUserBodyValidator: any = [
+  body('mobile_no')
+    .trim()
+    .notEmpty().withMessage("Missing mobile_no.")
+    .isString().withMessage("mobile_no must be a string."),
+  body('name')
+    .trim()
+    .notEmpty().withMessage("Missing name.")
+    .isString().withMessage("name must be a string."),
+  validate,
+];
