@@ -241,3 +241,4 @@ export class WhatsappService {
     //business logic
   }
 }
+export default new WhatsappService();

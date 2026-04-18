@@ -1,17 +1,12 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
-import { WhatsappService} from './whatsapp-service';
+import whatsappService from './whatsapp-service';
 import { RawWebhookBody } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 import userRepository from '../user/user-repository';
 
 export class WhatsappController {
-  private readonly service: WhatsappService;
-
-  constructor() {
-    this.service = new WhatsappService();
-  }
 
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
     try {
@@ -24,15 +19,16 @@ export class WhatsappController {
       const rawMsg  = value.messages[0];
       const contact = value.contacts?.[0];
       const meta    = value.metadata;
+      const message = whatsappService.parse(rawMsg!, contact, meta);
 
-      const message = this.service.parse(rawMsg!, contact, meta);
       //check if user exist
       if(contact?.wa_id){
         const userResult: Result<UserData> = await userService.getUserByMobileNo(contact?.wa_id);
         (userResult.isFailure())? userRepository.createUser(contact.wa_id, contact.profile.name) : ""
       }
-      //call service logic
-      await this.service.handle(message);
+
+
+      await whatsappService.handle(message);
     } catch (err) {
       console.error('handleWebhook error:', err);
     }
