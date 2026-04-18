@@ -1,3 +1,4 @@
+import { UserData } from '../user/user-model';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
@@ -185,8 +186,7 @@ export class WhatsappService {
     }
   }
 
-  async handle(message: WhatsappMessage): Promise<void> {
-    
+  async handle(message: WhatsappMessage, user: UserData): Promise<void> {
     switch (message.type) {
       case 'text':     return this.handleText(message);
       case 'image':    return this.handleImage(message);
