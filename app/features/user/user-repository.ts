@@ -40,8 +40,7 @@ class UserRepository implements IUserRepository {
 
   public async createUser(mobile_no: string, name: string): Promise<boolean> {
     try {
-      await db.collection("users").doc().set({
-        coords: new GeoPoint(0, 0),
+      await db.collection("users").doc(mobile_no).set({
         mobile_no,
         name
       });
