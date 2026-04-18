@@ -23,6 +23,8 @@ class WhatsappRoute {
 
         //receive, parse, and response to msg
         this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
+
+        this.router.post("/myMessage", asyncHandler(this.controller.sendMessage))
     } 
 }
 
