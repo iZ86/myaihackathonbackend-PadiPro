@@ -111,7 +111,7 @@ export class ReplyService {
 }
 
 //parsing msg 
-export class MessageService {
+export class WhatsappService {
   private readonly media: MediaService;
   private readonly reply: ReplyService;
 

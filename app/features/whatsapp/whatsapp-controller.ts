@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
-import { MessageService } from './whatsapp-service';
+import { WhatsappService} from './whatsapp-service';
 import { RawWebhookBody } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 import userRepository from '../user/user-repository';
 
 export class WhatsappController {
-  private readonly service: MessageService;
+  private readonly service: WhatsappService;
 
   constructor() {
-    this.service = new MessageService();
+    this.service = new WhatsappService();
   }
 
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
