@@ -188,11 +188,11 @@ export class WhatsappService {
 
   async handle(message: WhatsappMessage, user: UserData): Promise<void> {
     switch (message.type) {
-      case 'audio':    return this.handleAudio(message);
       case 'video':    return this.handleVideo(message);
       case 'location': return this.handleLocation(message);
       case 'text': return this.handleText(message, user);
       case 'image': return this.handleImage(message, user);
+      case 'audio': return this.handleAudio(message, user);
     }
   }
 
@@ -220,7 +220,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleAudio(msg: IAudioMessage): Promise<void> {
+  private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
     console.log(`[audio] from ${msg.name}, voice note: ${msg.voice}`);
     if (msg.mediaId) {
       const result = await this.reply.sendAudio(msg.from, { mediaId: msg.mediaId });
