@@ -188,15 +188,15 @@ export class WhatsappService {
 
   async handle(message: WhatsappMessage, user: UserData): Promise<void> {
     switch (message.type) {
-      case 'text':     return this.handleText(message);
       case 'image':    return this.handleImage(message);
       case 'audio':    return this.handleAudio(message);
       case 'video':    return this.handleVideo(message);
       case 'location': return this.handleLocation(message);
+      case 'text': return this.handleText(message, user);
     }
   }
 
-  private async handleText(msg: ITextMessage): Promise<void> {
+  private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
     console.log(`[text] from ${msg.name}: ${msg.body}`);
     const result = await this.reply.sendText(msg.from, `You said: ${msg.body}`);
     console.log(`[reply sent] message id: ${result.messages[0]?.id}`);
