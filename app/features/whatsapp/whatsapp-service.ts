@@ -1,15 +1,18 @@
+
 import { Result } from '../../../libs/Result';
-import { ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
+import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
 import { UserData } from '../user/user-model';
 import userService from '../user/user-service';
 import { VertexAnswerQueryData, VertexSessionInfoData } from '../vertex/vertex-model';
 import vertexService from '../vertex/vertex-service';
 import { WeatherData } from '../weather/weather-model';
 import weatherService from '../weather/weather-service';
+
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
   SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse,
+  WhatsappImageData,
 } from './whatsapp-model';
 import whatsappRepository from './whatsapp-repository';
 
@@ -196,7 +199,27 @@ export class WhatsappService {
     }
   }
 
-  async handle(message: WhatsappMessage, user: UserData): Promise<void> {
+
+  async handle(message: WhatsappMessage, user: UserData, newUser?: boolean): Promise<void> {
+    if (newUser) {
+      await this.reply.sendText(
+        message.from,
+        `
+            Welcome to PadiPro! 🌾💪 
+
+            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+
+            You may respond by:
+
+            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
+            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
+            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+
+            I'm able to respond to both text and image messages, now let's get started! 
+        `
+      )
+      return;
+    }
 
     switch (message.type) {
       case 'text': return this.handleText(message, user);
@@ -207,8 +230,26 @@ export class WhatsappService {
     }
   }
 
-  async myHandleText(msg: string, user: UserData): Promise<void> {
+  async myHandleText(msg: string, user: UserData, newUser: boolean): Promise<void> {
 
+    if (newUser) {
+      console.log(
+        `
+            Welcome to PadiPro! 🌾💪 
+
+            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+
+            You may respond by:
+
+            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
+            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
+            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+
+            I'm able to respond to both text and image messages, now let's get started! 
+        `
+      )
+      return;
+    }
 
     const mobile_no: string = user.mobile_no;
 
@@ -441,6 +482,12 @@ export class WhatsappService {
     this.reply.sendText(msg.from, "Location updated successfully.");
 
 
+  }
+
+  public async getImagesbyMobileNo(mobile_no: string): Promise<Result<WhatsappImageData[]>> {
+    const images: WhatsappImageData[] = await whatsappRepository.getImagesByMobileNo(mobile_no);
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, images, "Diagnosis history successfully retrieved.");
   }
 }
 

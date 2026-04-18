@@ -9,6 +9,7 @@ import { UserData } from "../user/user-model";
 
 interface IWeatherService {
   getWeatherByMobileNo(mobile_no: string): Promise<Result<WeatherData>>;
+  getWeatherDailyByMobileNo(mobile_no: string): Promise<Result<WeatherApiData>>;
   updateWeather(mobile_no: string): Promise<Result<WeatherData>>;
   saveWeather(mobile_no: string): Promise<Result<WeatherData>>;
 }
@@ -19,7 +20,6 @@ class WeatherService implements IWeatherService {
 
     // Check param exist.
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-
     if (userResult.isFailure()) {
       return userResult;
     }
@@ -29,6 +29,36 @@ class WeatherService implements IWeatherService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User weather not found.");
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, weather, "User weather record found.");
+  }
+
+  public async getWeatherDailyByMobileNo(mobile_no: string): Promise<Result<WeatherApiData>> {
+
+    // Check param exist.
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+    const user: UserData = userResult.getData();
+
+    // Check location set
+    if (!user.coords) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "User location is not set.");
+    }
+
+    // Fetch daily forecast
+    const weatherApiResponse: Response = await this.fetchWeatherDailyApi(
+      weatherServiceConfig.WEATHER_API_KEY,
+      user.coords._latitude,
+      user.coords._longitude
+    );
+
+    if (!weatherApiResponse.ok) {
+      const errorData = await weatherApiResponse.json();
+      console.error('Google API Error:', errorData);
+      throw new Error(`Weather API responded with status: ${weatherApiResponse.status}`);
+    }
+    const weatherApiData: WeatherApiData = await weatherApiResponse.json() as WeatherApiData;
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, weatherApiData, "User weather record updated.");
   }
 
   public async updateWeather(mobile_no: string): Promise<Result<WeatherData>> {
@@ -109,6 +139,22 @@ class WeatherService implements IWeatherService {
 
   private async fetchWeatherApi(apiKey: string, lat: number, lng: number): Promise<Response> {
     const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
+
+    try {
+      return await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      throw error;
+    }
+  }
+
+  private async fetchWeatherDailyApi(apiKey: string, lat: number, lng: number): Promise<Response> {
+    const url = `https://weather.googleapis.com/v1/forecast/days:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}`;
 
     try {
       return await fetch(url, {

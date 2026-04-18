@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
 import whatsappService from './whatsapp-service';
-import { RawWebhookBody } from './whatsapp-model';
+import { RawWebhookBody, WhatsappImageData } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 
@@ -25,14 +25,16 @@ export class WhatsappController {
       if (contact && contact.wa_id) {
         const mobile_no: string = contact.wa_id;
 
+        let newUser: boolean = false;
         let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
         if (userResult.isFailure()) {
           userResult = await userService.createUser(contact.wa_id, contact.profile.name);
+          newUser = true;
         }
 
         if (userResult.isSuccess()) {
           //call service logic
-          await whatsappService.handle(message, userResult.getData());
+          await whatsappService.handle(message, userResult.getData(), newUser);
         }
 
       }
@@ -46,17 +48,28 @@ export class WhatsappController {
     const name: string = req.body.name;
     const message: string = req.body.message;
 
+    let newUser: boolean = false;
     let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
     if (userResult.isFailure()) {
       userResult = await userService.createUser(mobile_no, name);
+      newUser = true;
     }
 
     if (userResult.isSuccess()) {
       //call service logic
-      await whatsappService.myHandleText(message, userResult.getData());
+      await whatsappService.myHandleText(message, userResult.getData(), newUser);
     }
+  }
 
+  async getImagesByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
 
+    const result: Result<WhatsappImageData[]> = await whatsappService.getImagesbyMobileNo(mobileNo);
 
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
   }
 }
