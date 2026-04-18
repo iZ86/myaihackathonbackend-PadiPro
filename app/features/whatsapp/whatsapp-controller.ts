@@ -16,9 +16,10 @@ export class WhatsappController {
       const value = req.body?.entry?.[0]?.changes?.[0]?.value;
       if (!value?.messages?.length) return; // status update or empty ping
 
-      const rawMsg  = value.messages[0];
+      const rawMsg = value.messages[0];
       const contact = value.contacts?.[0];
-      const meta    = value.metadata;
+      const meta = value.metadata;
+
       const message = whatsappService.parse(rawMsg!, contact, meta);
 
       //check if user exist
