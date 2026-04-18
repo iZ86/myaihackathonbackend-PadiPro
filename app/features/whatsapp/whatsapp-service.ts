@@ -424,8 +424,21 @@ export class WhatsappService {
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
-    console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
+    // console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
     //business logic
+
+    if (!msg.longitude || !msg.latitude) {
+      throw new Error("handleLocation undefined longitude or latitude");
+    }
+
+    const userResult: Result<UserData> = await userService.updateUserCoordsByMobileNo(msg.latitude, msg.longitude, user.mobile_no);
+    if (userResult.isFailure()) {
+      throw new Error(`handleLocation failed to updateUserCoords ${userResult.getMessage()}`);
+    }
+
+    this.reply.sendText(msg.from, "Location updated successfully.");
+
+
   }
 }
 export default new WhatsappService();
