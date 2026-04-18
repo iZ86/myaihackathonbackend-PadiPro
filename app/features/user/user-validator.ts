@@ -20,3 +20,17 @@ export const createUserBodyValidator: any = [
     .isString().withMessage("name must be a string."),
   validate,
 ];
+
+export const updateUserCoordsByMobileNoBodyValidator: any = [
+  body('lat')
+    .trim()
+    .notEmpty().withMessage("Missing lat.")
+    .isInt().withMessage("lat must be a number.")
+    .toInt(),
+  body('long')
+    .trim()
+    .notEmpty().withMessage("Missing long.")
+    .isInt().withMessage("long must be a number.")
+    .toInt(),
+  validate,
+];
