@@ -28,4 +28,17 @@ export default class UserController {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
+
+  async createUser(req: Request, res: Response) {
+    const mobileNo: string = req.body.mobile_no;
+    const name: string = req.body.name;
+
+    const result: Result<UserData> = await userService.createUser(mobileNo, name);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
 }
