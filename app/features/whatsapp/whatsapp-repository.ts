@@ -72,7 +72,7 @@ class WhatsappRepository implements IWhatsappRepository {
     try {
       //upload img to firebase storage
       const ext         = this.extFromMime(meta.mimeType);
-      const storagePath = `whatsapp/${mobile_no}/${meta.mediaId}${ext}`;
+      const storagePath = `images/${mobile_no}/${meta.mediaId}${ext}`;
       const file        = this.bucket.file(storagePath);
 
       await file.save(buffer, {
