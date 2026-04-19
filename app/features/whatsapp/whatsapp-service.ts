@@ -200,24 +200,13 @@ export class WhatsappService {
   }
 
 
-  async handle(message: WhatsappMessage, user: UserData, newUser?: boolean): Promise<void> {
+  async handle(message: WhatsappMessage, user: UserData, newUser: boolean, hasLocation: boolean): Promise<void> {
+    //im directly calling this send text here to make sure we can send out this msg even if the first msg the user sents out is any media
     if (newUser) {
-      await this.reply.sendText(
-        message.from,
-        `
-            Welcome to PadiPro! 🌾💪 
-
-            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
-
-            You may respond by:
-
-            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
-
-            I'm able to respond to both text and image messages, now let's get started! 
-        `
-      )
+      this.sendIntroductionMessage(message)
+    }
+    if (message.type != 'location' && !hasLocation) {
+      await this.sendLocationInstructionMessage(user.mobile_no)
       return;
     }
 
@@ -490,6 +479,40 @@ export class WhatsappService {
     const images: WhatsappImageData[] = await whatsappRepository.getImagesByMobileNo(mobile_no);
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, images, "Diagnosis history successfully retrieved.");
+  }
+
+  private async sendIntroductionMessage(message: WhatsappMessage) {
+    await this.reply.sendText(
+      message.from,
+      `
+          Welcome to PadiPro! 🌾💪 
+
+          I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+
+          You may respond by:
+
+          1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
+          2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
+          3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+
+          I'm able to respond to both text and image messages, now let's get started! 
+
+          Also before you start, please set up your location following below:
+        `
+    )
+    return;
+  }
+
+  private async sendLocationInstructionMessage(to: string): Promise<void> {
+    const images = await whatsappRepository.getLocationTutorialImages();
+    if (!images) {
+      console.warn('[sendLocationInstruction] no tutorial images found');
+      return;
+    }
+    await this.reply.sendText(to, "Please set up you location. Thank you very much.")
+    await this.reply.sendImage(to, { link: images.step_1 }, 'Step 1');
+    await this.reply.sendImage(to, { link: images.step_2 }, 'Step 2');
+    await this.reply.sendImage(to, { link: images.step_3 }, 'Step 3');
   }
 }
 

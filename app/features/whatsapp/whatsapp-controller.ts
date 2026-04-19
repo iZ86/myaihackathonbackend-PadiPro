@@ -34,7 +34,11 @@ export class WhatsappController {
 
         if (userResult.isSuccess()) {
           //call service logic
-          await whatsappService.handle(message, userResult.getData(), newUser);
+
+          const user: UserData = userResult.getData();
+          let locationExist: boolean = !(!user.coords);
+
+          await whatsappService.handle(message, userResult.getData(), newUser, locationExist);
         }
 
       }
