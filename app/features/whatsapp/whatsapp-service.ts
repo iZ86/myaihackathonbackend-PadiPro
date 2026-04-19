@@ -7,7 +7,6 @@ import { VertexAnswerQueryData, VertexSessionInfoData } from '../vertex/vertex-m
 import vertexService from '../vertex/vertex-service';
 import { WeatherData } from '../weather/weather-model';
 import weatherService from '../weather/weather-service';
-
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
@@ -267,7 +266,6 @@ export class WhatsappService {
     } else {
       throw new Error("handleText failed to get weather.");
     }
-
 
 
     const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);

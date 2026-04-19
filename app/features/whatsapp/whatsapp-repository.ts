@@ -7,12 +7,12 @@ interface IWhatsappRepository {
   getImageByMediaId(media_id: string): Promise<WhatsappImageData | undefined>;
   saveImage(
     mobile_no: string,
-    buffer:    Buffer,
+    buffer: Buffer,
     meta: {
-      mediaId:  string;
+      mediaId: string;
       mimeType: string;
       caption?: string;
-      sha256?:  string;
+      sha256?: string;
     },
   ): Promise<string | undefined>;
 }
@@ -24,7 +24,7 @@ interface LocationTutorialImages {
 }
 
 class WhatsappRepository implements IWhatsappRepository {
-  private readonly bucket     = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
+  private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
   private readonly collection = 'images';
 
   public async getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]> {
@@ -67,19 +67,19 @@ class WhatsappRepository implements IWhatsappRepository {
 
   public async saveImage(
     mobile_no: string,
-    buffer:    Buffer,
+    buffer: Buffer,
     meta: {
-      mediaId:  string;
+      mediaId: string;
       mimeType: string;
       caption?: string;
-      sha256?:  string;
+      sha256?: string;
     },
   ): Promise<string | undefined> {
     try {
       //upload img to firebase storage
-      const ext         = this.extFromMime(meta.mimeType);
+      const ext = this.extFromMime(meta.mimeType);
       const storagePath = `images/${mobile_no}/${meta.mediaId}${ext}`;
-      const file        = this.bucket.file(storagePath);
+      const file = this.bucket.file(storagePath);
 
       await file.save(buffer, {
         metadata: {
@@ -95,14 +95,14 @@ class WhatsappRepository implements IWhatsappRepository {
       const docRef = db.collection(this.collection).doc();
 
       const data = {
-        from:         mobile_no,
-        mediaId:      meta.mediaId,
-        mimeType:     meta.mimeType,
+        from: mobile_no,
+        mediaId: meta.mediaId,
+        mimeType: meta.mimeType,
         storage_path: storagePath,
         download_url,
-        created_at:   new Date().toISOString(),
+        created_at: new Date().toISOString(),
         ...(meta.caption !== undefined && { caption: meta.caption }),
-        ...(meta.sha256  !== undefined && { sha256:  meta.sha256  }),
+        ...(meta.sha256 !== undefined && { sha256: meta.sha256 }),
       };
 
       await docRef.create(data);
@@ -122,9 +122,9 @@ class WhatsappRepository implements IWhatsappRepository {
   private extFromMime(mimeType: string): string {
     const map: Record<string, string> = {
       'image/jpeg': '.jpg',
-      'image/png':  '.png',
+      'image/png': '.png',
       'image/webp': '.webp',
-      'image/gif':  '.gif',
+      'image/gif': '.gif',
     };
     return map[mimeType] ?? '';
   }

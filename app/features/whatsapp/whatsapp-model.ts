@@ -3,11 +3,11 @@ export type WhatsappMessage = ITextMessage | IImageMessage | IAudioMessage | IVi
 
 //all parameter with an undefined type is to prevent user sending nothing
 export interface WhatsappBaseMessage {
-  from:          string;
-  messageId:     string;
-  timestamp:     string;
-  name:          string | undefined;
-  waId:          string | undefined;
+  from: string;
+  messageId: string;
+  timestamp: string;
+  name: string | undefined;
+  waId: string | undefined;
   phoneNumberId: string | undefined;
 }
 
@@ -17,48 +17,48 @@ export interface ITextMessage extends WhatsappBaseMessage {
 }
 
 export interface IImageMessage extends WhatsappBaseMessage {
-  type:     'image';
-  mediaId:  string | undefined;
-  url:      string | undefined;
-  caption:  string | undefined;
+  type: 'image';
+  mediaId: string | undefined;
+  url: string | undefined;
+  caption: string | undefined;
   mimeType: string | undefined;
-  sha256:   string | undefined;
+  sha256: string | undefined;
 }
 
 export interface IAudioMessage extends WhatsappBaseMessage {
-  type:     'audio';
-  mediaId:  string | undefined;
-  url:      string | undefined;
+  type: 'audio';
+  mediaId: string | undefined;
+  url: string | undefined;
   mimeType: string | undefined;
-  voice:    boolean | undefined;
-  sha256:   string | undefined;
+  voice: boolean | undefined;
+  sha256: string | undefined;
 }
 
 export interface IVideoMessage extends WhatsappBaseMessage {
-  type:     'video';
-  mediaId:  string | undefined;
-  url:      string | undefined;
+  type: 'video';
+  mediaId: string | undefined;
+  url: string | undefined;
   mimeType: string | undefined;
-  sha256:   string | undefined;
+  sha256: string | undefined;
 }
 
 export interface ILocationMessage extends WhatsappBaseMessage {
-  type:      'location';
-  latitude:  number | undefined;
+  type: 'location';
+  latitude: number | undefined;
   longitude: number | undefined;
-  locName:   string | undefined;
-  address:   string | undefined;
+  locName: string | undefined;
+  address: string | undefined;
 }
 
 
 //the payload format
 export interface RawWebhookBody {
   object: string;
-  entry:  RawEntry[];
+  entry: RawEntry[];
 }
 
 export interface RawEntry {
-  id:      string;
+  id: string;
   changes: RawChange[];
 }
 
@@ -69,88 +69,88 @@ export interface RawChange {
 
 export interface RawValue {
   messaging_product: string;
-  metadata:          RawMetadata;
-  contacts?:         RawContact[];
-  messages?:         RawMessage[];
+  metadata: RawMetadata;
+  contacts?: RawContact[];
+  messages?: RawMessage[];
 }
 
 export interface RawMetadata {
   display_phone_number: string;
-  phone_number_id:      string;
+  phone_number_id: string;
 }
 
 export interface RawContact {
   profile: { name: string };
-  wa_id:   string;
+  wa_id: string;
 }
 
 export interface RawMessage {
-  from:      string;
-  id:        string;
+  from: string;
+  id: string;
   timestamp: string;
-  type:      MessageType;
-  text?:     { body: string };
-  image?:    RawMedia & { caption?: string };
-  audio?:    RawMedia & { voice?: boolean };
-  video?:    RawMedia;
+  type: MessageType;
+  text?: { body: string };
+  image?: RawMedia & { caption?: string };
+  audio?: RawMedia & { voice?: boolean };
+  video?: RawMedia;
   location?: RawLocation;
 }
 
 export interface RawMedia {
-  id:        string;
-  url:       string;
+  id: string;
+  url: string;
   mime_type: string;
-  sha256:    string;
+  sha256: string;
 }
 
 export interface RawLocation {
-  latitude:  number;
+  latitude: number;
   longitude: number;
-  name?:     string;
-  address?:  string;
+  name?: string;
+  address?: string;
 }
 
 
 //reply payload format
 export interface SendTextPayload {
   messaging_product: 'whatsapp';
-  recipient_type:    'individual';
-  to:                string;
-  type:              'text';
+  recipient_type: 'individual';
+  to: string;
+  type: 'text';
   text: {
-    body:        string;
+    body: string;
     preview_url: boolean;
   };
 }
 
 export type SendImagePayload = {
   messaging_product: 'whatsapp';
-  recipient_type:    'individual';
-  to:                string;
-  type:              'image';
+  recipient_type: 'individual';
+  to: string;
+  type: 'image';
   image:
-    | { id: string;   link?: never; caption?: string }
-    | { link: string; id?: never;   caption?: string };
+  | { id: string; link?: never; caption?: string }
+  | { link: string; id?: never; caption?: string };
 };
 
 export type SendAudioPayload = {
   messaging_product: 'whatsapp';
-  recipient_type:    'individual';
-  to:                string;
-  type:              'audio';
+  recipient_type: 'individual';
+  to: string;
+  type: 'audio';
   audio:
-    | { id: string;   link?: never }
-    | { link: string; id?: never   };
+  | { id: string; link?: never }
+  | { link: string; id?: never };
 };
- 
+
 export type SendVideoPayload = {
   messaging_product: 'whatsapp';
-  recipient_type:    'individual';
-  to:                string;
-  type:              'video';
+  recipient_type: 'individual';
+  to: string;
+  type: 'video';
   video:
-    | { id: string;   link?: never; caption?: string }
-    | { link: string; id?: never;   caption?: string };
+  | { id: string; link?: never; caption?: string }
+  | { link: string; id?: never; caption?: string };
 };
 
 //response from sending msg for better console logging
@@ -164,12 +164,12 @@ export interface SendReplyResponse {
 export interface WhatsappImageData extends IImageMessage {
   storage_path: string;
   download_url: string;
-  created_at:   string;
+  created_at: string;
 }
 
 // Models for fetching history data
 export interface HistoryData {
-  created_at:   string;
-  diagnosis:    string;
+  created_at: string;
+  diagnosis: string;
   download_url: string;
 }

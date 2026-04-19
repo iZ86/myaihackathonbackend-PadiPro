@@ -27,6 +27,7 @@ export class WhatsappController {
 
         let newUser: boolean = false;
         let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
         if (userResult.isFailure()) {
           userResult = await userService.createUser(contact.wa_id, contact.profile.name);
           newUser = true;
