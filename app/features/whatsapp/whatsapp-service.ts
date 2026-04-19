@@ -331,6 +331,30 @@ export class WhatsappService {
 
     const mobile_no: string = user.mobile_no;
 
+    await this.syncUserWeather(mobile_no);
+
+    const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+    if (!msg.body) {
+      throw new Error("handleText does not have message.body");
+    }
+
+    const session: string = await this.getOrCreateVertexSession(mobile_no);
+
+
+    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
+
+
+    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+      await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
+    } else {
+      await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+    }
+  }
+
+  private async syncUserWeather(mobile_no: string): Promise<undefined> {
+
     const getWeatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
 
     if (getWeatherResult.isSuccess()) {
@@ -356,11 +380,13 @@ export class WhatsappService {
     } else {
       throw new Error("handleText failed to get weather.");
     }
+  }
+
+  private async generateWeatherQuery(mobile_no: string): Promise<string> {
 
     const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
 
     let weatherQuery: string = "";
-
 
     if (weatherResult.isSuccess()) {
       const weather: WeatherData = weatherResult.getData();
@@ -392,11 +418,11 @@ export class WhatsappService {
       throw new Error(`handleText could not getWeather due to other reasons: ${weatherResult.getMessage()}`);
     }
 
-    if (!msg.body) {
-      throw new Error("handleText does not have message.body");
-    }
+    return weatherQuery;
+  }
 
-    const session = userVertexSession[mobile_no] ?? await (async () => {
+  private async getOrCreateVertexSession(mobile_no: string): Promise<string> {
+    return userVertexSession[mobile_no] ?? await (async () => {
       const createVertexSessionResult: Result<VertexSessionInfoData> = await vertexService.createVertexSession();
       if (createVertexSessionResult.isSuccess()) {
         const vertexSession: VertexSessionInfoData = createVertexSessionResult.getData();
@@ -405,18 +431,6 @@ export class WhatsappService {
       }
       throw new Error("handleText failed to create vertex session.");
     })();
-
-
-    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
-
-
-    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
-
-    } else {
-      await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
-    }
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
