@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
-import { ChatInput, ChatOutput, ImageOutput } from "./gemini-model";
+import { ChatInput, ChatOutput, ImageInput, ImageOutput } from "./gemini-model";
 import geminiService from "./gemini-service";
 
 /** Handles HTTP requests and delegates to ChatService. */
@@ -21,9 +21,8 @@ export default class GeminiController {
   }
 
   async image(req: Request, res: Response) {
-    const input: ChatInput = {
-      message: req.body.message,
-      history: req.body.history,
+    const input: ImageInput = {
+      image_url: req.body.image_url
     };
 
     const result: Result<ImageOutput> = await geminiService.image(input);
