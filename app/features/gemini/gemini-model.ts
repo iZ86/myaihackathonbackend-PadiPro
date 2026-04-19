@@ -30,5 +30,5 @@ export const ImageOutputSchema = z.object({
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
-export type ImageInput = z.infer<typeof ChatInputSchema>;
-export type ImageOutput = z.infer<typeof ChatOutputSchema>;
+export type ImageInput = z.infer<typeof ImageInputSchema>;
+export type ImageOutput = z.infer<typeof ImageOutputSchema>;
