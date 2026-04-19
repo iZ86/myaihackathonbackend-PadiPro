@@ -94,9 +94,9 @@ class GeminiService implements IGeminiService {
   }
   
   public async image(input: ImageInput): Promise<Result<ImageOutput>> {
-    const output = await this.chatFlow(input);
+    const output = await this.imageFlow(input);
 
-    if (!output?.reply) {
+    if (!output?.disease) {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
     }
 
