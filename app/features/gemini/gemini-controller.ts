@@ -21,11 +21,8 @@ export default class GeminiController {
   }
 
   async image(req: Request, res: Response) {
-    const input: ImageInput = {
-      image_url: req.body.image_url
-    };
-
-    const result: Result<ImageOutput> = await geminiService.image(input);
+    const image_url: string = req.body.image_url
+    const result: Result<ImageOutput> = await geminiService.image(image_url);
 
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());

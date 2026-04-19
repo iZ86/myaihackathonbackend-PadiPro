@@ -14,7 +14,7 @@ const ai = genkit({
 
 interface IGeminiService {
   chat(input: ChatInput): Promise<Result<ChatOutput>>;
-  image(input: ImageInput): Promise<Result<ImageOutput>>;
+  image(image_url: string): Promise<Result<ImageOutput>>;
 }
 
 class GeminiService implements IGeminiService {
@@ -93,7 +93,12 @@ class GeminiService implements IGeminiService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Chat response generated.");
   }
   
-  public async image(input: ImageInput): Promise<Result<ImageOutput>> {
+  public async image(image_url: string): Promise<Result<ImageOutput>> {
+
+    const input: ImageInput = {
+      image_url
+    };
+
     const output = await this.imageFlow(input);
 
     if (!output?.disease) {
