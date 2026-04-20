@@ -431,27 +431,46 @@ export class WhatsappService {
     if (msg.mediaId && msg.url) {
       const buffer = await this.media.fetch(msg.mediaId, msg.url);
 
+      const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
+        mediaId: msg.mediaId,
+        mimeType: msg.mimeType ?? 'image/jpeg',
+        ...(msg.caption && { caption: msg.caption }),
+        ...(msg.sha256 && { sha256: msg.sha256 }),
+      });
 
-      const imageResult: Result<ImageOutput> = await geminiService.image(msg.url);
+      if (!saveImageResult) {
+        throw new Error("handleImage failed to saveImage");
+      }
+
+      const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
       if (imageResult.isFailure()) {
+        throw new Error("handleImage failed to retrieve image.");
+      }
+
+      const image: WhatsappImageData = imageResult.getData();
+
+      const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
+      if (geminiImageResult.isFailure()) {
         throw new Error("handleImage geminiService.image failed to detect image.");
       }
 
-      const imageOutput: ImageOutput = imageResult.getData();
+      const imageOutput: ImageOutput = geminiImageResult.getData();
 
       if (imageOutput.disease === "NOT DETECTED") {
+
+        const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
+        if (deleteImageResult.isFailure()) {
+          throw new Error("handleImage delete image failed.");
+        }
         this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
         return;
+
       } else if (imageOutput.disease === "HEALTHY") {
+
         this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
         return;
+
       } else {
-        await whatsappRepository.saveImage(msg.from, buffer, {
-          mediaId: msg.mediaId,
-          mimeType: msg.mimeType ?? 'image/jpeg',
-          ...(msg.caption && { caption: msg.caption }),
-          ...(msg.sha256 && { sha256: msg.sha256 }),
-        });
 
         const mobile_no: string = user.mobile_no;
 
