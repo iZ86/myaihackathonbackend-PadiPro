@@ -427,9 +427,6 @@ export class WhatsappService {
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
-    // console.log(`[location] from ${msg.name}: ${msg.latitude}, ${msg.longitude}`);
-    //business logic
-
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
