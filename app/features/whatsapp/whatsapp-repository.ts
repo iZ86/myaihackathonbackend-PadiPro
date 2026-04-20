@@ -14,7 +14,7 @@ interface IWhatsappRepository {
       caption?: string;
       sha256?: string;
     },
-  ): Promise<string | undefined>;
+  ): Promise<boolean>;
 }
 
 interface LocationTutorialImages {
@@ -74,7 +74,7 @@ class WhatsappRepository implements IWhatsappRepository {
       caption?: string;
       sha256?: string;
     },
-  ): Promise<string | undefined> {
+  ): Promise<boolean> {
     try {
       //upload img to firebase storage
       const ext = this.extFromMime(meta.mimeType);
@@ -108,11 +108,11 @@ class WhatsappRepository implements IWhatsappRepository {
       await docRef.create(data);
 
       console.log(`[WhatsappRepository] image saved → ${storagePath}`);
-      return meta.mediaId;
+      return true;
     } catch (error: any) {
       if (error.code === 6) {
         console.warn(`[WhatsappRepository] image already exists for mediaId: ${meta.mediaId}`);
-        return undefined;
+        return false;
       }
       console.error('Firestore/Storage Save Error:', error);
       throw error;
