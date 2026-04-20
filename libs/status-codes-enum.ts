@@ -1,6 +1,7 @@
 export enum ENUM_STATUS_CODES_SUCCESS {
   OK = 200,
-  CREATED = 201
+  CREATED = 201,
+  NO_CONTENT = 204
 }
 
 export enum ENUM_STATUS_CODES_FAILURE {
