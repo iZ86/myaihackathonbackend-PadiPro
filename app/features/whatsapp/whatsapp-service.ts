@@ -220,6 +220,7 @@ export class WhatsappService {
     }
   }
 
+  // This only works if the user has coords.
   async myHandleText(msg: string, user: UserData, newUser: boolean): Promise<void> {
 
     if (newUser) {
