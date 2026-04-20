@@ -15,6 +15,7 @@ interface IWhatsappRepository {
       sha256?: string;
     },
   ): Promise<boolean>;
+  deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
 interface LocationTutorialImages {
@@ -61,6 +62,35 @@ class WhatsappRepository implements IWhatsappRepository {
       return { id: doc.id, ...doc.data() } as unknown as WhatsappImageData;
     } catch (error) {
       console.error('Firestore Get Error:', error);
+      throw error;
+    }
+  }
+
+  public async deleteImageByMediaId(media_id: string): Promise<boolean> {
+    try {
+      const snapshot = await db.collection(this.collection)
+        .where('mediaId', '==', media_id)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) return false;
+
+      const doc = snapshot.docs[0];
+      if (!doc) return false;
+
+      const data = doc.data();
+
+      // 1. Delete from Storage bucket
+      if (data.storagePath) {
+        const bucket = admin.storage().bucket();
+        await bucket.file(data.storagePath).delete();
+      }
+
+      // 2. Delete from Firestore
+      await doc.ref.delete();
+      return true;
+    } catch (error) {
+      console.error('Delete Error:', error);
       throw error;
     }
   }
