@@ -17,3 +17,19 @@ export const sendMessageBodyValidator: any = [
     .isString().withMessage("message must be a string."),
   validate,
 ];
+
+export const sendImageBodyValidator: any = [
+  body('mobile_no')
+    .trim()
+    .notEmpty().withMessage("Missing mobile_no.")
+    .isString().withMessage("mobile_no must be a string."),
+  body('name')
+    .trim()
+    .notEmpty().withMessage("Missing name.")
+    .isString().withMessage("name must be a string."),
+  body('image_url')
+    .trim()
+    .notEmpty().withMessage("Missing image_url.")
+    .isString().withMessage("image_url must be a string."),
+  validate,
+];
