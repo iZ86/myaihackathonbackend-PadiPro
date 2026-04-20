@@ -262,6 +262,65 @@ export class WhatsappService {
     }
   }
 
+  // This only works if the user has coords.
+  // Also doesn't save image.
+  async myHandleImage(image_url: string, user: UserData, newUser: boolean): Promise<void> {
+
+    if (newUser) {
+      console.log(
+        `
+            Welcome to PadiPro! 🌾💪 
+
+            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
+
+            You may respond by:
+
+            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
+            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
+            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+
+            I'm able to respond to both text and image messages, now let's get started! 
+        `
+      )
+      return;
+    }
+
+    const imageResult: Result<ImageOutput> = await geminiService.image(image_url);
+    if (imageResult.isFailure()) {
+      throw new Error("myHandleImage geminiService.image failed to detect image.");
+    }
+
+    const imageOutput: ImageOutput = imageResult.getData();
+
+    if (imageOutput.disease === "NOT DETECTED") {
+      console.log(`[reply sent] message id: I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.`);
+      return;
+    } else if (imageOutput.disease === "HEALTHY") {
+      console.log(`[reply sent] message id: No visible signs of disease detected. The rice plants appear healthy based on this image.`);
+      return;
+    } else {
+
+      const mobile_no: string = user.mobile_no;
+
+      await this.syncUserWeather(mobile_no);
+
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+      const session: string = await this.getOrCreateVertexSession(mobile_no);
+
+      const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+      console.log(`[text] from ${user.mobile_no}: ${defaultQuery + weatherQuery}`);
+      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
+
+      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+      if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+        console.log(`[reply sent] message id: I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.`);
+      } else {
+        console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
+      }
+    }
+  }
+
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
 
     const mobile_no: string = user.mobile_no;
