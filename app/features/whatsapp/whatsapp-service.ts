@@ -547,6 +547,20 @@ export class WhatsappService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, image, "Image found.");
   }
+
+  private async deleteImageByMediaId(mediaId: string): Promise<Result<null>> {
+    const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(mediaId);
+    if (imageResult.isFailure()) {
+      return imageResult;
+    }
+
+    const deleteImageResult: boolean = await whatsappRepository.deleteImageByMediaId(mediaId);
+    if (!deleteImageResult) {
+      throw new Error("deleteImageByMediaId failed to delete");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.NO_CONTENT, null, "Image successfully deleted.");
+  }
 }
 
 export default new WhatsappService();
