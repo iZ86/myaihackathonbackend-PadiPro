@@ -81,9 +81,9 @@ class WhatsappRepository implements IWhatsappRepository {
       const data = doc.data();
 
       // 1. Delete from Storage bucket
-      if (data.storagePath) {
-        const bucket = admin.storage().bucket();
-        await bucket.file(data.storagePath).delete();
+      if (data.storage_path) {
+        const file = this.bucket.file(data.storage_path);
+        await file.delete();
       }
 
       // 2. Delete from Firestore
