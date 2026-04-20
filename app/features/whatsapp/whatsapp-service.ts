@@ -538,6 +538,15 @@ export class WhatsappService {
     await this.reply.sendImage(to, { link: images.step_2 }, 'Step 2');
     await this.reply.sendImage(to, { link: images.step_3 }, 'Step 3');
   }
+
+  private async getImageByMediaId(mediaId: string): Promise<Result<WhatsappImageData>> {
+    const image: WhatsappImageData | undefined = await whatsappRepository.getImageByMediaId(mediaId);
+    if (!image) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Image not found.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, image, "Image found.");
+  }
 }
 
 export default new WhatsappService();
