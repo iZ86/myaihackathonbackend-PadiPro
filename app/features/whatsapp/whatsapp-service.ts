@@ -255,10 +255,8 @@ export class WhatsappService {
 
     const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
     if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      console.log("I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?");
-
+      console.log(`[reply sent] message id: I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?`);
     } else {
-      console.log(sendQueryVertex.answer.answerText);
       console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
     }
   }
