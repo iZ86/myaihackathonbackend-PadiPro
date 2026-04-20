@@ -1,6 +1,8 @@
 
 import { Result } from '../../../libs/Result';
 import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
+import { ImageOutput } from '../gemini/gemini-model';
+import geminiService from '../gemini/gemini-service';
 import { UserData } from '../user/user-model';
 import userService from '../user/user-service';
 import { VertexAnswerQueryData, VertexSessionInfoData } from '../vertex/vertex-model';
@@ -367,20 +369,52 @@ export class WhatsappService {
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
-    // console.log(`[image] from ${msg.name}, caption: ${msg.caption}`);
 
     if (msg.mediaId && msg.url) {
       const buffer = await this.media.fetch(msg.mediaId, msg.url);
 
-      await whatsappRepository.saveImage(msg.from, buffer, {
-        mediaId: msg.mediaId,
-        mimeType: msg.mimeType ?? 'image/jpeg',
-        ...(msg.caption && { caption: msg.caption }),
-        ...(msg.sha256 && { sha256: msg.sha256 }),
-      });
 
-      const result = await this.reply.sendImage(msg.from, { mediaId: msg.mediaId }, msg.caption);
-      // console.log(`[image echoed] message id: ${result.messages[0]?.id}`);
+      const imageResult: Result<ImageOutput> = await geminiService.image(msg.url);
+      if (imageResult.isFailure()) {
+        throw new Error("handleImage geminiService.image failed to detect image.");
+      }
+
+      const imageOutput: ImageOutput = imageResult.getData();
+
+      if (imageOutput.disease === "NOT DETECTED") {
+        this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
+        return;
+      } else if (imageOutput.disease === "HEALTHY") {
+        this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
+        return;
+      } else {
+        await whatsappRepository.saveImage(msg.from, buffer, {
+          mediaId: msg.mediaId,
+          mimeType: msg.mimeType ?? 'image/jpeg',
+          ...(msg.caption && { caption: msg.caption }),
+          ...(msg.sha256 && { sha256: msg.sha256 }),
+        });
+
+        const mobile_no: string = user.mobile_no;
+
+        await this.syncUserWeather(mobile_no);
+
+        const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+        const session: string = await this.getOrCreateVertexSession(mobile_no);
+
+        const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+
+        const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
+
+
+        const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+        if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+          await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.");
+        } else {
+          await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+        }
+      }
     }
   }
 
