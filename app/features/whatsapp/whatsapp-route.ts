@@ -4,6 +4,7 @@ import { WhatsappController } from './whatsapp-controller';
 import { sendImageBodyValidator, sendMessageBodyValidator } from "./whatsapp-validator";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import { userParamValidator } from "../user/user-validator";
+import WhatsappRepository from "./whatsapp-repository";
 
 class WhatsappRoute {
     router = Router();
@@ -32,6 +33,11 @@ class WhatsappRoute {
 
         // Get history of images
         this.router.get("/history/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
+
+
+        //OTP service 
+        this.router.post('/otp/generate', this.controller.generateOTP.bind(this.controller));
+        this.router.post('/otp/verify',   this.controller.verifyOTP.bind(this.controller));
     }
 }
 

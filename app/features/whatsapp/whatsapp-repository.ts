@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { db } from '../../database/db-connection';
 import { WhatsappImageData } from './whatsapp-model';
 import { Timestamp } from 'firebase-admin/firestore';
+import { convertProcessSignalToExitCode } from 'node:util';
 
 interface IWhatsappRepository {
   getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]>;
@@ -192,12 +193,12 @@ class WhatsappRepository implements IWhatsappRepository {
     const doc = await db.collection('OTP').doc(mobileNo).get();
     if (!doc.exists) return false;
 
-    const { otp, expire_at } = doc.data()!;
+    const { otp, expires_at } = doc.data()!;
 
-    if (expire_at.toDate() < new Date()) return false;
-    if (otp !== inputOtp) return false;
+    if (expires_at.toDate() < new Date()) return false;
+    if (String(otp) !== String(inputOtp)) return false;
 
-    await db.collection('otps').doc(mobileNo).delete();
+    await db.collection('OTP').doc(mobileNo).delete();
     return true;
   }
 }
