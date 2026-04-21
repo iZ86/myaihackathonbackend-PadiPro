@@ -580,6 +580,10 @@ export class WhatsappService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.NO_CONTENT, null, "Image successfully deleted.");
   }
+
+  public async sendOTP(to: string, otp: string): Promise<void> {
+    await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`)
+  }
 }
 
 export default new WhatsappService();

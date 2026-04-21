@@ -176,7 +176,7 @@ class WhatsappRepository implements IWhatsappRepository {
     }
   }
 
-  public async generateAndStoreOTP(mobile_no: string): Promise<String> {
+  public async generateAndStoreOTP(mobile_no: string): Promise<string> {
     const docRef = db.collection('OTP').doc(mobile_no);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000));
