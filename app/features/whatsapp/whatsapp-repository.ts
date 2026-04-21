@@ -15,6 +15,7 @@ interface IWhatsappRepository {
       sha256?: string;
     },
   ): Promise<boolean>;
+  updateImageDiagnosis(media_id: string, diagnosis: string, severity: number): Promise<boolean>;
   deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
@@ -62,6 +63,38 @@ class WhatsappRepository implements IWhatsappRepository {
       return { id: doc.id, ...doc.data() } as unknown as WhatsappImageData;
     } catch (error) {
       console.error('Firestore Get Error:', error);
+      throw error;
+    }
+  }
+
+  public async updateImageDiagnosis(
+    media_id: string, 
+    diagnosis: string, 
+    severity: number
+  ): Promise<boolean> {
+    try {
+      const snapshot = await db.collection(this.collection)
+        .where('mediaId', '==', media_id)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        console.warn(`No record found for media_id: ${media_id}`);
+        return false;
+      }
+
+      const doc = snapshot.docs[0];
+      if (!doc) return false;
+
+      await doc.ref.update({
+        diagnosis: diagnosis,
+        severity: severity,
+        updatedAt: new Date().toISOString() 
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Update Diagnosis Error:', error);
       throw error;
     }
   }

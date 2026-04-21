@@ -467,10 +467,14 @@ export class WhatsappService {
 
       } else if (imageOutput.disease === "HEALTHY") {
 
+        await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+
         this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
         return;
 
       } else {
+
+        await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
 
         const mobile_no: string = user.mobile_no;
 
