@@ -13,10 +13,6 @@ export const weatherServiceConfig = {
 };
 
 export const vertexServiceConfig = {
-  VERTEX_GCLOUD_AUTH_KEY: process.env.VERTEX_GCLOUD_AUTH_KEY as string,
-  VERTEX_SESSION_URL: process.env.VERTEX_SESSION_URL as string,
-  VERTEX_CREATE_SESSION_URL: process.env.VERTEX_CREATE_SESSION_URL as string,
-  VERTEX_SEND_QUERY_URL: process.env.VERTEX_SEND_QUERY_URL as string,
   VERTEX_PROJECT_ID: process.env.VERTEX_PROJECT_ID as string,
   VERTEX_LOCATION: process.env.VERTEX_LOCATION as string,
   VERTEX_COLLECTION: process.env.VERTEX_COLLECTION as string,
