@@ -34,7 +34,6 @@ class WhatsappRoute {
         // Get history of images
         this.router.get("/history/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
 
-
         //OTP service 
         this.router.post('/otp/generate', this.controller.generateOTP.bind(this.controller));
         this.router.post('/otp/verify', this.controller.verifyOTP.bind(this.controller));
