@@ -2,6 +2,7 @@ import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { vertexServiceConfig } from "../../config/config";
 import { VertexAnswerData, VertexAnswerQueryData, VertexSessionData, VertexSessionInfoData } from "./vertex-model";
+import { ConversationalSearchServiceClient } from "@google-cloud/discoveryengine";
 
 interface IVertexService {
   createVertexSession(): Promise<Result<VertexSessionInfoData>>;
@@ -9,6 +10,16 @@ interface IVertexService {
 }
 
 class VertexService implements IVertexService {
+
+
+  private conversationalSearchClient: ConversationalSearchServiceClient;
+  private conversationalSearchParent: string;
+
+  constructor() {
+    this.conversationalSearchClient = new ConversationalSearchServiceClient();
+    this.conversationalSearchParent = `projects/${vertexServiceConfig.VERTEX_PROJECT_ID}/locations/${vertexServiceConfig.VERTEX_LOCATION}/collections/${vertexServiceConfig.VERTEX_COLLECTION}/engines/${vertexServiceConfig.VERTEX_ENGINE_ID}`;
+  }
+
 
   public async createVertexSession(): Promise<Result<VertexSessionInfoData>> {
     const createVertexSessionResponse: Response = await this.fetchCreateVertexSessionAPI();
