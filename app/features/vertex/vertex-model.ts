@@ -87,5 +87,4 @@ export interface VertexAnswerQueryData {
 
 export interface VertexSessionInfoData {
   session: string;
-  queryId: string;
 }

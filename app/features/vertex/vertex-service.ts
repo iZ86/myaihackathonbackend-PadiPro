@@ -33,8 +33,7 @@ class VertexService implements IVertexService {
     const createVertexSessionData: VertexSessionData = await createVertexSessionResponse.json() as VertexSessionData;
 
     const vertexSessionInfo: VertexSessionInfoData = {
-      session: createVertexSessionData.sessionInfo.name,
-      queryId: createVertexSessionData.sessionInfo.queryId
+      session: createVertexSessionData.sessionInfo.name
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, vertexSessionInfo, "Successfully created Vertex AI Search session.");
