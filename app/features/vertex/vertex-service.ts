@@ -1,8 +1,8 @@
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { vertexServiceConfig } from "../../config/config";
-import { VertexAnswerData, VertexAnswerQueryData, VertexSessionInfoData } from "./vertex-model";
-import { ConversationalSearchServiceClient } from "@google-cloud/discoveryengine";
+import { VertexAnswerQueryData, VertexSessionInfoData } from "./vertex-model";
+import { ConversationalSearchServiceClient, protos } from "@google-cloud/discoveryengine";
 
 interface IVertexService {
   createVertexSession(): Promise<Result<VertexSessionInfoData>>;
@@ -50,27 +50,76 @@ class VertexService implements IVertexService {
   }
 
   public async sendQueryVertex(text: string, session: string): Promise<Result<VertexAnswerQueryData>> {
-    const sendQueryVertexResponse: Response = await this.fetchSendQueryVertexAPI(text, session);
 
-    if (!sendQueryVertexResponse.ok) {
-      const errorData = await sendQueryVertexResponse.json();
-      console.error('Vertex API Error:', errorData);
-      throw new Error(`Vertex API responded with status: ${sendQueryVertexResponse.status}`);
+    const preamble: string | null = process.env.VERTEX_PROMPT_SEC ? process.env.VERTEX_PROMPT_SEC : null;
+    const modelSpec: string | null = process.env.VERTEX_MODEL_VERSION ? process.env.VERTEX_MODEL_VERSION : null;
+    try {
+
+      const [response] = await this.conversationalSearchClient.answerQuery({
+
+        servingConfig: this.servingConfig,
+        query: { text },
+        session: session,
+        relatedQuestionsSpec: { enable: true },
+        answerGenerationSpec: {
+          // maps to your ignoreAdversarialQuery etc.
+          ignoreAdversarialQuery: true,
+          ignoreNonAnswerSeekingQuery: true,
+          ignoreLowRelevantContent: true,
+          includeCitations: true,
+
+          promptSpec: {
+            preamble: preamble,
+          },
+
+          modelSpec: {
+            modelVersion: modelSpec,
+          },
+        },
+
+        queryUnderstandingSpec: {
+          queryClassificationSpec: {
+            types: [
+              protos.google.cloud.discoveryengine.v1alpha
+                .AnswerQueryRequest.QueryUnderstandingSpec.QueryClassificationSpec.Type
+                .NON_ANSWER_SEEKING_QUERY
+            ],
+          },
+        },
+      });
+
+      if (!response.answer) {
+        throw new Error('sendQueryVertex response received but no answer returned');
+      }
+
+      if (!response.answer.answerText) {
+        throw new Error('sendQueryVertex response received but no answerText returned');
+      }
+
+      if (!response.answer.state) {
+        throw new Error('sendQueryVertex response received but no state returned');
+      }
+
+      if (!response.answer.relatedQuestions) {
+        throw new Error('sendQueryVertex response received but no related questions returned');
+      }
+
+      const vertexAnswerQuery: VertexAnswerQueryData = {
+        answer: {
+          answerText: response.answer.answerText,
+          state: response.answer.state.toString()
+        },
+        relatedQuestions: response.answer.relatedQuestions,
+        session: session,
+        query: text
+      }
+
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, vertexAnswerQuery, "Successfully sent query to Vertex AI Search.");
+
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      throw error;
     }
-
-    const searchQueryVertexData: VertexAnswerData = await sendQueryVertexResponse.json() as VertexAnswerData;
-
-    const vertexAnswerQuery: VertexAnswerQueryData = {
-      answer: {
-        answerText: searchQueryVertexData.answer.answerText,
-        state: searchQueryVertexData.answer.state
-      },
-      relatedQuestions: searchQueryVertexData.answer.relatedQuestions,
-      session: session,
-      query: text
-    }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, vertexAnswerQuery, "Successfully sent query to Vertex AI Search.");
   }
 
   private async fetchSendQueryVertexAPI(text: string, session: string): Promise<Response> {
