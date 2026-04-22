@@ -22,21 +22,29 @@ class VertexService implements IVertexService {
 
 
   public async createVertexSession(): Promise<Result<VertexSessionInfoData>> {
-    const createVertexSessionResponse: Response = await this.fetchCreateVertexSessionAPI();
 
-    if (!createVertexSessionResponse.ok) {
-      const errorData = await createVertexSessionResponse.json();
-      console.error('Vertex API Error:', errorData);
-      throw new Error(`Vertex API responded with status: ${createVertexSessionResponse.status}`);
+    try {
+      const [session] = await this.conversationalSearchClient.createSession({
+        parent: this.conversationalSearchParent,
+        session: {
+          state: 'IN_PROGRESS',
+        },
+      });
+
+      if (!session.name) {
+        throw new Error('createVertexSession session created but no name returned');
+      }
+
+      const vertexSessionInfo: VertexSessionInfoData = {
+        session: session.name,
+      }
+
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, vertexSessionInfo, "Successfully created Vertex AI Search session.");
+
+    } catch (error) {
+      console.error('Vertex API Error:', error);
+      throw error;
     }
-
-    const createVertexSessionData: VertexSessionData = await createVertexSessionResponse.json() as VertexSessionData;
-
-    const vertexSessionInfo: VertexSessionInfoData = {
-      session: createVertexSessionData.sessionInfo.name
-    }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, vertexSessionInfo, "Successfully created Vertex AI Search session.");
   }
 
   public async sendQueryVertex(text: string, session: string): Promise<Result<VertexAnswerQueryData>> {
