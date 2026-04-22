@@ -17,6 +17,7 @@
   "dependencies": {
     "@genkit-ai/express": "^1.16.1",
     "@genkit-ai/google-genai": "^1.16.1",
+    "@google-cloud/discoveryengine": "^2.6.0",
     "@google-cloud/firestore": "^8.5.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
