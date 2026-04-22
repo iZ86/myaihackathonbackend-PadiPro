@@ -4,6 +4,7 @@ import whatsappService from './whatsapp-service';
 import { RawWebhookBody, WhatsappImageData } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
+import whatsappRepository from './whatsapp-repository';
 
 export class WhatsappController {
 
@@ -95,5 +96,41 @@ export class WhatsappController {
       await whatsappService.myHandleImage(image_url, userResult.getData(), newUser);
     }
   }
-  
+
+  async generateOTP(req: Request, res: Response): Promise<void> {
+    try {
+      const { mobile_no } = req.body;
+
+      if (!mobile_no) {
+        res.status(400).json({ message: 'mobile_no is required' });
+        return;
+      }
+
+      const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
+      
+      await whatsappService.sendOTP(mobile_no, otp);
+      
+      res.status(200).json({ message: 'OTP generated' });
+      return;
+    }catch(error: any) {
+      console.error("GENERATE OTP ERROR:", error);
+      res.status(500).json({
+        message: error.message || 'Failed to generate OTP'
+      });
+      return;
+    }
+  }
+
+  async verifyOTP(req: Request, res: Response): Promise<void> {
+    const { mobile_no, otp } = req.body;
+    if (!mobile_no || !otp) {
+      res.status(400).json({ message: 'mobile_no and otp are required' });
+      return;
+    }
+
+    const valid = await whatsappRepository.verifyOTP(mobile_no, otp);
+    valid
+      ? res.status(200).json({ message: 'OTP verified' })
+      : res.status(400).json({ message: 'Invalid or expired OTP' });
+  }
 }
