@@ -14,10 +14,12 @@ class VertexService implements IVertexService {
 
   private conversationalSearchClient: ConversationalSearchServiceClient;
   private conversationalSearchParent: string;
+  private servingConfig: string;
 
   constructor() {
     this.conversationalSearchClient = new ConversationalSearchServiceClient();
     this.conversationalSearchParent = `projects/${vertexServiceConfig.VERTEX_PROJECT_ID}/locations/${vertexServiceConfig.VERTEX_LOCATION}/collections/${vertexServiceConfig.VERTEX_COLLECTION}/engines/${vertexServiceConfig.VERTEX_ENGINE_ID}`;
+    this.servingConfig = `${this.conversationalSearchParent}/servingConfigs/${vertexServiceConfig.VERTEX_SERVING_CONFIG}`;
   }
 
 
