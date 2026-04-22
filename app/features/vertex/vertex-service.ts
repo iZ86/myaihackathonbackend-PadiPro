@@ -1,7 +1,7 @@
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { vertexServiceConfig } from "../../config/config";
-import { VertexAnswerData, VertexAnswerQueryData, VertexSessionData, VertexSessionInfoData } from "./vertex-model";
+import { VertexAnswerData, VertexAnswerQueryData, VertexSessionInfoData } from "./vertex-model";
 import { ConversationalSearchServiceClient } from "@google-cloud/discoveryengine";
 
 interface IVertexService {
@@ -69,32 +69,6 @@ class VertexService implements IVertexService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, vertexAnswerQuery, "Successfully sent query to Vertex AI Search.");
-  }
-
-  private async fetchCreateVertexSessionAPI(): Promise<Response> {
-    const url: string = vertexServiceConfig.VERTEX_CREATE_SESSION_URL;
-
-    try {
-      return await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${vertexServiceConfig.VERTEX_GCLOUD_AUTH_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          "queryExpansionSpec": { "condition": "AUTO" },
-          "spellCorrectionSpec": { "mode": "AUTO" },
-          "languageCode": "en-US",
-          "contentSearchSpec": { "snippetSpec": { "returnSnippet": true } },
-          "userInfo": { "timeZone": "Asia/Kuala_Lumpur" },
-          "session": vertexServiceConfig.VERTEX_SESSION_URL
-        }),
-        mode: "cors"
-      });
-    } catch (error) {
-      console.error('Fetch Error:', error);
-      throw error;
-    }
   }
 
   private async fetchSendQueryVertexAPI(text: string, session: string): Promise<Response> {
