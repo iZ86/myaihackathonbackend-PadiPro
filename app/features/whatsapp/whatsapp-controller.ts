@@ -107,8 +107,9 @@ export class WhatsappController {
       }
 
       const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
-      
+      console.log("OTP stored:", otp);
       await whatsappService.sendOTP(mobile_no, otp);
+      console.log("OTP sent"); 
       
       res.status(200).json({ message: 'OTP generated' });
       return;

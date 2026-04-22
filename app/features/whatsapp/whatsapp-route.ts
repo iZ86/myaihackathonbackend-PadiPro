@@ -37,7 +37,7 @@ class WhatsappRoute {
 
         //OTP service 
         this.router.post('/otp/generate', this.controller.generateOTP.bind(this.controller));
-        this.router.post('/otp/verify',   this.controller.verifyOTP.bind(this.controller));
+        this.router.post('/otp/verify', this.controller.verifyOTP.bind(this.controller));
     }
 }
 

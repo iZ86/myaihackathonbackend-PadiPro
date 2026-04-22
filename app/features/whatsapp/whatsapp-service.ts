@@ -501,6 +501,7 @@ export class WhatsappService {
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
     this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    this.sendOTP(msg.from, "123456");
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
