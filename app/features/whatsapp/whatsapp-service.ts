@@ -587,7 +587,7 @@ export class WhatsappService {
   }
 
   public async sendOTP(to: string, otp: string): Promise<void> {
-    const result = await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
+    await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
   }
 }
 
