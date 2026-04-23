@@ -20,7 +20,7 @@ export default class Server {
 
   private config(app: Application): void {
     const corsOptions: CorsOptions = {
-      origin: serverConfig.FRONTEND_URL
+      origin: [serverConfig.FRONTEND_URL, "http://localhost:5173"]
     };
     app.use(cors(corsOptions));
 
