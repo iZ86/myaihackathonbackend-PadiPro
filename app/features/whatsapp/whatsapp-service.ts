@@ -456,7 +456,20 @@ export class WhatsappService {
 
         const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
         if (geminiImageResult.isFailure()) {
-          throw new Error("handleImage geminiService.image failed to detect image.");
+
+          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
+          if (deleteImageResult.isFailure()) {
+            throw new Error("handleImage delete image failed.");
+          }
+
+          if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
+            await this.reply.sendText(msg.from, "We are currently experiencing high demand, please try again later.");
+            return;
+          } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
+            await this.reply.sendText(msg.from, "You are sending images to frequently, please send again in 1 minute.");
+            return;
+          }
+          throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
         }
 
         const imageOutput: ImageOutput = geminiImageResult.getData();
