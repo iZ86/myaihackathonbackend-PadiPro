@@ -37,7 +37,7 @@ class GeminiService implements IGeminiService {
       return { reply: text };
     }
   );
-  
+
   public readonly imageFlow = ai.defineFlow(
     {
       name: "imageFlow",
@@ -92,7 +92,7 @@ class GeminiService implements IGeminiService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Chat response generated.");
   }
-  
+
   public async image(image_url: string): Promise<Result<ImageOutput>> {
 
     const input: ImageInput = {
