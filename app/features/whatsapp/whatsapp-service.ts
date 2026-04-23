@@ -432,75 +432,79 @@ export class WhatsappService {
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
+    try {
+      if (msg.mediaId && msg.url) {
+        const buffer = await this.media.fetch(msg.mediaId, msg.url);
 
-    if (msg.mediaId && msg.url) {
-      const buffer = await this.media.fetch(msg.mediaId, msg.url);
+        const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
+          mediaId: msg.mediaId,
+          mimeType: msg.mimeType ?? 'image/jpeg',
+          ...(msg.caption && { caption: msg.caption }),
+          ...(msg.sha256 && { sha256: msg.sha256 }),
+        });
 
-      const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
-        mediaId: msg.mediaId,
-        mimeType: msg.mimeType ?? 'image/jpeg',
-        ...(msg.caption && { caption: msg.caption }),
-        ...(msg.sha256 && { sha256: msg.sha256 }),
-      });
-
-      if (!saveImageResult) {
-        throw new Error("handleImage failed to saveImage");
-      }
-
-      const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
-      if (imageResult.isFailure()) {
-        throw new Error("handleImage failed to retrieve image.");
-      }
-
-      const image: WhatsappImageData = imageResult.getData();
-
-      const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
-      if (geminiImageResult.isFailure()) {
-        throw new Error("handleImage geminiService.image failed to detect image.");
-      }
-
-      const imageOutput: ImageOutput = geminiImageResult.getData();
-
-      if (imageOutput.disease === "NOT DETECTED") {
-
-        const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
-        if (deleteImageResult.isFailure()) {
-          throw new Error("handleImage delete image failed.");
+        if (!saveImageResult) {
+          throw new Error("handleImage failed to saveImage");
         }
-        await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
-        return;
 
-      } else if (imageOutput.disease === "HEALTHY") {
+        const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
+        if (imageResult.isFailure()) {
+          throw new Error("handleImage failed to retrieve image.");
+        }
 
-        await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+        const image: WhatsappImageData = imageResult.getData();
 
-        await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
-        return;
+        const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
+        if (geminiImageResult.isFailure()) {
+          throw new Error("handleImage geminiService.image failed to detect image.");
+        }
 
-      } else {
+        const imageOutput: ImageOutput = geminiImageResult.getData();
 
-        await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+        if (imageOutput.disease === "NOT DETECTED") {
 
-        const mobile_no: string = user.mobile_no;
+          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
+          if (deleteImageResult.isFailure()) {
+            throw new Error("handleImage delete image failed.");
+          }
+          await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
+          return;
 
-        await this.syncUserWeather(mobile_no);
+        } else if (imageOutput.disease === "HEALTHY") {
 
-        const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
 
-        const session: string = await this.getOrCreateVertexSession(mobile_no);
+          await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
+          return;
 
-        const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
-
-        const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-
-
-        const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-        if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-          await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.");
         } else {
-          await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+
+          const mobile_no: string = user.mobile_no;
+
+          await this.syncUserWeather(mobile_no);
+
+          const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+          const session: string = await this.getOrCreateVertexSession(mobile_no);
+
+          const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+
+          const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
+
+
+          const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+          if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.");
+          } else {
+            await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+          }
         }
       }
+    } catch (error) {
+      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
+      throw error;
     }
   }
 
