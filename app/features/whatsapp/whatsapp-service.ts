@@ -321,28 +321,33 @@ export class WhatsappService {
   }
 
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
+    try {
+      const mobile_no: string = user.mobile_no;
 
-    const mobile_no: string = user.mobile_no;
+      await this.syncUserWeather(mobile_no);
 
-    await this.syncUserWeather(mobile_no);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
 
-    const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+      if (!msg.body) {
+        throw new Error("handleText does not have message.body");
+      }
 
-    if (!msg.body) {
-      throw new Error("handleText does not have message.body");
-    }
-
-    const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-
-    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
+      const session: string = await this.getOrCreateVertexSession(mobile_no);
 
 
-    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
-    } else {
-      await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
+
+
+      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+      if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+        await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
+      } else {
+        await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+      }
+
+    } catch (error) {
+      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
+      throw error;
     }
   }
 
