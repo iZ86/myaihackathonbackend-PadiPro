@@ -1,7 +1,8 @@
 require('dotenv').config();
 
 export const serverConfig = {
-  PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 8080
+  PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 8080,
+  FRONTEND_URL: process.env.FRONTEND_URL as string
 }
 
 export const geminiServiceConfig = {
