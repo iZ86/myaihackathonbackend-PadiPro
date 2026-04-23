@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { genkit } from "genkit";
+import { genkit, GenkitError } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
 import { ChatInput, ChatInputSchema, ChatOutputSchema, ChatOutput, ImageInput, ImageOutput, ImageOutputSchema, ImageInputSchema } from "./gemini-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
@@ -99,14 +99,41 @@ class GeminiService implements IGeminiService {
       image_url
     };
 
-    const output = await this.imageFlow(input);
+    try {
 
-    if (!output?.disease) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
+      const output = await this.imageFlow(input);
+
+      if (!output?.disease) {
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
+      }
+
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Diagnosis generated.");
+
+
+    } catch (error) {
+
+      if (error instanceof GenkitError) {
+        let errorMessage: string = error.message;
+
+        if (error.detail) {
+          if (error.detail.error) {
+            if (error.detail.error.message) {
+              errorMessage = error.detail.error.message;
+            }
+          }
+        }
+        if (error.code === 503) {
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, errorMessage);
+        } else if (error.code === 429) {
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, errorMessage);
+        }
+      }
+
+      throw error;
     }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Diagnosis generated.");
   }
+
+
 }
 
 export default new GeminiService();
