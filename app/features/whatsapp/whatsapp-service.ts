@@ -466,7 +466,7 @@ export class WhatsappService {
             await this.reply.sendText(msg.from, "We are currently experiencing high demand, please try again later.");
             return;
           } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
-            await this.reply.sendText(msg.from, "You are sending images to frequently, please send again in 1 minute.");
+            await this.reply.sendText(msg.from, "You are sending images too frequently, please send again in 1 minute.");
             return;
           }
           throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
