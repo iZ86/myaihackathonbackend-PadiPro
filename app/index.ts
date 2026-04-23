@@ -3,6 +3,7 @@ import cors, { CorsOptions } from "cors";
 import Routes from "./routes/routes";
 import { enhanceResponse } from "../libs/express-enhancer";
 import { ENUM_STATUS_CODES_FAILURE } from "../libs/status-codes-enum";
+import { serverConfig } from "./config/config";
 
 export default class Server {
   constructor(app: Application) {
@@ -19,7 +20,7 @@ export default class Server {
 
   private config(app: Application): void {
     const corsOptions: CorsOptions = {
-      origin: "http://localhost:5173"
+      origin: serverConfig.FRONTEND_URL
     };
     app.use(cors(corsOptions));
 
