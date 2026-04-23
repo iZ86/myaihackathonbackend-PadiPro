@@ -462,14 +462,14 @@ export class WhatsappService {
         if (deleteImageResult.isFailure()) {
           throw new Error("handleImage delete image failed.");
         }
-        this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
+        await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
         return;
 
       } else if (imageOutput.disease === "HEALTHY") {
 
         await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
 
-        this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
+        await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
         return;
 
       } else {
@@ -500,12 +500,12 @@ export class WhatsappService {
   }
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
-    this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
     this.sendOTP(msg.from, "123456");
+    await this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
-    this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    await this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
@@ -518,7 +518,7 @@ export class WhatsappService {
       throw new Error(`handleLocation failed to updateUserCoords ${userResult.getMessage()}`);
     }
 
-    this.reply.sendText(msg.from, "Location updated successfully.");
+    await this.reply.sendText(msg.from, "Location updated successfully.");
 
 
   }
