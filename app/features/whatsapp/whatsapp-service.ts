@@ -204,7 +204,7 @@ export class WhatsappService {
   async handle(message: WhatsappMessage, user: UserData, newUser: boolean, hasLocation: boolean): Promise<void> {
     //im directly calling this send text here to make sure we can send out this msg even if the first msg the user sents out is any media
     if (newUser) {
-      this.sendIntroductionMessage(message)
+      await this.sendIntroductionMessage(message)
     }
     if (message.type != 'location' && !hasLocation) {
       await this.sendLocationInstructionMessage(user.mobile_no)
