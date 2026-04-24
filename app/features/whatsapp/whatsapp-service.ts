@@ -581,7 +581,7 @@ export class WhatsappService {
       console.warn('[sendLocationInstruction] no tutorial images found');
       return;
     }
-    await this.reply.sendText(to, "Please set up you location. Thank you very much.")
+    await this.reply.sendText(to, "Before we start, please set up your location by following the steps below:");
     await this.reply.sendImage(to, { link: images.step_1 }, 'Step 1');
     await this.reply.sendImage(to, { link: images.step_2 }, 'Step 2');
     await this.reply.sendImage(to, { link: images.step_3 }, 'Step 3');
