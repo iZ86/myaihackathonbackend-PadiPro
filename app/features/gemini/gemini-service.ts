@@ -9,7 +9,7 @@ import { ENUM_PADDY_DISEASE } from "./gemini-enums";
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
-  model: googleAI.model("gemini-2.5-flash"),
+  model: googleAI.model("gemini-3-flash-preview"),
 });
 
 interface IGeminiService {
