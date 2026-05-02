@@ -16,6 +16,7 @@ import {
   WhatsappImageData,
 } from './whatsapp-model';
 import whatsappRepository from './whatsapp-repository';
+import whatsappConverter from './whatsapp-converter';
 
 // Testing to hold vertex sessions
 const userVertexSession: { [mobile_no: string]: string } = {};
@@ -522,7 +523,14 @@ export class WhatsappService {
   }
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
-    await this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    if (msg.mediaId && msg.url) {
+      const buffer     = await this.media.fetch(msg.mediaId, msg.url);
+      const transcript = await whatsappConverter.convertAndTranscribe(buffer);
+      
+      if (transcript) {
+        await this.reply.sendText(msg.from, `You said: "${transcript}"`);
+      }
+    }
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
