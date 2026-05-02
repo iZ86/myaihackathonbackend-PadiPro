@@ -110,7 +110,7 @@ class GeminiService implements IGeminiService {
 
       const output = await this.imageFlow(input);
 
-      if (!output?.disease) {
+      if (!output.detections[0]?.disease) {
         return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
       }
 
