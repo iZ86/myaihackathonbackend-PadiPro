@@ -171,7 +171,7 @@ class WhatsappRepository implements IWhatsappRepository {
 
       await docRef.create(data);
 
-      console.log(`[WhatsappRepository] image saved → ${storagePath}`);
+      // console.log(`[WhatsappRepository] image saved → ${storagePath}`);
       return true;
     } catch (error: any) {
       if (error.code === 6) {

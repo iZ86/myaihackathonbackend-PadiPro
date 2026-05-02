@@ -47,8 +47,6 @@ class GeminiService implements IGeminiService {
       outputSchema: ImageOutputSchema,
     },
     async ({ image_url }) => {
-      console.log(`[Gemini Media Parsing] Begin diagnosing uploaded media...`);
-
       const diseaseList = Object.values(ENUM_PADDY_DISEASE)
         .filter((v) => typeof v === 'string')
         .join(", ");
@@ -94,8 +92,6 @@ class GeminiService implements IGeminiService {
         const detections = output?.detections ?? [];
         chart = await this.generateDetectionChart(detections);
       }
-
-      console.log(`[Gemini Media Parsing] Diagnosis complete.`);
 
       return {
         detections: output?.detections ?? [],

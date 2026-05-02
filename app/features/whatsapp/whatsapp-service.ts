@@ -434,7 +434,10 @@ export class WhatsappService {
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
     try {
       if (msg.mediaId && msg.url) {
+        console.log(`[Whatsapp] Detected message as: Image`);
+        
         const buffer = await this.media.fetch(msg.mediaId, msg.url);
+        console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
 
         const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
           mediaId: msg.mediaId,
@@ -442,6 +445,7 @@ export class WhatsappService {
           ...(msg.caption && { caption: msg.caption }),
           ...(msg.sha256 && { sha256: msg.sha256 }),
         });
+        console.log(`[Whatsapp] Saved image to Firestore and Storage`);
 
         if (!saveImageResult) {
           throw new Error("handleImage failed to saveImage");
@@ -454,6 +458,7 @@ export class WhatsappService {
 
         const image: WhatsappImageData = imageResult.getData();
 
+        console.log(`[Gemini] Diagnosing Image`);
         const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
         if (geminiImageResult.isFailure()) {
 
@@ -473,6 +478,7 @@ export class WhatsappService {
         }
 
         const imageOutput: ImageOutput = geminiImageResult.getData();
+        console.log(`[Gemini] Image diagnosed`);
 
         if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
 
@@ -496,16 +502,21 @@ export class WhatsappService {
 
           const mobile_no: string = user.mobile_no;
 
+          console.log(`[Whatsapp] Syncing weather status`);
           await this.syncUserWeather(mobile_no);
+          console.log(`[Whatsapp] Weather status synced`);
 
           const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
 
+          console.log(`[Vertex] Creating session`);
           const session: string = await this.getOrCreateVertexSession(mobile_no);
+          console.log(`[Vertex] Session created`);
 
           const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
 
+          console.log(`[Vertex] Sending response to Vertex`);
           const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-
+          console.log(`[Vertex] Response received`);
 
           const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
           if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
