@@ -1,11 +1,13 @@
 import "dotenv/config";
 import { genkit, GenkitError } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
-import { ChatInput, ChatInputSchema, ChatOutputSchema, ChatOutput, ImageInput, ImageOutput, ImageOutputSchema, ImageInputSchema } from "./gemini-model";
+import { ChatInput, ChatInputSchema, ChatOutputSchema, ChatOutput, ImageInput, ImageOutput, ImageOutputDetection, ImageOutputSchema, ImageInputSchema } from "./gemini-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { geminiServiceConfig } from "../../config/config";
 import { ENUM_PADDY_DISEASE } from "./gemini-enums";
+import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import { ChartConfiguration } from "chart.js";
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
@@ -45,6 +47,8 @@ class GeminiService implements IGeminiService {
       outputSchema: ImageOutputSchema,
     },
     async ({ image_url }) => {
+      console.log(`[Gemini Media Parsing] Begin diagnosing uploaded media...`);
+
       const diseaseList = Object.values(ENUM_PADDY_DISEASE)
         .filter((v) => typeof v === 'string')
         .join(", ");
@@ -84,8 +88,18 @@ class GeminiService implements IGeminiService {
         },
       });
 
+      let chart: string = '';
+      let disease: string = output?.detections[0]?.disease ?? '';
+      if (disease !== '' && disease !== 'NOT DETECTED' && disease !== 'HEALTHY') {
+        const detections = output?.detections ?? [];
+        chart = await this.generateDetectionChart(detections);
+      }
+
+      console.log(`[Gemini Media Parsing] Diagnosis complete.`);
+
       return {
-        detections: output?.detections ?? [], 
+        detections: output?.detections ?? [],
+        chart: chart ?? '', 
       };
     }
   );
@@ -107,21 +121,15 @@ class GeminiService implements IGeminiService {
     };
 
     try {
-
       const output = await this.imageFlow(input);
-
       if (!output.detections[0]?.disease) {
         return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Diagnosis generated.");
-
-
     } catch (error) {
-
       if (error instanceof GenkitError) {
         let errorMessage: string = error.message;
-
         if (error.detail) {
           if (error.detail.error) {
             if (error.detail.error.message) {
@@ -135,12 +143,83 @@ class GeminiService implements IGeminiService {
           return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, errorMessage);
         }
       }
-
       throw error;
     }
   }
 
+  private async generateDetectionChart (detections: ImageOutputDetection[]): Promise<string> {
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 500, height: 250 });
+    const configuration: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: detections.map(d => d.disease),
+        datasets: [{
+          label: 'Severity Level',
+          data: detections.map(d => d.severity),
+          backgroundColor: detections.map(d => {
+            if (d.severity <= 0.3) return '#FFEB3B';
+            if (d.severity <= 0.7) return '#FB8C00';
+            return '#F44336';
+          }),
+          barThickness: 20,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: false,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 1.0,
+            title: {
+              display: true,
+              text: 'Severity',
+              font: { size: 12, weight: 'bold' }
+            },
+            grid: { display: false },
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, weight: 'bold' },
+              color: '#333'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              generateLabels: (chart) => [
+                { text: 'Mild (≤ 0.3)', fillStyle: '#FFEB3B' },
+                { text: 'Moderate (0.3 - 0.7)', fillStyle: '#FB8C00' },
+                { text: 'Severe (> 0.7)', fillStyle: '#F44336' }
+              ]
+            }
+          },
+          title: {
+            display: true,
+            text: 'Disease Severity Analysis',
+            font: { size: 14 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const val = context.parsed.x ?? 0;
+                let status = val <= 0.3 ? 'Mild' : val <= 0.7 ? 'Moderate' : 'Severe';
+                return ` Severity: ${val} (${status})`;
+              }
+            }
+          }
+        }
+      }
+    };
 
+    const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+    return buffer.toString('base64');
+  }
 }
 
 export default new GeminiService();

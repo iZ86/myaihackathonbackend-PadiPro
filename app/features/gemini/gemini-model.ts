@@ -30,7 +30,8 @@ const ImageOutputDetectionSchema = z.object({
 });
 
 export const ImageOutputSchema = z.object({
-  detections: z.array(ImageOutputDetectionSchema).describe("List of all detected diseases with metadata")
+  detections: z.array(ImageOutputDetectionSchema).describe("List of all detected diseases with metadata"),
+  chart: z.string().describe("Base64 encoded PNG buffer").optional(),
 });
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;

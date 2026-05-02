@@ -1,7 +1,7 @@
 
 import { Result } from '../../../libs/Result';
 import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
-import { ImageOutput } from '../gemini/gemini-model';
+import { ImageOutput, ImageOutputDetection } from '../gemini/gemini-model';
 import geminiService from '../gemini/gemini-service';
 import { UserData } from '../user/user-model';
 import userService from '../user/user-service';
@@ -403,7 +403,7 @@ export class WhatsappService {
 
 
       weatherQuery =
-        "\nAdditionally, here are the current weather conditions that you may reference: " +
+        "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
         `\nCurrent weather conditions:` +
         `\n- Condition: ${condition}` +
         `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
@@ -502,16 +502,22 @@ export class WhatsappService {
 
           const session: string = await this.getOrCreateVertexSession(mobile_no);
 
-          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}, and how to solve it? `;
+          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
 
           const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
 
 
           const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
           if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.");
+            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.");
           } else {
+
+            // Generate sendText response
             await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+
+            // Generate sendImage response
+
+            // Generate sendDocument response
           }
         }
       }
