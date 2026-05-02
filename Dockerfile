@@ -49,12 +49,10 @@ ENV VERTEX_SERVING_CONFIG=$VERTEX_SERVING_CONFIG
 ENV VERTEX_PROMPT_SEC=$VERTEX_PROMPT_SEC
 ENV VERTEX_MODEL_VERSION=$VERTEX_MODEL_VERSION
 
-
-run npm install -g serve
-
 RUN npm install
 
 RUN npm run build
 
-CMD ["serve", "-s", "-l", "8080", "./dist"]
+EXPOSE 8080
+CMD ["node", "dist/server.js"]
 
