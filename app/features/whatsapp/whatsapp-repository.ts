@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { db } from '../../database/db-connection';
 import { WhatsappImageData } from './whatsapp-model';
+import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 import { convertProcessSignalToExitCode } from 'node:util';
 
@@ -17,7 +18,7 @@ interface IWhatsappRepository {
       sha256?: string;
     },
   ): Promise<boolean>;
-  updateImageDiagnosis(media_id: string, diagnosis: string, severity: number): Promise<boolean>;
+  updateImageDiagnosis(media_id: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
   deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
@@ -71,8 +72,7 @@ class WhatsappRepository implements IWhatsappRepository {
 
   public async updateImageDiagnosis(
     media_id: string, 
-    diagnosis: string, 
-    severity: number
+    detections: Array<ImageOutputDetection>,
   ): Promise<boolean> {
     try {
       const snapshot = await db.collection(this.collection)
@@ -89,8 +89,7 @@ class WhatsappRepository implements IWhatsappRepository {
       if (!doc) return false;
 
       await doc.ref.update({
-        diagnosis: diagnosis,
-        severity: severity,
+        detections: detections,
         updatedAt: new Date().toISOString() 
       });
 

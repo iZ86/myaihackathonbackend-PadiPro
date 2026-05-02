@@ -53,11 +53,19 @@ class GeminiService implements IGeminiService {
         You are an expert in diagnosing paddy plant diseases. 
         Analyze the image and provide a diagnosis based on these rules:
 
+        For disease:
         - If the image is not a paddy plant: return "NOT DETECTED" with severity 0.
         - If the plant is healthy: return "HEALTHY" with severity 0.
         - If a disease is found: return the name from this list: [${diseaseList}].
 
-        For severity: Provide a score from 0.0 to 1.0 (0 is healthy, 1.0 is total crop failure).
+        For severity: 
+        - Provide a score from 0.0 to 1.0 (0 is healthy, 1.0 is total crop failure).
+
+        For confidence:
+        - Provide a score from 0.0 to 1.0 (0 means not detected, 1.0 is absolutely sure the disease is on the plant.)
+        
+        For detections:
+        - Provide any disease found with a score of > 0.4, else you can skip adding them.
       `;
 
       const { output } = await ai.generate({
@@ -77,8 +85,7 @@ class GeminiService implements IGeminiService {
       });
 
       return {
-        disease: output?.disease ?? "NOT DETECTED",
-        severity: output?.severity ?? 0,
+        detections: output?.detections ?? [], 
       };
     }
   );

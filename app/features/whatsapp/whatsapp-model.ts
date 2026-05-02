@@ -166,11 +166,3 @@ export interface WhatsappImageData extends IImageMessage {
   download_url: string;
   created_at: string;
 }
-
-// Models for fetching history data
-export interface HistoryData {
-  created_at: string;
-  severity: number;
-  diagnosis: string;
-  download_url: string;
-}

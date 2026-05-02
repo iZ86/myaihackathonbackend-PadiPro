@@ -291,10 +291,10 @@ export class WhatsappService {
 
     const imageOutput: ImageOutput = imageResult.getData();
 
-    if (imageOutput.disease === "NOT DETECTED") {
+    if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
       console.log(`[reply sent] message id: I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.`);
       return;
-    } else if (imageOutput.disease === "HEALTHY") {
+    } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
       console.log(`[reply sent] message id: No visible signs of disease detected. The rice plants appear healthy based on this image.`);
       return;
     } else {
@@ -307,7 +307,7 @@ export class WhatsappService {
 
       const session: string = await this.getOrCreateVertexSession(mobile_no);
 
-      const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+      const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}, and how to solve it? `;
       console.log(`[text] from ${user.mobile_no}: ${defaultQuery + weatherQuery}`);
       const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
 
@@ -474,7 +474,7 @@ export class WhatsappService {
 
         const imageOutput: ImageOutput = geminiImageResult.getData();
 
-        if (imageOutput.disease === "NOT DETECTED") {
+        if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
 
           const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
           if (deleteImageResult.isFailure()) {
@@ -483,16 +483,16 @@ export class WhatsappService {
           await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
           return;
 
-        } else if (imageOutput.disease === "HEALTHY") {
+        } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
 
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
 
           await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
           return;
 
         } else {
 
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
 
           const mobile_no: string = user.mobile_no;
 
@@ -502,7 +502,7 @@ export class WhatsappService {
 
           const session: string = await this.getOrCreateVertexSession(mobile_no);
 
-          const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}, and how to solve it? `;
 
           const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
 

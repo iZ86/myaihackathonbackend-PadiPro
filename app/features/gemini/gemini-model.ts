@@ -23,12 +23,18 @@ export const ImageInputSchema = z.object({
     .refine((val) => val.startsWith('http'), "Must be a valid Data URL or image link") // We'll be using the downloadable link in the firestore ya
 });
 
-export const ImageOutputSchema = z.object({
+const ImageOutputDetectionSchema = z.object({
   disease: z.string(),
   severity: z.number().min(0).max(1).describe("The severity score from 0 to 1"),
+  score: z.number().min(0).max(1).describe("The confidence score of the model"),
+});
+
+export const ImageOutputSchema = z.object({
+  detections: z.array(ImageOutputDetectionSchema).describe("List of all detected diseases with metadata")
 });
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 export type ImageInput = z.infer<typeof ImageInputSchema>;
 export type ImageOutput = z.infer<typeof ImageOutputSchema>;
+export type ImageOutputDetection = z.infer<typeof ImageOutputDetectionSchema>;
