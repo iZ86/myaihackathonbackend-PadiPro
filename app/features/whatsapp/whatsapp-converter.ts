@@ -1,11 +1,13 @@
-import ffmpeg from 'fluent-ffmpeg';
+import ffmpeg = require('fluent-ffmpeg');
+import ffmpegStatic = require('ffmpeg-static');
+
 import { SpeechClient } from '@google-cloud/speech';
 import { google } from '@google-cloud/speech/build/protos/protos';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-
+ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
 const speechClient = new SpeechClient();
 
 export class WhatsappConverter {
@@ -52,7 +54,7 @@ export class WhatsappConverter {
         sampleRateHertz:            16000,
         languageCode:               'en-US',
         alternativeLanguageCodes:   ['ms-MY', 'zh-TW'],
-        model:                      'chirp-3',
+        model:                      'latest_long',
         enableAutomaticPunctuation: true,
       },
     };
