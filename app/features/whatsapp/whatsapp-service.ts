@@ -554,7 +554,107 @@ export class WhatsappService {
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
-    await this.reply.sendText(msg.from, "Sorry, I can’t process audio or video messages. Please send your question as text or an image.");
+    try {
+      if (msg.mediaId && msg.url) {
+        console.log(`[Whatsapp] Detected message as: Video`);
+        
+        const buffer = await this.media.fetch(msg.mediaId, msg.url);
+        console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
+
+        const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
+          mediaId: msg.mediaId,
+          mimeType: msg.mimeType ?? 'image/jpeg',
+          ...(msg.sha256 && { sha256: msg.sha256 }),
+        });
+        console.log(`[Whatsapp] Saved video to Firestore and Storage`);
+
+        if (!saveImageResult) {
+          throw new Error("handleImage failed to saveImage");
+        }
+
+        const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
+        if (imageResult.isFailure()) {
+          throw new Error("handleImage failed to retrieve image.");
+        }
+
+        const image: WhatsappImageData = imageResult.getData();
+
+        const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
+        if (geminiImageResult.isFailure()) {
+
+          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
+          if (deleteImageResult.isFailure()) {
+            throw new Error("handleImage delete image failed.");
+          }
+
+          if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
+            await this.reply.sendText(msg.from, "We are currently experiencing high demand, please try again later.");
+            return;
+          } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
+            await this.reply.sendText(msg.from, "You are sending images too frequently, please send again in 1 minute.");
+            return;
+          }
+          throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
+        }
+
+        const imageOutput: ImageOutput = geminiImageResult.getData();
+
+        if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
+
+          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
+          if (deleteImageResult.isFailure()) {
+            throw new Error("handleImage delete image failed.");
+          }
+          await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
+          return;
+
+        } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
+
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
+
+          await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
+          return;
+
+        } else {
+
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
+
+          const mobile_no: string = user.mobile_no;
+
+          console.log(`[Whatsapp] Syncing weather status`);
+          await this.syncUserWeather(mobile_no);
+          console.log(`[Whatsapp] Weather status synced`);
+
+          const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+          console.log(`[Vertex] Creating session`);
+          const session: string = await this.getOrCreateVertexSession(mobile_no);
+          console.log(`[Vertex] Session created`);
+
+          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
+
+          console.log(`[Vertex] Sending response to Vertex`);
+          const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
+          console.log(`[Vertex] Response received`);
+
+          const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+          if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.");
+          } else {
+
+            // Generate sendText response
+            await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+
+            // Generate sendImage response
+
+            // Generate sendDocument response
+          }
+        }
+      }
+    } catch (error) {
+      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
+      throw error;
+    }
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
