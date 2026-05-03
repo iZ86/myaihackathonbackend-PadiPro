@@ -8,7 +8,7 @@ import * as path from 'path';
 
 ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
 
-const REGION = 'us-central1';
+const REGION = 'us';
 
 export class WhatsappConverter {
 
@@ -53,7 +53,7 @@ export class WhatsappConverter {
       recognizer: `projects/${projectId}/locations/${REGION}/recognizers/_`,
       config: {
         autoDecodingConfig: {},
-        languageCodes:      ['en-US', 'ms-MY', 'cmn-Hans-CN'],
+        languageCodes:      ['ms-MY', 'cmn-Hans-CN'],
         model:              'chirp_3',
       },
       content: audioBuffer,
