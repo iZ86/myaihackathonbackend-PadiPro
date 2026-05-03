@@ -543,7 +543,12 @@ export class WhatsappService {
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
       
       if (transcript) {
-        await this.reply.sendText(msg.from, `You said: "${transcript}"`);
+        const textMsg: ITextMessage = {
+          ...msg,
+          type: 'text',
+          body: transcript,
+        };
+        this.handleText(textMsg, user);
       }
     }
   }
