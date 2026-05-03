@@ -524,9 +524,11 @@ export class WhatsappService {
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
     if (msg.mediaId && msg.url) {
+      console.log(msg);
       const buffer     = await this.media.fetch(msg.mediaId, msg.url);
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
       
+      console.log(transcript);
       if (transcript) {
         await this.reply.sendText(msg.from, `You said: "${transcript}"`);
       }

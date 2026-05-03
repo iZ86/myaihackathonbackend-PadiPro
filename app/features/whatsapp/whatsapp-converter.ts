@@ -1,65 +1,65 @@
 import ffmpeg = require('fluent-ffmpeg');
 import ffmpegStatic = require('ffmpeg-static');
-
-import { SpeechClient } from '@google-cloud/speech';
-import { google } from '@google-cloud/speech/build/protos/protos';
+import { SpeechClient } from '@google-cloud/speech/build/src/v2';
+import { protos } from '@google-cloud/speech';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
 ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
-const speechClient = new SpeechClient();
+
+const REGION = 'us';
 
 export class WhatsappConverter {
+
+  private getSpeechClient(): SpeechClient {
+    return new SpeechClient({
+      apiEndpoint: `${REGION}-speech.googleapis.com`,
+    });
+  }
+
   async convertOggToMp3(oggBuffer: Buffer): Promise<Buffer> {
-    const tmpDir    = os.tmpdir();
-    const inputPath = path.join(tmpDir, `wa-audio-${Date.now()}.ogg`);
+    const tmpDir     = os.tmpdir();
+    const inputPath  = path.join(tmpDir, `wa-audio-${Date.now()}.ogg`);
     const outputPath = path.join(tmpDir, `wa-audio-${Date.now()}.mp3`);
 
     try {
-      // Write ogg buffer to tmp file
       await fs.promises.writeFile(inputPath, oggBuffer);
 
-      // Convert ogg/opus → mp3
       await new Promise<void>((resolve, reject) => {
         ffmpeg(inputPath)
           .audioCodec('libmp3lame')
           .audioBitrate('128k')
           .format('mp3')
           .on('end', () => resolve())
-          .on('error', (err) => reject(err))
+          .on('error', (err: Error) => reject(err))
           .save(outputPath);
       });
 
-      // Read mp3 back as buffer
-      const mp3Buffer = await fs.promises.readFile(outputPath);
-      return mp3Buffer;
+      return await fs.promises.readFile(outputPath);
     } finally {
-      // Clean up tmp files regardless of success or failure
       await fs.promises.unlink(inputPath).catch(() => {});
       await fs.promises.unlink(outputPath).catch(() => {});
     }
   }
 
-  async transcribeAudio(mp3Buffer: Buffer): Promise<string> {
+  async transcribeAudio(audioBuffer: Buffer): Promise<string> {
     const projectId = process.env.GOOGLE_CLOUD_PROJECT;
     if (!projectId) throw new Error('GOOGLE_CLOUD_PROJECT env var is not set');
 
-    const request: google.cloud.speech.v1p1beta1.IRecognizeRequest = {
-      audio: {
-        content: mp3Buffer.toString('base64'),
-      },
+    const client = this.getSpeechClient();
+
+    const request: protos.google.cloud.speech.v2.IRecognizeRequest = {
+      recognizer: `projects/${projectId}/locations/${REGION}/recognizers/_`,
       config: {
-        encoding:                   'MP3',
-        sampleRateHertz:            16000,
-        languageCode:               'en-US',
-        alternativeLanguageCodes:   ['ms-MY', 'zh-TW'],
-        model:                      'latest_long',
-        enableAutomaticPunctuation: true,
+        autoDecodingConfig: {},
+        languageCodes:      ['en-US', 'ms-MY'],
+        model:              'chirp_3',
       },
+      content: audioBuffer,
     };
 
-    const [response] = await speechClient.recognize(request as any);
+    const [response] = await client.recognize(request);
 
     const transcript = response.results
       ?.map((r) => r.alternatives?.[0]?.transcript ?? '')
@@ -82,5 +82,3 @@ export class WhatsappConverter {
 }
 
 export default new WhatsappConverter();
-
-
