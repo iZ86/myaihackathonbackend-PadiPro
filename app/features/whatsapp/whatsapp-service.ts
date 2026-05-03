@@ -540,14 +540,18 @@ export class WhatsappService {
   }
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
+    console.log('just received msg from whatsapp');
     if (msg.mediaId && msg.url) {
-      console.log(msg);
+      console.log('start to process msg');
       const buffer     = await this.media.fetch(msg.mediaId, msg.url);
+      console.log('finish parsing msg to buffer');
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
+      console.log('finish converting and transcribing');
       
       console.log(transcript);
       if (transcript) {
         await this.reply.sendText(msg.from, `You said: "${transcript}"`);
+        console.log('finish sending');
       }
     }
   }
