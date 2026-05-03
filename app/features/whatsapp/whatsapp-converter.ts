@@ -8,7 +8,7 @@ import * as path from 'path';
 
 ffmpeg.setFfmpegPath(ffmpegStatic as unknown as string);
 
-const REGION = 'us';
+const REGION = 'us-central1';
 
 export class WhatsappConverter {
 
