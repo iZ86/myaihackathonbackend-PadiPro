@@ -70,6 +70,7 @@ class GeminiService implements IGeminiService {
         - Provide any disease found with a score of > 0.4, else you can skip adding them.
       `;
 
+      console.log(`[Gemini] Diagnosing image`);
       const { output } = await ai.generate({
         system: systemPrompt,
         messages: [
@@ -85,13 +86,16 @@ class GeminiService implements IGeminiService {
           schema: ImageOutputSchema,
         },
       });
+      console.log(`[Gemini] Image diagnosis Complete`);
 
+      console.log(`[Chartjs] Creating detections chart base64 string`);
       let chart: string = '';
       let disease: string = output?.detections[0]?.disease ?? '';
       if (disease !== '' && disease !== 'NOT DETECTED' && disease !== 'HEALTHY') {
         const detections = output?.detections ?? [];
         chart = await this.generateDetectionChart(detections);
       }
+      console.log(`[Chartjs] Base64 string generated`);
 
       return {
         detections: output?.detections ?? [],

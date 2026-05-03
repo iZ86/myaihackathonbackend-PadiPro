@@ -459,7 +459,6 @@ export class WhatsappService {
 
         const image: WhatsappImageData = imageResult.getData();
 
-        console.log(`[Gemini] Diagnosing Image`);
         const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
         if (geminiImageResult.isFailure()) {
 
@@ -479,7 +478,6 @@ export class WhatsappService {
         }
 
         const imageOutput: ImageOutput = geminiImageResult.getData();
-        console.log(`[Gemini] Image diagnosed`);
 
         if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
 
