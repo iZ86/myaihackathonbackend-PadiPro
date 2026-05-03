@@ -19,8 +19,8 @@ export const ChatOutputSchema = z.object({
 export const ImageInputSchema = z.object({
   image_url: z
     .string()
-    .describe("Base64 encoded string or image URL")
-    .refine((val) => val.startsWith('http'), "Must be a valid Data URL or image link") // We'll be using the downloadable link in the firestore ya
+    .describe("Base64 encoded string or URL of media")
+    .refine((val) => val.startsWith('http'), "Must be a valid Data URL or media link") // We'll be using the downloadable link in the firestore ya
 });
 
 const ImageOutputDetectionSchema = z.object({

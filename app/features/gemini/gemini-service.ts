@@ -71,6 +71,8 @@ class GeminiService implements IGeminiService {
       `;
 
       console.log(`[Gemini] Diagnosing image`);
+      const isVideo = image_url.endsWith('.mp4') || image_url.endsWith('.mov'); 
+      const contentType = isVideo ? "video/mp4" : "image/jpeg";
       const { output } = await ai.generate({
         system: systemPrompt,
         messages: [
@@ -78,7 +80,7 @@ class GeminiService implements IGeminiService {
             role: "user",
             content: [
               { text: "Analyze this image for paddy disease and estimate severity." },
-              { media: { url: image_url, contentType: "image/jpeg" } },
+              { media: { url: image_url, contentType: contentType } },
             ],
           },
         ],
