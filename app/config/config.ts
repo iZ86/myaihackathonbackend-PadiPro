@@ -26,3 +26,7 @@ export const vertexServiceConfig = {
 export const speechConfig = {
   GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT as string
 };
+
+export const testConfig = {
+  TEST: process.env.TEST as string
+}

@@ -4,6 +4,7 @@ import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
 import userRepository from "./user-repository";
 import { GeoPoint } from "firebase-admin/firestore";
+import { testConfig } from "../../config/config";
 
 interface IUserService {
   getUsers(): Promise<Result<UserData[]>>;
@@ -67,6 +68,10 @@ class UserService implements IUserService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully updated.");
+  }
+
+  public async getTestEnv(): Promise<Result<string>> {
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, testConfig.TEST, "Env retrieved successfully.");
   }
 
 }

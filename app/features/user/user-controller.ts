@@ -55,4 +55,15 @@ export default class UserController {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
+
+  async getTestEnv(req: Request, res: Response) {
+
+    const result: Result<string> = await userService.getTestEnv();
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
 }
