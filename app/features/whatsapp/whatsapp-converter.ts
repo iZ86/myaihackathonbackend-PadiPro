@@ -1,3 +1,4 @@
+import { speechConfig } from "../../config/config";
 import ffmpeg = require('fluent-ffmpeg');
 import ffmpegStatic = require('ffmpeg-static');
 import { SpeechClient } from '@google-cloud/speech/build/src/v2';
@@ -44,7 +45,7 @@ export class WhatsappConverter {
   }
 
   async transcribeAudio(audioBuffer: Buffer): Promise<string> {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+    const projectId = speechConfig.GOOGLE_CLOUD_PROJECT;
     if (!projectId) throw new Error('GOOGLE_CLOUD_PROJECT env var is not set');
 
     const client = this.getSpeechClient();

@@ -22,3 +22,7 @@ export const vertexServiceConfig = {
   VERTEX_PROMPT_SEC: process.env.VERTEX_PROMPT_SEC as string,
   VERTEX_MODEL_VERSION: process.env.VERTEX_MODEL_VERSION as string
 }
+
+export const speechConfig = {
+  GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT as string
+};
