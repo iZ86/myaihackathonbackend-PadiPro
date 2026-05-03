@@ -1,7 +1,7 @@
 
 import { Result } from '../../../libs/Result';
 import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
-import { ImageOutput } from '../gemini/gemini-model';
+import { ImageOutput, ImageOutputDetection } from '../gemini/gemini-model';
 import geminiService from '../gemini/gemini-service';
 import { UserData } from '../user/user-model';
 import userService from '../user/user-service';
@@ -292,10 +292,10 @@ export class WhatsappService {
 
     const imageOutput: ImageOutput = imageResult.getData();
 
-    if (imageOutput.disease === "NOT DETECTED") {
+    if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
       console.log(`[reply sent] message id: I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.`);
       return;
-    } else if (imageOutput.disease === "HEALTHY") {
+    } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
       console.log(`[reply sent] message id: No visible signs of disease detected. The rice plants appear healthy based on this image.`);
       return;
     } else {
@@ -308,7 +308,7 @@ export class WhatsappService {
 
       const session: string = await this.getOrCreateVertexSession(mobile_no);
 
-      const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+      const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}, and how to solve it? `;
       console.log(`[text] from ${user.mobile_no}: ${defaultQuery + weatherQuery}`);
       const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
 
@@ -404,7 +404,7 @@ export class WhatsappService {
 
 
       weatherQuery =
-        "\nAdditionally, here are the current weather conditions that you may reference: " +
+        "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
         `\nCurrent weather conditions:` +
         `\n- Condition: ${condition}` +
         `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
@@ -435,7 +435,10 @@ export class WhatsappService {
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
     try {
       if (msg.mediaId && msg.url) {
+        console.log(`[Whatsapp] Detected message as: Image`);
+        
         const buffer = await this.media.fetch(msg.mediaId, msg.url);
+        console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
 
         const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
           mediaId: msg.mediaId,
@@ -443,6 +446,7 @@ export class WhatsappService {
           ...(msg.caption && { caption: msg.caption }),
           ...(msg.sha256 && { sha256: msg.sha256 }),
         });
+        console.log(`[Whatsapp] Saved image to Firestore and Storage`);
 
         if (!saveImageResult) {
           throw new Error("handleImage failed to saveImage");
@@ -455,6 +459,7 @@ export class WhatsappService {
 
         const image: WhatsappImageData = imageResult.getData();
 
+        console.log(`[Gemini] Diagnosing Image`);
         const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
         if (geminiImageResult.isFailure()) {
 
@@ -474,8 +479,9 @@ export class WhatsappService {
         }
 
         const imageOutput: ImageOutput = geminiImageResult.getData();
+        console.log(`[Gemini] Image diagnosed`);
 
-        if (imageOutput.disease === "NOT DETECTED") {
+        if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
 
           const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
           if (deleteImageResult.isFailure()) {
@@ -484,35 +490,46 @@ export class WhatsappService {
           await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
           return;
 
-        } else if (imageOutput.disease === "HEALTHY") {
+        } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
 
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
 
           await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
           return;
 
         } else {
 
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.disease, imageOutput.severity);
+          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
 
           const mobile_no: string = user.mobile_no;
 
+          console.log(`[Whatsapp] Syncing weather status`);
           await this.syncUserWeather(mobile_no);
+          console.log(`[Whatsapp] Weather status synced`);
 
           const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
 
+          console.log(`[Vertex] Creating session`);
           const session: string = await this.getOrCreateVertexSession(mobile_no);
+          console.log(`[Vertex] Session created`);
 
-          const defaultQuery: string = `What causes ${imageOutput.disease}, and how to solve it? `;
+          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
 
+          console.log(`[Vertex] Sending response to Vertex`);
           const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-
+          console.log(`[Vertex] Response received`);
 
           const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
           if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.");
+            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.");
           } else {
+
+            // Generate sendText response
             await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+
+            // Generate sendImage response
+
+            // Generate sendDocument response
           }
         }
       }

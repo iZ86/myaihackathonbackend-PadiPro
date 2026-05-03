@@ -20,7 +20,7 @@ class GeminiRoute {
 
     // Genkit native route — exposes the flow directly (supports streaming via genkit/beta/client)
     this.router.post("/flow", expressHandler(geminiService.chatFlow));
-   
+    
     // Additional routes for images (diagnosis of paddy plants)
     this.router.post("/image/", checkAuthTokenHeader, asyncHandler(this.controller.image.bind(this.controller)));
     this.router.post("/image/flow", expressHandler(geminiService.imageFlow));
