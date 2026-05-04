@@ -54,26 +54,36 @@ export class WhatsappConverter {
       recognizer: `projects/${projectId}/locations/${REGION}/recognizers/_`,
       config: {
         autoDecodingConfig: {},
-        languageCodes:      ['ms-MY', 'cmn-Hans-CN'],
-        model:              'chirp_3',
+        languageCodes: ['ms-MY', 'cmn-Hans-CN'],
+        model: 'chirp_3',
       },
       content: audioBuffer,
     };
 
-    const [response] = await client.recognize(request);
+    try {
+      const [response] = await client.recognize(request);
 
-    const transcript = response.results
-      ?.map((r) => r.alternatives?.[0]?.transcript ?? '')
-      .join(' ')
-      .trim();
+      const transcript = response.results
+        ?.map((r) => r.alternatives?.[0]?.transcript ?? '')
+        .join(' ')
+        .trim();
 
-    if (!transcript) {
-      console.warn('[transcribeAudio] empty transcript returned');
-      return '';
+      if (!transcript) {
+        console.warn('[transcribeAudio] empty transcript returned');
+        return '⚠️ I couldn’t detect any speech in the audio.';
+      }
+
+      return transcript;
+
+    } catch (err: any) {
+      console.error('[transcribeAudio] error:', err);
+
+      if (err.code === 3) {
+        return '⏱️ Your audio is too long (max 60 seconds). Please send a shorter voice message.';
+      }
+
+      return '❌ Something went wrong while processing your audio. Please try again.';
     }
-
-    console.log(`[transcribeAudio] transcript: ${transcript}`);
-    return transcript;
   }
 
   async convertAndTranscribe(oggBuffer: Buffer): Promise<string> {
