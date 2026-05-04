@@ -44,7 +44,7 @@ export class WhatsappConverter {
     }
   }
 
-  async transcribeAudio(audioBuffer: Buffer): Promise<string> {
+  async transcribeAudio(audioBuffer: Buffer): Promise<{text: string, success: boolean}> {
     const projectId = speechConfig.GOOGLE_CLOUD_PROJECT;
     if (!projectId) throw new Error('GOOGLE_CLOUD_PROJECT env var is not set');
 
@@ -70,23 +70,21 @@ export class WhatsappConverter {
 
       if (!transcript) {
         console.warn('[transcribeAudio] empty transcript returned');
-        return '⚠️ I couldn’t detect any speech in the audio.';
+        return {text: '⚠️ I couldn’t detect any speech in the audio.', success: false};
       }
 
-      return transcript;
+      return {text: transcript, success: true};
 
     } catch (err: any) {
-      console.error('[transcribeAudio] error:', err);
-
       if (err.code === 3) {
-        return '⏱️ Your audio is too long (max 60 seconds). Please send a shorter voice message.';
+        return {text: '⏱️ Your audio is too long (max 60 seconds). Please send a shorter voice message.', success: false};
       }
 
-      return '❌ Something went wrong while processing your audio. Please try again.';
+      return {text: '❌ Something went wrong while processing your audio. Please try again.', success: false};
     }
   }
 
-  async convertAndTranscribe(oggBuffer: Buffer): Promise<string> {
+  async convertAndTranscribe(oggBuffer: Buffer): Promise<{text: string, success: boolean}> {
     const mp3Buffer = await this.convertOggToMp3(oggBuffer);
     return this.transcribeAudio(mp3Buffer);
   }

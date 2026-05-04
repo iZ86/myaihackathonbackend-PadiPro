@@ -542,11 +542,18 @@ export class WhatsappService {
       const buffer     = await this.media.fetch(msg.mediaId, msg.url);
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
       
-      if (transcript) {
+      if (transcript.success) {
         const textMsg: ITextMessage = {
           ...msg,
           type: 'text',
-          body: transcript,
+          body: transcript.text,
+        };
+        this.handleText(textMsg, user);
+      }else{
+        const textMsg: ITextMessage = {
+          ...msg,
+          type: 'text',
+          body: transcript.text,
         };
         this.handleText(textMsg, user);
       }
