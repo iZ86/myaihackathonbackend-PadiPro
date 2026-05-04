@@ -442,7 +442,7 @@ export class WhatsappService {
 
         const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
           mediaId: msg.mediaId,
-          mimeType: msg.mimeType ?? 'image/jpeg',
+          mimeType: msg.mimeType ?? 'video/mp4',
           ...(msg.caption && { caption: msg.caption }),
           ...(msg.sha256 && { sha256: msg.sha256 }),
         });

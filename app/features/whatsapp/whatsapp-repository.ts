@@ -189,6 +189,7 @@ class WhatsappRepository implements IWhatsappRepository {
       'image/png': '.png',
       'image/webp': '.webp',
       'image/gif': '.gif',
+      'video/mp4': '.mp4',
     };
     return map[mimeType] ?? '';
   }
