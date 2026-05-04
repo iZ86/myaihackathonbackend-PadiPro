@@ -541,6 +541,7 @@ export class WhatsappService {
     if (msg.mediaId && msg.url) {
       const buffer     = await this.media.fetch(msg.mediaId, msg.url);
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
+      console.log(transcript.success);
       
       if (transcript.success) {
         const textMsg: ITextMessage = {
