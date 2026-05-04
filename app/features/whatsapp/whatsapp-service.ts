@@ -550,12 +550,7 @@ export class WhatsappService {
         };
         this.handleText(textMsg, user);
       }else{
-        const textMsg: ITextMessage = {
-          ...msg,
-          type: 'text',
-          body: transcript.text,
-        };
-        this.handleText(textMsg, user);
+        this.reply.sendText(msg.from, transcript.text);
       }
     }
   }
