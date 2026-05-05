@@ -13,6 +13,6 @@ export default class Routes {
     app.use("/api/v1/gemini", geminiRoute)
     app.use("/api/v1/vertex", vertexRoute);
     app.use("/api/v1/whatsapp", whatsappRoute)
-    // app.use("/api/v1/gemma", gemmaRoute)
+    app.use("/api/v1/gemma", gemmaRoute)
   }
 }
