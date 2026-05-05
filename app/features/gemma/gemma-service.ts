@@ -24,6 +24,7 @@ class GemmaService implements IGemmaService {
       outputSchema: ChatOutputSchema,
     },
     async (input) => {
+      console.log("[Gemma] Input entered:", input);
       const result = await this.chat(input);
       if (result.isFailure()) {
         throw new Error("Chat flow failed to generate a response.");
@@ -48,10 +49,11 @@ class GemmaService implements IGemmaService {
           messages: history 
         };
       },
-      save: async (id: string, data: any) => {
+      save: async (mobile_no: string, data: any) => {
+        console.log("[Gemma] Saving into chat_history as document ID:", mobile_no);
         const messages = (data && data.messages) ? data.messages : [];
         const lastFive = messages.slice(-5);
-        await gemmaRepository.saveChatHistory(id, lastFive);
+        await gemmaRepository.saveChatHistory(mobile_no, lastFive);
       }
     };
 
