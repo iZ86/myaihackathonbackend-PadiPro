@@ -61,24 +61,6 @@ export class WhatsappController {
     }
   }
 
-  async sendImage(req: Request, res: Response) {
-    const mobile_no: string = req.body.mobile_no;
-    const name: string = req.body.name;
-    const image_url: string = req.body.image_url;
-
-    let newUser: boolean = false;
-    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-    if (userResult.isFailure()) {
-      userResult = await userService.createUser(mobile_no, name);
-      newUser = true;
-    }
-
-    if (userResult.isSuccess()) {
-      //call service logic
-      await whatsappService.myHandleImage(image_url, userResult.getData(), newUser);
-    }
-  }
-
   async generateOTP(req: Request, res: Response): Promise<void> {
     try {
       const { mobile_no } = req.body;
