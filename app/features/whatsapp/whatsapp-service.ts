@@ -226,46 +226,6 @@ export class WhatsappService {
     }
   }
 
-  // This only works if the user has coords.
-  async myHandleText(msg: string, user: UserData, newUser: boolean): Promise<void> {
-
-    if (newUser) {
-      console.log(
-        `
-            Welcome to PadiPro! 🌾💪 
-
-            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
-
-            You may respond by:
-
-            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
-
-            I'm able to respond to both text and image messages, now let's get started! 
-        `
-      )
-      return;
-    }
-
-    const mobile_no: string = user.mobile_no;
-
-    await this.syncUserWeather(mobile_no);
-
-    let weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-    const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-    console.log(`[text] from ${user.mobile_no}: ${msg + weatherQuery}`);
-    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg + weatherQuery, session);
-
-    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      console.log(`[reply sent] message id: I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?`);
-    } else {
-      console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
-    }
-  }
 
   // This only works if the user has coords.
   // Also doesn't save image.
