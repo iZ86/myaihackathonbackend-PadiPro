@@ -4,7 +4,6 @@ import { WhatsappController } from './whatsapp-controller';
 import { sendImageBodyValidator, sendMessageBodyValidator } from "./whatsapp-validator";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import { userParamValidator } from "../user/user-validator";
-import WhatsappRepository from "./whatsapp-repository";
 
 class WhatsappRoute {
     router = Router();
