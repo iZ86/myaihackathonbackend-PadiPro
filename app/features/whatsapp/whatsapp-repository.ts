@@ -3,7 +3,6 @@ import { db } from '../../database/db-connection';
 import { WhatsappImageData } from './whatsapp-model';
 import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
-import { convertProcessSignalToExitCode } from 'node:util';
 
 interface IWhatsappRepository {
   getImagesByMobileNo(mobile_no: string): Promise<WhatsappImageData[]>;
