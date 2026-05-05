@@ -27,7 +27,6 @@ class WhatsappRoute {
         //receive, parse, and response to msg
         this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
 
-        this.router.post("/myImage", sendImageBodyValidator, asyncHandler(this.controller.sendImage));
 
         // Get history of images
         this.router.get("/history/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
