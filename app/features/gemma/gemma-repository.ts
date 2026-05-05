@@ -30,9 +30,10 @@ class GemmaRepository implements IGemmaRepository {
 
   public async saveChatHistory(mobile_no: string, data: ChatHistory): Promise<string | undefined> {
     try {
-      const docRef = db.collection('chat_history').doc(mobile_no);
+      const docRef = db.collection('chat_history').doc();
       await docRef.create({
         ...data,
+        from: mobile_no
       });
 
       return mobile_no;
