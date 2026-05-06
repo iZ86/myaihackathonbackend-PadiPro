@@ -40,7 +40,6 @@ class GemmaService implements IGemmaService {
   );
 
   public async chat(input: ChatInput): Promise<Result<ChatOutput>> {
-    console.log("[Gemma] Input entered:", input);
     const store = {
       get: async (id: string) => {
         const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
@@ -53,6 +52,7 @@ class GemmaService implements IGemmaService {
       },
       save: async (mobile_no: string, data: any) => {
         console.log("[Gemma] Saving into chat_history for user:", mobile_no);
+        console.log("[Gemma] Saving data:", data);
         const messages = (data && data.messages) ? data.messages : [];
         const latestMessage = messages[messages.length - 1];
         if (latestMessage) {
