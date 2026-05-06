@@ -6,6 +6,7 @@ interface IMediaRepository {
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]>;
   getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined>;
   updateImageDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
+  deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
 }
 
 
@@ -71,6 +72,25 @@ class MediaRepository implements IMediaRepository {
       return true;
     } catch (error) {
       throw new Error(`updateImageDiagnosis repository error`, { cause: error });
+    }
+  }
+
+  public async deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean> {
+    try {
+      const snapshot = await db.collection(this.collection)
+        .where('mediaName', '==', mediaName)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) return false;
+
+      const doc = snapshot.docs[0];
+      if (!doc) return false;
+
+      await doc.ref.delete();
+      return true;
+    } catch (error) {
+      throw new Error(`deleteMediaByMediaName repository error`, { cause: error });
     }
   }
 }
