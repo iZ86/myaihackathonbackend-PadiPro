@@ -358,15 +358,6 @@ export class WhatsappService {
     await this.reply.sendImage(to, { link: locationTutorialImages.step_3 }, 'Step 3');
   }
 
-  private async getImageByMediaId(mediaId: string): Promise<Result<WhatsappImageData>> {
-    const image: WhatsappImageData | undefined = await whatsappRepository.getImageByMediaId(mediaId);
-    if (!image) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Image not found.");
-    }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, image, "Image found.");
-  }
-
   public async sendOTP(to: string, otp: string): Promise<void> {
     await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
   }
