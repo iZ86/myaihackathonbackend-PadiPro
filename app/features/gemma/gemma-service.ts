@@ -47,12 +47,12 @@ class GemmaService implements IGemmaService {
         const formattedHistory: Message[] = history.slice(-15).map((msg) => ({
           role: msg.role === "editor" ? "model" : msg.role, 
           content: [
-            { 
-              text: msg.content.reply,
-              metadata: {
-                vertexOutput: msg.content.vertexOutput,
-                prompt: msg.content.prompt
-              }
+            {
+              text: typeof msg.content === 'string'
+                ? msg.content
+                : typeof msg.content === 'object'
+                  ? msg.content.reply ?? JSON.stringify(msg.content)
+                  : String(msg.content),
             }
           ],
           timestamp: msg.timestamp,
@@ -67,17 +67,32 @@ class GemmaService implements IGemmaService {
         };
       },
       save: async (id, data) => {
-        const latest = data.threads?.main?.at(-1);
-        if (latest) {
-          const chatHistory = {
-            content: JSON.parse(latest.content[0]?.text ?? ''),
-            role: latest.role,
-            timestamp: "",
+        const thread = data.threads?.main ?? [];
+        const existing = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
+        const newEntries = thread.slice(existing.length);
+        
+        for (const entry of newEntries) {
+          const text = entry.content[0]?.text ?? '';
+          
+          let content;
+          try {
+            const sanitized = text
+              .replace(/\r?\n/g, '\\n')
+              .replace(/\r/g, '\\r')
+              .trim();
+            content = JSON.parse(sanitized);
+          } catch {
+            content = { reply: text };
           }
-          await gemmaRepository.saveChatHistory(id, "whatsapp", chatHistory);
+
+          await gemmaRepository.saveChatHistory(id, "whatsapp", {
+            role: entry.role,
+            content,
+            timestamp: "",
+          });
         }
       }
-    };
+    }
 
     let session;
     try {
@@ -91,8 +106,7 @@ class GemmaService implements IGemmaService {
 
     const chat = session.chat();
     const { output } = await chat.send({
-      prompt: `INSTRUCTION: Remember what users say. Always provide a reply and vertexOutput status code.
-                USER MESSAGE: ${input.message}`,
+      prompt: input.message,
       output: {
         schema: ChatOutputSchema
       }

@@ -13,7 +13,7 @@ export const ChatInputSchema = z.object({
 });
 
 export const ChatOutputSchema = z.object({
-  reply: z.string(),
+  reply: z.string().describe("The reply you will send back to users"),
   prompt: z.string().describe("The customized prompt to send into Vertex").optional(),
   vertexOutput: z.string().describe("Status code to determine next course of action"),
 });
