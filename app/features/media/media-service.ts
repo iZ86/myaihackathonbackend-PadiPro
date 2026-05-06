@@ -11,6 +11,7 @@ interface IMediaService {
   saveImage(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageFile(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  saveVideo(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoFile(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
@@ -149,6 +150,31 @@ class MediaService implements IMediaService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Image file saved.");
 
+  }
+
+
+  public async saveVideo(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+
+    const videoFileResult: Result<MediaFileData> = await this.saveVideoFile(videoName, mimeType, buffer, mobile_no);
+    if (videoFileResult.isFailure()) {
+      return videoFileResult;
+    }
+
+    const videoFile: MediaFileData = videoFileResult.getData();
+
+    try {
+      this.saveVideoMetaData(videoFile.mediaName, mimeType, videoFile.storage_path, videoFile.download_url, mobile_no, caption, sha256);
+    } catch (error) {
+      this.deleteMediaByMediaName(videoFile.mediaName);
+      throw new Error('saveVideo failed to save', { cause: error });
+    }
+    
+    const videoData: Result<MediaData> = await this.getMediaMetaDataByMediaName(videoFile.mediaName);
+    if (videoData.isFailure()) {
+      throw new Error('saveVideo failed to get saved video.');
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, videoData.getData(), "Video saved.");
   }
 
   public async saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
