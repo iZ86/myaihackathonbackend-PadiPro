@@ -431,3 +431,7 @@ dist/
 
 # yaml extension
 *.yaml
+
+# Firebase Emulator
+.firebaserc
+firebase.json

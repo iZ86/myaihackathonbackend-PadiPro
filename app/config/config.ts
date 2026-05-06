@@ -2,7 +2,13 @@ require('dotenv').config();
 
 export const serverConfig = {
   PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 8080,
-  FRONTEND_URL: process.env.FRONTEND_URL as string
+  FRONTEND_URL: process.env.FRONTEND_URL as string,
+}
+
+export const firestoreConfig = {
+  DEV_MODE: process.env.FIRESTORE_DEV_MODE ?? 'PROD',
+  EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST as string,
+  PROJECT_ID: process.env.FIRESTORE_PROJECT_ID as string,
 }
 
 export const geminiServiceConfig = {
