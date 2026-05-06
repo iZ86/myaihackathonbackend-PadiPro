@@ -265,7 +265,7 @@ class MediaService implements IMediaService {
     if (savedAudio.isFailure()) {
       throw new Error("savedAudioMetaData failed to get saved audio.");
     }
-    
+
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedAudio.getData(), "Audio metadata saved.");
   }
 
@@ -304,7 +304,7 @@ class MediaService implements IMediaService {
     if (mediaResult.isFailure()) {
       return mediaResult;
     }
-    
+
     const media: MediaData = mediaResult.getData();
 
     const mimeType: string = media.mimeType;
