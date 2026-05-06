@@ -13,7 +13,7 @@ class WebchatRoute {
   }
 
   initializeRoutes() {
-    this.router.get("/upload/url", checkAuthTokenHeader, generateUploadUrlrBodyValidator, asyncHandler(this.controller.generateUploadUrl));
+    this.router.post("/upload/url", checkAuthTokenHeader, generateUploadUrlrBodyValidator, asyncHandler(this.controller.generateUploadUrl));
   }
 }
 
