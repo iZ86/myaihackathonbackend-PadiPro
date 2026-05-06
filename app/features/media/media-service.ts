@@ -14,6 +14,7 @@ interface IMediaService {
   saveVideo(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoFile(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
 
 
@@ -21,6 +22,7 @@ class MediaService implements IMediaService {
   private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
   private readonly imageCollection: string = 'images';
   private readonly videoCollection: string = 'videos';
+  private readonly audioCollection: string = 'audios';
 
   public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>> {
     const media: MediaData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
@@ -219,6 +221,35 @@ class MediaService implements IMediaService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Video file saved.");
 
+  }
+
+  public async saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>> {
+    const ext = this.extFromMime(mimeType);
+    if (ext.length === 0 || (ext !== ".mp3")) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.UNSUPPORTED_MEDIA_TYPE, `File type ${mimeType} not supported for audio uploads.`);
+    }
+
+    const sha256AudioName: string = crypto.createHash('sha256').update(`${audioName}${mobile_no}${Date.now()}`).digest('hex');
+    const storagePath = `${this.audioCollection}/${mobile_no}/${sha256AudioName}${ext}`;
+    const file = this.bucket.file(storagePath);
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: mimeType,
+        mobile_no: mobile_no,
+      },
+    });
+
+    await file.makePublic();
+    const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
+
+    const mediaFileData: MediaFileData = {
+      mediaName: sha256AudioName,
+      storage_path: storagePath,
+      download_url: download_url
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Audio file saved.");
   }
 }
 
