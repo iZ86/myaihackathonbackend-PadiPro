@@ -33,20 +33,6 @@ class WhatsappRepository implements IWhatsappRepository {
     return map[mimeType] ?? '';
   }
 
-  public async getLocationTutorialImages(): Promise<LocationTutorialImages | undefined> {
-    try {
-      const doc = await db.collection('tutorial').doc('location').get();
-      if (!doc.exists) {
-        console.warn('[WhatsappRepository] tutorial/location document not found');
-        return undefined;
-      }
-      const { step_1, step_2, step_3 } = doc.data() as LocationTutorialImages;
-      return { step_1, step_2, step_3 };
-    } catch (error) {
-      console.error('getLocationTutorialImages error:', error);
-      throw error;
-    }
-  }
 
   public async generateAndStoreOTP(mobile_no: string): Promise<string> {
     const docRef = db.collection('OTP').doc(mobile_no);
