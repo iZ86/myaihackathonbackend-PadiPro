@@ -62,11 +62,11 @@ export interface RawEntry {
 }
 
 export interface RawChange {
-    value: RawValue;
+    value: WhatsappRawValue;
     field: string;
 }
 
-export interface RawValue {
+export interface WhatsappRawValue {
     messaging_product: string;
     metadata: RawMetadata;
     contacts?: RawContact[];
