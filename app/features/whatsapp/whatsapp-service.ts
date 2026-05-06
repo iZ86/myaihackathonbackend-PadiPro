@@ -1,21 +1,11 @@
 
 import { Result } from '../../../libs/Result';
-import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
-import { ImageOutput, ImageOutputDetection } from '../gemini/gemini-model';
-import geminiService from '../gemini/gemini-service';
 import { UserData } from '../user/user-model';
-import userService from '../user/user-service';
-import { VertexAnswerQueryData, VertexSessionInfoData } from '../vertex/vertex-model';
-import vertexService from '../vertex/vertex-service';
-import { WeatherData } from '../weather/weather-model';
-import weatherService from '../weather/weather-service';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
-  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse,
-  WhatsappImageData,
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse
 } from './whatsapp-model';
-import whatsappRepository from './whatsapp-repository';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
 import { LocationTutorialImages, MediaData } from '../media/media-model';
