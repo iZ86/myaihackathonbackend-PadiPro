@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../utils/utils";
 import { WhatsappController } from './whatsapp-controller';
-import { checkAuthTokenHeader } from "../../middlewares/auth";
-import { userParamValidator } from "../user/user-validator";
 
 class WhatsappRoute {
     router = Router();
@@ -26,9 +24,6 @@ class WhatsappRoute {
         //receive, parse, and response to msg
         this.router.post('/', asyncHandler(this.controller.handleWebhook.bind(this.controller)));
 
-
-        // Get history of images
-        this.router.get("/history/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getImagesByMobileNo));
 
         //OTP service 
         this.router.post('/otp/generate', this.controller.generateOTP.bind(this.controller));
