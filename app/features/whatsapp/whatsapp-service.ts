@@ -396,16 +396,20 @@ export class WhatsappService {
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
+
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
 
-    const userResult: Result<UserData> = await userService.updateUserCoordsByMobileNo(msg.latitude, msg.longitude, user.mobile_no);
-    if (userResult.isFailure()) {
-      throw new Error(`handleLocation failed to updateUserCoords ${userResult.getMessage()}`);
-    }
+    const handleLocationResult: Result<UserData> = await mainService.handleLocation(user.mobile_no, msg.latitude, msg.longitude);
 
-    await this.reply.sendText(msg.from, "Location updated successfully.");
+    if (handleLocationResult.isFailure()) {
+
+      throw new Error(`handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`);
+    } else if (handleLocationResult.isSuccess()) {
+
+      await this.reply.sendText(msg.from, "Location updated successfully.");
+    }
   }
 
   public async getImagesbyMobileNo(mobile_no: string): Promise<Result<WhatsappImageData[]>> {
