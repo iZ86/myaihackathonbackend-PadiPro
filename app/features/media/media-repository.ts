@@ -13,7 +13,7 @@ interface IMediaRepository {
 
 
 class MediaRepository implements IMediaRepository {
-  private readonly collection: string = 'medias';
+  private readonly collection: string = 'media';
 
   public async getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]> {
     try {
