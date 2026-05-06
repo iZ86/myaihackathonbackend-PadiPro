@@ -1,25 +1,15 @@
 
 import { Result } from '../../../libs/Result';
-import { ENUM_STATUS_CODES_SUCCESS, ENUM_STATUS_CODES_FAILURE } from '../../../libs/status-codes-enum';
-import { ImageOutput, ImageOutputDetection } from '../gemini/gemini-model';
-import geminiService from '../gemini/gemini-service';
 import { UserData } from '../user/user-model';
-import userService from '../user/user-service';
-import { VertexAnswerQueryData, VertexSessionInfoData } from '../vertex/vertex-model';
-import vertexService from '../vertex/vertex-service';
-import { WeatherData } from '../weather/weather-model';
-import weatherService from '../weather/weather-service';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
-  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse,
-  WhatsappImageData,
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse
 } from './whatsapp-model';
-import whatsappRepository from './whatsapp-repository';
 import whatsappConverter from './whatsapp-converter';
-
-// Testing to hold vertex sessions
-const userVertexSession: { [mobile_no: string]: string } = {};
+import mainService from '../main/main-service';
+import { LocationTutorialImages, MediaData } from '../media/media-model';
+import mediaService from '../media/media-service';
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -212,337 +202,65 @@ export class WhatsappService {
       return;
     }
 
-    switch (message.type) {
-      case 'text': return this.handleText(message, user);
-      case 'image': return this.handleImage(message, user);
-      case 'audio': return this.handleAudio(message, user);
-      case 'video': return this.handleVideo(message, user);
-      case 'location': return this.handleLocation(message, user);
-    }
-  }
-
-  // This only works if the user has coords.
-  async myHandleText(msg: string, user: UserData, newUser: boolean): Promise<void> {
-
-    if (newUser) {
-      console.log(
-        `
-            Welcome to PadiPro! 🌾💪 
-
-            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
-
-            You may respond by:
-
-            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
-
-            I'm able to respond to both text and image messages, now let's get started! 
-        `
-      )
-      return;
-    }
-
-    const mobile_no: string = user.mobile_no;
-
-    await this.syncUserWeather(mobile_no);
-
-    let weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-    const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-    console.log(`[text] from ${user.mobile_no}: ${msg + weatherQuery}`);
-    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg + weatherQuery, session);
-
-    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      console.log(`[reply sent] message id: I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?`);
-    } else {
-      console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
-    }
-  }
-
-  // This only works if the user has coords.
-  // Also doesn't save image.
-  async myHandleImage(image_url: string, user: UserData, newUser: boolean): Promise<void> {
-
-    if (newUser) {
-      console.log(
-        `
-            Welcome to PadiPro! 🌾💪 
-
-            I'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
-
-            You may respond by:
-
-            1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-            2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-            3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
-
-            I'm able to respond to both text and image messages, now let's get started! 
-        `
-      )
-      return;
-    }
-
-    const imageResult: Result<ImageOutput> = await geminiService.image(image_url);
-    if (imageResult.isFailure()) {
-      throw new Error("myHandleImage geminiService.image failed to detect image.");
-    }
-
-    const imageOutput: ImageOutput = imageResult.getData();
-
-    if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
-      console.log(`[reply sent] message id: I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.`);
-      return;
-    } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
-      console.log(`[reply sent] message id: No visible signs of disease detected. The rice plants appear healthy based on this image.`);
-      return;
-    } else {
-
-      const mobile_no: string = user.mobile_no;
-
-      await this.syncUserWeather(mobile_no);
-
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-      const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-      const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}, and how to solve it? `;
-      console.log(`[text] from ${user.mobile_no}: ${defaultQuery + weatherQuery}`);
-      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-
-      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-      if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-        console.log(`[reply sent] message id: I’m not confident in identifying this condition based on my current knowledge. Please consult an agricultural expert or provide more details.`);
-      } else {
-        console.log(`[reply sent] message id: ${sendQueryVertex.answer.answerText}`);
+    try {
+      switch (message.type) {
+        case 'text': return this.handleText(message, user);
+        case 'image': return this.handleImage(message, user);
+        case 'audio': return this.handleAudio(message, user);
+        case 'video': return this.handleVideo(message, user);
+        case 'location': return this.handleLocation(message, user);
       }
+    } catch (error) {
+      await this.reply.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
+      throw error;
     }
   }
 
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
-    try {
-      const mobile_no: string = user.mobile_no;
 
-      await this.syncUserWeather(mobile_no);
-
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-      if (!msg.body) {
-        throw new Error("handleText does not have message.body");
-      }
-
-      const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-
-      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
-
-
-      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-      if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-        await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
-      } else {
-        await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
-      }
-
-    } catch (error) {
-      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
-    }
-  }
-
-  private async syncUserWeather(mobile_no: string): Promise<undefined> {
-
-    const getWeatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
-
-    if (getWeatherResult.isSuccess()) {
-
-      const updateWeatherResult: Result<WeatherData> = await weatherService.updateWeather(mobile_no);
-
-      if (updateWeatherResult.isFailure() &&
-        ((updateWeatherResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.NOT_FOUND && updateWeatherResult.getMessage() !== "User location is not set.") ||
-          (updateWeatherResult.getStatusCode() !== ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS))) {
-
-        throw new Error(`handleText had issue with updateWeather: ${updateWeatherResult.getMessage()}`);
-      }
-
-
-    } else if (getWeatherResult.isFailure() && getWeatherResult.getMessage() === "User weather not found.") {
-
-      const saveWeatherResult: Result<WeatherData> = await weatherService.saveWeather(mobile_no);
-
-      if (saveWeatherResult.isFailure() && saveWeatherResult.getMessage() !== "User location is not set.") {
-        throw new Error(`handleText had issue with saveWeather: ${saveWeatherResult.getMessage()}`);
-      }
-
-    } else {
-      throw new Error("handleText failed to get weather.");
-    }
-  }
-
-  private async generateWeatherQuery(mobile_no: string): Promise<string> {
-
-    const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
-
-    let weatherQuery: string = "";
-
-    if (weatherResult.isSuccess()) {
-      const weather: WeatherData = weatherResult.getData();
-      const condition = weather.weatherCondition?.replace(/_/g, " ").toLowerCase();
-      const temp = `${weather.temperature?.degrees}°${weather.temperature?.unit === "CELSIUS" ? "C" : "F"}`;
-      const feelsLike = weather.dewPoint ? `dew point ${weather.dewPoint.degrees}°C` : "";
-      const humidity = `humidity ${weather.relativeHumidity}%`;
-      const wind = `wind ${weather.wind?.speed?.value} ${weather.wind?.speed?.unit?.replace(/_/g, " ").toLowerCase()} from ${weather.wind?.direction?.cardinal?.replace(/_/g, " ")}`;
-      const gusts = weather.wind?.gust?.value ? `, gusting to ${weather.wind.gust.value} km/h` : "";
-      const cloud = `cloud cover ${weather.cloudCover}%`;
-      const rainChance = `${weather.precipitation?.probability?.percent}% chance of ${weather.precipitation?.probability?.type?.toLowerCase()}`;
-      const thunderChance = (weather.thunderstormProbability ? weather.thunderstormProbability > 0 : false) ? `, ${weather.thunderstormProbability}% chance of thunderstorms` : "";
-      const qpf = (weather.precipitation?.qpf.quantity ? weather.precipitation?.qpf?.quantity > 0 : false)
-        ? `, expected rainfall ${weather.precipitation?.qpf.quantity} ${weather.precipitation?.qpf.unit.toLowerCase()}`
-        : "";
-
-
-      weatherQuery =
-        "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
-        `\nCurrent weather conditions:` +
-        `\n- Condition: ${condition}` +
-        `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
-        `\n- Wind: ${wind}${gusts}` +
-        `\n- Sky: ${cloud}` +
-        `\n- Precipitation: ${rainChance}${thunderChance}${qpf}`;
-    } else if (weatherResult.isFailure() && weatherResult.getMessage() !== "User weather not found.") {
-      // If the weather is still not set by here. Means that the user has no location set.
-      // Hence, don't throw error unless its something else other than no user location set.
-      throw new Error(`handleText could not getWeather due to other reasons: ${weatherResult.getMessage()}`);
+    if (!msg.body) {
+      throw new Error("handleText does not have message.body");
     }
 
-    return weatherQuery;
-  }
+    const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
 
-  private async getOrCreateVertexSession(mobile_no: string): Promise<string> {
-    return userVertexSession[mobile_no] ?? await (async () => {
-      const createVertexSessionResult: Result<VertexSessionInfoData> = await vertexService.createVertexSession();
-      if (createVertexSessionResult.isSuccess()) {
-        const vertexSession: VertexSessionInfoData = createVertexSessionResult.getData();
-        userVertexSession[mobile_no] = vertexSession.session;
-        return vertexSession.session;
-      }
-      throw new Error("handleText failed to create vertex session.");
-    })();
+    if (handleTextResult.isSuccess()) {
+      const replyText: string = handleTextResult.getData();
+      await this.reply.sendText(msg.from, replyText);
+    }
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
-    try {
-      if (msg.mediaId && msg.url) {
-        console.log(`[Whatsapp] Detected message as: Image`);
-        
-        const buffer = await this.media.fetch(msg.mediaId, msg.url);
-        console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
+    if (msg.mediaId && msg.url) {
+      console.log(`[Whatsapp] Detected message as: Image`);
 
-        const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
-          mediaId: msg.mediaId,
-          mimeType: msg.mimeType ?? 'video/mp4',
-          ...(msg.caption && { caption: msg.caption }),
-          ...(msg.sha256 && { sha256: msg.sha256 }),
-        });
-        console.log(`[Whatsapp] Saved image to Firestore and Storage`);
+      const buffer = await this.media.fetch(msg.mediaId, msg.url);
+      console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
 
-        if (!saveImageResult) {
-          throw new Error("handleImage failed to saveImage");
-        }
+      const saveImageResult: Result<MediaData> = await mediaService.saveImage(msg.mediaId, msg.mimeType ?? 'image/jpeg', buffer, user.mobile_no, msg.caption, msg.sha256);
+      console.log(`[Whatsapp] Saved image to Firestore and Storage`);
 
-        const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
-        if (imageResult.isFailure()) {
-          throw new Error("handleImage failed to retrieve image.");
-        }
-
-        const image: WhatsappImageData = imageResult.getData();
-
-        const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
-        if (geminiImageResult.isFailure()) {
-
-          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
-          if (deleteImageResult.isFailure()) {
-            throw new Error("handleImage delete image failed.");
-          }
-
-          if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
-            await this.reply.sendText(msg.from, "We are currently experiencing high demand, please try again later.");
-            return;
-          } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
-            await this.reply.sendText(msg.from, "You are sending images too frequently, please send again in 1 minute.");
-            return;
-          }
-          throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
-        }
-
-        const imageOutput: ImageOutput = geminiImageResult.getData();
-
-        if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
-
-          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
-          if (deleteImageResult.isFailure()) {
-            throw new Error("handleImage delete image failed.");
-          }
-          await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
-          return;
-
-        } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
-
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
-
-          await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
-          return;
-
-        } else {
-
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
-
-          const mobile_no: string = user.mobile_no;
-
-          console.log(`[Whatsapp] Syncing weather status`);
-          await this.syncUserWeather(mobile_no);
-          console.log(`[Whatsapp] Weather status synced`);
-
-          const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-          console.log(`[Vertex] Creating session`);
-          const session: string = await this.getOrCreateVertexSession(mobile_no);
-          console.log(`[Vertex] Session created`);
-
-          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
-
-          console.log(`[Vertex] Sending response to Vertex`);
-          const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-          console.log(`[Vertex] Response received`);
-
-          const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-          if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.");
-          } else {
-
-            // Generate sendText response
-            await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
-
-            // Generate sendImage response
-
-            // Generate sendDocument response
-          }
-        }
+      if (saveImageResult.isFailure()) {
+        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
-    } catch (error) {
-      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
+
+      const saveImage: MediaData = saveImageResult.getData();
+
+      const handleImageResult: Result<string> = await mainService.handleImage(user.mobile_no, saveImage.mediaName);
+      if (handleImageResult.isSuccess()) {
+        await this.reply.sendText(msg.from, handleImageResult.getData());
+      } else if (handleImageResult.isFailure()) {
+        await this.reply.sendText(msg.from, handleImageResult.getMessage());
+      }
     }
   }
 
   private async handleAudio(msg: IAudioMessage, user: UserData): Promise<void> {
     if (msg.mediaId && msg.url) {
-      const buffer     = await this.media.fetch(msg.mediaId, msg.url);
+      const buffer = await this.media.fetch(msg.mediaId, msg.url);
       const transcript = await whatsappConverter.convertAndTranscribe(buffer);
       console.log(transcript.success);
-      
+
       if (transcript.success) {
         const textMsg: ITextMessage = {
           ...msg,
@@ -550,143 +268,55 @@ export class WhatsappService {
           body: transcript.text,
         };
         this.handleText(textMsg, user);
-      }else{
+      } else {
         this.reply.sendText(msg.from, transcript.text);
       }
     }
   }
 
   private async handleVideo(msg: IVideoMessage, user: UserData): Promise<void> {
-    try {
-      if (msg.mediaId && msg.url) {
-        console.log(`[Whatsapp] Detected message as: Video`);
-        
-        const buffer = await this.media.fetch(msg.mediaId, msg.url);
-        console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
 
-        const saveImageResult: boolean = await whatsappRepository.saveImage(msg.from, buffer, {
-          mediaId: msg.mediaId,
-          mimeType: msg.mimeType ?? 'image/jpeg',
-          ...(msg.sha256 && { sha256: msg.sha256 }),
-        });
-        console.log(`[Whatsapp] Saved video to Firestore and Storage`);
+    if (msg.mediaId && msg.url) {
+      console.log(`[Whatsapp] Detected message as: Video`);
 
-        if (!saveImageResult) {
-          throw new Error("handleImage failed to saveImage");
-        }
+      const buffer = await this.media.fetch(msg.mediaId, msg.url);
+      console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
 
-        const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(msg.mediaId);
-        if (imageResult.isFailure()) {
-          throw new Error("handleImage failed to retrieve image.");
-        }
+      const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(msg.mediaId, msg.mimeType ?? 'video/mp4', buffer, user.mobile_no, undefined, msg.sha256);
+      console.log(`[Whatsapp] Saved video to Firestore and Storage`);
 
-        const image: WhatsappImageData = imageResult.getData();
-
-        const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
-        if (geminiImageResult.isFailure()) {
-
-          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
-          if (deleteImageResult.isFailure()) {
-            throw new Error("handleImage delete image failed.");
-          }
-
-          if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
-            await this.reply.sendText(msg.from, "We are currently experiencing high demand, please try again later.");
-            return;
-          } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
-            await this.reply.sendText(msg.from, "You are sending images too frequently, please send again in 1 minute.");
-            return;
-          }
-          throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
-        }
-
-        const imageOutput: ImageOutput = geminiImageResult.getData();
-
-        if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
-
-          const deleteImageResult: Result<null> = await this.deleteImageByMediaId(msg.mediaId);
-          if (deleteImageResult.isFailure()) {
-            throw new Error("handleImage delete image failed.");
-          }
-          await this.reply.sendText(msg.from, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.");
-          return;
-
-        } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
-
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
-
-          await this.reply.sendText(msg.from, "No visible signs of disease detected. The rice plants appear healthy based on this image.");
-          return;
-
-        } else {
-
-          await whatsappRepository.updateImageDiagnosis(msg.mediaId, imageOutput.detections);
-
-          const mobile_no: string = user.mobile_no;
-
-          console.log(`[Whatsapp] Syncing weather status`);
-          await this.syncUserWeather(mobile_no);
-          console.log(`[Whatsapp] Weather status synced`);
-
-          const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
-
-          console.log(`[Vertex] Creating session`);
-          const session: string = await this.getOrCreateVertexSession(mobile_no);
-          console.log(`[Vertex] Session created`);
-
-          const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
-
-          console.log(`[Vertex] Sending response to Vertex`);
-          const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
-          console.log(`[Vertex] Response received`);
-
-          const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-          if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-            await this.reply.sendText(msg.from, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.");
-          } else {
-
-            // Generate sendText response
-            await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
-
-            // Generate sendImage response
-
-            // Generate sendDocument response
-          }
-        }
+      if (saveVideoResult.isFailure()) {
+        throw new Error(`handleImage failed to saveImage: ${saveVideoResult.getMessage()}`);
       }
-    } catch (error) {
-      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
+
+      const savedVideo: MediaData = saveVideoResult.getData();
+
+
+      const handleVideoResult: Result<string> = await mainService.handleVideo(user.mobile_no, savedVideo.mediaName);
+      if (handleVideoResult.isSuccess()) {
+        await this.reply.sendText(msg.from, handleVideoResult.getData());
+      } else if (handleVideoResult.isFailure()) {
+        await this.reply.sendText(msg.from, handleVideoResult.getMessage());
+      }
     }
+
   }
 
   private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
 
-    try {
-      if (!msg.longitude || !msg.latitude) {
-        throw new Error("handleLocation undefined longitude or latitude");
-      }
-
-      const userResult: Result<UserData> = await userService.updateUserCoordsByMobileNo(msg.latitude, msg.longitude, user.mobile_no);
-      if (userResult.isFailure()) {
-        throw new Error(`handleLocation failed to updateUserCoords ${userResult.getMessage()}`);
-      }
-
-      await this.reply.sendText(msg.from, "Location updated successfully.");
-
-    } catch (error) {
-      await this.reply.sendText(msg.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
+    if (!msg.longitude || !msg.latitude) {
+      throw new Error("handleLocation undefined longitude or latitude");
     }
 
+    const handleLocationResult: Result<UserData> = await mainService.handleLocation(user.mobile_no, msg.latitude, msg.longitude);
 
+    if (handleLocationResult.isFailure()) {
 
-  }
+      throw new Error(`handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`);
+    } else if (handleLocationResult.isSuccess()) {
 
-  public async getImagesbyMobileNo(mobile_no: string): Promise<Result<WhatsappImageData[]>> {
-    const images: WhatsappImageData[] = await whatsappRepository.getImagesByMobileNo(mobile_no);
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, images, "Diagnosis history successfully retrieved.");
+      await this.reply.sendText(msg.from, "Location updated successfully.");
+    }
   }
 
   private async sendIntroductionMessage(message: WhatsappMessage) {
@@ -706,38 +336,16 @@ export class WhatsappService {
   }
 
   private async sendLocationInstructionMessage(to: string): Promise<void> {
-    const images = await whatsappRepository.getLocationTutorialImages();
-    if (!images) {
-      console.warn('[sendLocationInstruction] no tutorial images found');
-      return;
+    const locationTutorialImagesResult: Result<LocationTutorialImages> = await mediaService.getLocationTutorialImages();
+    if (locationTutorialImagesResult.isFailure()) {
+      throw new Error(`sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`);
     }
+
+    const locationTutorialImages: LocationTutorialImages = locationTutorialImagesResult.getData();
     await this.reply.sendText(to, "Before we start, please set up your location by following the steps below:");
-    await this.reply.sendImage(to, { link: images.step_1 }, 'Step 1');
-    await this.reply.sendImage(to, { link: images.step_2 }, 'Step 2');
-    await this.reply.sendImage(to, { link: images.step_3 }, 'Step 3');
-  }
-
-  private async getImageByMediaId(mediaId: string): Promise<Result<WhatsappImageData>> {
-    const image: WhatsappImageData | undefined = await whatsappRepository.getImageByMediaId(mediaId);
-    if (!image) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Image not found.");
-    }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, image, "Image found.");
-  }
-
-  private async deleteImageByMediaId(mediaId: string): Promise<Result<null>> {
-    const imageResult: Result<WhatsappImageData> = await this.getImageByMediaId(mediaId);
-    if (imageResult.isFailure()) {
-      return imageResult;
-    }
-
-    const deleteImageResult: boolean = await whatsappRepository.deleteImageByMediaId(mediaId);
-    if (!deleteImageResult) {
-      throw new Error("deleteImageByMediaId failed to delete");
-    }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.NO_CONTENT, null, "Image successfully deleted.");
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_1 }, 'Step 1');
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_2 }, 'Step 2');
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_3 }, 'Step 3');
   }
 
   public async sendOTP(to: string, otp: string): Promise<void> {

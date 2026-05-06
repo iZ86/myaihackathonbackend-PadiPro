@@ -159,10 +159,3 @@ export interface SendReplyResponse {
   contacts: { input: string; wa_id: string }[];
   messages: { id: string }[];
 }
-
-//additional interface for firebase storage logic
-export interface WhatsappImageData extends IImageMessage {
-  storage_path: string;
-  download_url: string;
-  created_at: string;
-}
