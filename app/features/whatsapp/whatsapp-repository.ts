@@ -5,16 +5,6 @@ import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface IWhatsappRepository {
-  saveImage(
-    mobile_no: string,
-    buffer: Buffer,
-    meta: {
-      mediaId: string;
-      mimeType: string;
-      caption?: string;
-      sha256?: string;
-    },
-  ): Promise<boolean>;
   deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
@@ -60,59 +50,6 @@ class WhatsappRepository implements IWhatsappRepository {
     }
   }
 
-  public async saveImage(
-    mobile_no: string,
-    buffer: Buffer,
-    meta: {
-      mediaId: string;
-      mimeType: string;
-      caption?: string;
-      sha256?: string;
-    },
-  ): Promise<boolean> {
-    try {
-      //upload img to firebase storage
-      const ext = this.extFromMime(meta.mimeType);
-      const storagePath = `images/${mobile_no}/${meta.mediaId}${ext}`;
-      const file = this.bucket.file(storagePath);
-
-      await file.save(buffer, {
-        metadata: {
-          contentType: meta.mimeType,
-          metadata: { mobile_no, media_id: meta.mediaId },
-        },
-      });
-
-      await file.makePublic();
-      const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
-
-      //save img data to firestore
-      const docRef = db.collection(this.collection).doc();
-
-      const data = {
-        from: mobile_no,
-        mediaId: meta.mediaId,
-        mimeType: meta.mimeType,
-        storage_path: storagePath,
-        download_url,
-        created_at: new Date().toISOString(),
-        ...(meta.caption !== undefined && { caption: meta.caption }),
-        ...(meta.sha256 !== undefined && { sha256: meta.sha256 }),
-      };
-
-      await docRef.create(data);
-
-      // console.log(`[WhatsappRepository] image saved → ${storagePath}`);
-      return true;
-    } catch (error: any) {
-      if (error.code === 6) {
-        console.warn(`[WhatsappRepository] image already exists for mediaId: ${meta.mediaId}`);
-        return false;
-      }
-      console.error('Firestore/Storage Save Error:', error);
-      throw error;
-    }
-  }
 
   private extFromMime(mimeType: string): string {
     const map: Record<string, string> = {
