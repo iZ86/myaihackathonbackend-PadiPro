@@ -4,12 +4,19 @@ import { UserData } from '../user/user-model';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
-  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendReplyResponse
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse
 } from './whatsapp-model';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
 import { LocationTutorialImages, MediaData } from '../media/media-model';
 import mediaService from '../media/media-service';
+import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
+
+interface Timeline {
+  day: string;
+  solution: string;
+  description: string;
+}
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -31,7 +38,7 @@ export class ReplyService {
     return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
   }
 
-  private async post(payload: SendTextPayload | SendImagePayload | SendAudioPayload | SendVideoPayload): Promise<SendReplyResponse> {
+  private async post(payload: SendTextPayload | SendImagePayload | SendAudioPayload | SendVideoPayload | SendDocPayload): Promise<SendReplyResponse> {
     const res = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
@@ -42,6 +49,29 @@ export class ReplyService {
     });
     if (!res.ok) throw new Error(`Reply failed (${res.status}): ${await res.text()}`);
     return res.json() as Promise<SendReplyResponse>;
+  }
+
+  async uploadMedia(
+    buffer: Buffer,
+    options?: { filename?: string; mimeType?: string },
+  ): Promise<string> {
+    const url = `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/media`;
+    const formData = new FormData();
+    const blob = new Blob([new Uint8Array(buffer)], { type: options?.mimeType ?? 'application/octet-stream' });
+    formData.append('file', blob, options?.filename ?? 'upload');
+    formData.append('messaging_product', 'whatsapp');
+ 
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}`,
+      },
+      body: formData,
+    });
+    if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`);
+ 
+    const data = await res.json() as { id: string };
+    return data.id;
   }
 
   async sendText(
@@ -111,6 +141,33 @@ export class ReplyService {
       to,
       type: 'video',
       video,
+    };
+    return this.post(payload);
+  }
+
+  async sendDoc(
+    to: string,
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    options?: { caption?: string; filename?: string },
+  ): Promise<SendReplyResponse> {
+    const document =
+      'mediaId' in source && source.mediaId
+        ? {
+            id: source.mediaId,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          }
+        : {
+            link: source.link!,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          };
+    const payload: SendDocPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'document',
+      document,
     };
     return this.post(payload);
   }
@@ -225,8 +282,13 @@ export class WhatsappService {
     const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
 
     if (handleTextResult.isSuccess()) {
-      const replyText: string = handleTextResult.getData();
-      await this.reply.sendText(msg.from, replyText);
+      // const replyText: string = handleTextResult.getData();
+      // await this.reply.sendText(msg.from, replyText);
+
+      const json = JSON.parse(handleTextResult.getData());
+      const doc = await this.generateDocuments(json);
+      const mediaId = await this.reply.uploadMedia(doc);
+      await this.reply.sendDoc(msg.from, {mediaId: mediaId})
     }
   }
 
@@ -351,6 +413,152 @@ export class WhatsappService {
   public async sendOTP(to: string, otp: string): Promise<void> {
     await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
   }
+
+  private cleanText(str: string): string {
+    return str.replace(/\[\.\.\.]\(asc_slot:\/\/[^)]+\)/g, "").trim();
+  }
+
+  private cleanTimeline(timeline: Timeline[]): Timeline[] {
+    return timeline.map((item) => ({
+      day: this.cleanText(item.day ?? ""),
+      solution: this.cleanText(item.solution ?? ""),
+      description: this.cleanText(item.description ?? ""),
+    }));
+  }
+
+  public buildChildren(timeline: Timeline[]): Paragraph[] {
+    const children: Paragraph[] = [];
+  
+    // Title
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [
+          new TextRun({ text: "Timeline for Solution", bold: true }),
+        ],
+        spacing: { after: 320 },
+      })
+    );
+  
+    // Group entries by day label, preserving insertion order
+    const groups = new Map<string, Timeline[]>();
+    for (const item of timeline) {
+      if (!groups.has(item.day)) groups.set(item.day, []);
+      groups.get(item.day)!.push(item);
+    }
+  
+    for (const [day, entries] of groups) {
+      // Day heading
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun({ text: day, bold: true })],
+          spacing: { before: 360, after: 120 },
+          border: {
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 4,
+              color: "2E75B6",
+              space: 1,
+            },
+          },
+        })
+      );
+  
+      entries.forEach((entry, i) => {
+        // Step number + solution
+        children.push(
+          new Paragraph({
+            spacing: { before: 160, after: 60 },
+            children: [
+              new TextRun({
+                text: `Step ${i + 1}: `,
+                bold: true,
+                size: 24,
+                color: "2E75B6",
+              }),
+              new TextRun({ text: entry.solution, size: 24 }),
+            ],
+          })
+        );
+  
+        // Description — indented, italic
+        children.push(
+          new Paragraph({
+            spacing: { before: 0, after: 160 },
+            indent: { left: 480 },
+            children: [
+              new TextRun({ text: "→ ", bold: true, color: "888888", size: 22 }),
+              new TextRun({
+                text: entry.description,
+                italics: true,
+                color: "555555",
+                size: 22,
+              }),
+            ],
+          })
+        );
+      });
+    }
+  
+    return children;
+  }
+
+  public async generateDocuments(
+    timeline: Timeline[]
+  ): Promise<Buffer> {
+    const clean = this.cleanTimeline(timeline);
+    const children = this.buildChildren(clean);
+  
+    const doc = new Document({
+      styles: {
+        default: {
+          document: { run: { font: "Arial", size: 24 } },
+        },
+        paragraphStyles: [
+          {
+            id: "Heading1",
+            name: "Heading 1",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: { size: 36, bold: true, font: "Arial", color: "1F3864" },
+            paragraph: {
+              spacing: { before: 0, after: 240 },
+              outlineLevel: 0,
+            },
+          },
+          {
+            id: "Heading2",
+            name: "Heading 2",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: { size: 28, bold: true, font: "Arial", color: "2E75B6" },
+            paragraph: {
+              spacing: { before: 240, after: 120 },
+              outlineLevel: 1,
+            },
+          },
+        ],
+      },
+      sections: [
+        {
+          properties: {
+            page: {
+              size: { width: 12240, height: 15840 },
+              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+            },
+          },
+          children,
+        },
+      ],
+    });
+  
+    return Packer.toBuffer(doc);
+  }
 }
+
+
 
 export default new WhatsappService();
