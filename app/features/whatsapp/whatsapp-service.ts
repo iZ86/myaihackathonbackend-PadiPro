@@ -285,7 +285,8 @@ export class WhatsappService {
       // const replyText: string = handleTextResult.getData();
       // await this.reply.sendText(msg.from, replyText);
 
-      const json = JSON.parse(handleTextResult.getData());
+      const cleaned = this.cleanPrefix(handleTextResult.getData());
+      const json = JSON.parse(cleaned);
       const doc = await this.generateDocuments(json);
       const mediaId = await this.reply.uploadMedia(doc);
       await this.reply.sendDoc(msg.from, {mediaId: mediaId})
@@ -414,15 +415,20 @@ export class WhatsappService {
     await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
   }
 
-  private cleanText(str: string): string {
+  private cleanInternalTag(str: string): string {
     return str.replace(/\[\.\.\.]\(asc_slot:\/\/[^)]+\)/g, "").trim();
+  }
+
+  private cleanPrefix(input: string): string {
+    const start = input.indexOf("{");
+    return input.slice(start);
   }
 
   private cleanTimeline(timeline: Timeline[]): Timeline[] {
     return timeline.map((item) => ({
-      day: this.cleanText(item.day ?? ""),
-      solution: this.cleanText(item.solution ?? ""),
-      description: this.cleanText(item.description ?? ""),
+      day: this.cleanInternalTag(item.day ?? ""),
+      solution: this.cleanInternalTag(item.solution ?? ""),
+      description: this.cleanInternalTag(item.description ?? ""),
     }));
   }
 
