@@ -243,35 +243,6 @@ export class WhatsappService {
     }
   }
 
-  private async syncUserWeather(mobile_no: string): Promise<undefined> {
-
-    const getWeatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
-
-    if (getWeatherResult.isSuccess()) {
-
-      const updateWeatherResult: Result<WeatherData> = await weatherService.updateWeather(mobile_no);
-
-      if (updateWeatherResult.isFailure() &&
-        ((updateWeatherResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.NOT_FOUND && updateWeatherResult.getMessage() !== "User location is not set.") ||
-          (updateWeatherResult.getStatusCode() !== ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS))) {
-
-        throw new Error(`handleText had issue with updateWeather: ${updateWeatherResult.getMessage()}`);
-      }
-
-
-    } else if (getWeatherResult.isFailure() && getWeatherResult.getMessage() === "User weather not found.") {
-
-      const saveWeatherResult: Result<WeatherData> = await weatherService.saveWeather(mobile_no);
-
-      if (saveWeatherResult.isFailure() && saveWeatherResult.getMessage() !== "User location is not set.") {
-        throw new Error(`handleText had issue with saveWeather: ${saveWeatherResult.getMessage()}`);
-      }
-
-    } else {
-      throw new Error("handleText failed to get weather.");
-    }
-  }
-
   private async generateWeatherQuery(mobile_no: string): Promise<string> {
 
     const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
