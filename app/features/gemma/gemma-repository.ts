@@ -3,19 +3,16 @@ import { db } from "../../database/db-connection";
 import { ChatHistory } from "./gemma-model";
 
 interface IGemmaRepository {
-  getChatHistory(mobile_no: string): Promise<ChatHistory[] | undefined>;
-  // saveGemma(mobile_no: string, data: GemmaData) : Promise<string|undefined>;
+  getChatHistory(mobile_no: string, type: string): Promise<ChatHistory[] | undefined>;
+  saveChatHistory(mobile_no: string, type: string, data: ChatHistory) : Promise<string|undefined>;
   // updateGemma(mobile_no: string, data: Partial<GemmaData>): Promise<string | undefined>;
 }
 
 class GemmaRepository implements IGemmaRepository {
 
-  public async getChatHistory(mobile_no: string): Promise<ChatHistory[] | undefined> {
+  public async getChatHistory(mobile_no: string, type: string): Promise<ChatHistory[] | undefined> {
     try {
-      const snapshot = await db.collection('chat_history')
-        .where('from', '==', mobile_no)
-        .get();
-
+      const snapshot = await db.collection('chat_history').doc(type).collection(mobile_no).orderBy('created_at', 'desc').get();
       if (snapshot.empty) return [];
 
       return snapshot.docs.map((doc) => ({
@@ -28,12 +25,12 @@ class GemmaRepository implements IGemmaRepository {
     }
   }
 
-  public async saveChatHistory(mobile_no: string, data: ChatHistory): Promise<string | undefined> {
+  public async saveChatHistory(mobile_no: string, type: string, data: ChatHistory): Promise<string | undefined> {
     try {
-      const docRef = db.collection('chat_history').doc();
+      const docRef = db.collection('chat_history').doc(type).collection(mobile_no).doc();
       await docRef.create({
         ...data,
-        from: mobile_no
+        created_at: new Date(),
       });
 
       return mobile_no;
