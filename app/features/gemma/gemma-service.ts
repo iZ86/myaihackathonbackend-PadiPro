@@ -60,10 +60,15 @@ class GemmaService implements IGemmaService {
       }
     };
 
-    const session = ai.createSession({
-      sessionId: input.mobile_no,
-      store: store
-    });
+    let session;
+    try {
+      session = await ai.loadSession(input.mobile_no, { store });
+    } catch {
+      session = ai.createSession({
+        sessionId: input.mobile_no,
+        store
+      });
+    }
 
     const chat = session.chat();
     const { output } = await chat.send({
