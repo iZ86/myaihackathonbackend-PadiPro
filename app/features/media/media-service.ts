@@ -8,6 +8,7 @@ import crypto from 'crypto';
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
   deleteMediaByMediaName(mediaName: string): Promise<Result<null>>;
+  saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageFile(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
 
@@ -77,6 +78,19 @@ class MediaService implements IMediaService {
       'audio/mpeg': '.mp3'
     };
     return map[mimeType] ?? '';
+  }
+
+  public async saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+    const saveImageResult: boolean = await mediaRepository.saveMediaMetaData(imageName, mimeType, storagePath, downloadUrl, mobile_no, caption, sha256);
+    if (!saveImageResult) {
+      throw new Error("saveImageMetaData failed to save image.");
+    }
+
+    const savedImage: Result<MediaData> = await this.getMediaMetaDataByMediaName(imageName);
+    if (savedImage.isFailure()) {
+      throw new Error("savedImageMetaData failed to get saved image.");
+    }
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedImage.getData(), "Image metadata saved.");
   }
 
   public async saveImageFile(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>> {
