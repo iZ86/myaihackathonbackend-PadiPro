@@ -4,6 +4,7 @@ import { MediaData, MediaFileData } from "./media-model";
 import mediaRepository from "./media-repository";
 import * as admin from 'firebase-admin';
 import crypto from 'crypto';
+import { ImageOutputDetection } from "../gemini/gemini-model";
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -17,6 +18,7 @@ interface IMediaService {
   saveAudio(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  updateImageOrVideoDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<Result<MediaData>>;
 }
 
 
@@ -290,6 +292,36 @@ class MediaService implements IMediaService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Audio file saved.");
+  }
+
+  public async updateImageOrVideoDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<Result<MediaData>> {
+    const mediaResult: Result<MediaData> = await this.getMediaMetaDataByMediaName(mediaName);
+
+    if (mediaResult.isFailure()) {
+      return mediaResult;
+    }
+    
+    const media: MediaData = mediaResult.getData();
+
+    const mimeType: string = media.mimeType;
+    const ext: string = this.extFromMime(mimeType);
+
+    if (!(ext === '.jpg' || ext === '.png' || ext === '.webp' || ext === '.mp4')) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.UNPROCESSABLE_CONTENT, "Media to be updated must be either .jpg, .png, .webp, or .mp4.");
+    }
+
+    const updateResult: boolean = await mediaRepository.updateImageDiagnosis(mediaName, detections);
+    if (!updateResult) {
+      throw new Error("updateMediaDiagnosis failed to update.");
+    }
+
+    const updatedMedia: Result<MediaData> = await this.getMediaMetaDataByMediaName(mediaName);
+
+    if (updatedMedia.isFailure()) {
+      throw new Error('updateMediaDiagnosis failed to get updated data.');
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedMedia.getData(), "Updated media diagnosis.");
   }
 }
 
