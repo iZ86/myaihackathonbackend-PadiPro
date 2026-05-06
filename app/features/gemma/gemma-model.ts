@@ -18,9 +18,13 @@ export const ChatOutputSchema = z.object({
   vertexOutput: z.string().describe("Status code to determine next course of action"),
 });
 
-export const ChatHistorySchema = MessageSchema;
+export const ChatHistorySchema = z.object({
+  content: ChatOutputSchema,
+  role: z.enum(["model", "tool", "editor", "user", "system"]),
+  timestamp: z.string(),
+});
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 export type ChatHistory = z.infer<typeof ChatHistorySchema>;
-export type ChatHistoryRaw = SessionData<any>; // Have to use this one, Genkit doesn't have their own schema for some reason
+export type Message = z.infer<typeof MessageSchema>;

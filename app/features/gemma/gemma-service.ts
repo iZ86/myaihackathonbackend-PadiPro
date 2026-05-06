@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { genkit, SessionStore } from "genkit/beta";
+import { MessageSchema } from "genkit/model";
 import { googleAI } from "@genkit-ai/google-genai";
-import { ChatInputSchema, ChatOutputSchema, ChatOutput, ChatHistory, ChatInput, } from "./gemma-model";
+import { ChatInputSchema, ChatOutputSchema, ChatOutput, ChatInput, Message } from "./gemma-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { geminiServiceConfig } from "../../config/config";
@@ -43,19 +44,37 @@ class GemmaService implements IGemmaService {
     const store: SessionStore<any> = {
       get: async (id) => {
         const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
-        console.log("[Gemma] History Data: ", history);
+        const formattedHistory: Message[] = history.slice(-15).map((msg) => ({
+          role: msg.role === "editor" ? "model" : msg.role, 
+          content: [
+            { 
+              text: msg.content.reply,
+              metadata: {
+                vertexOutput: msg.content.vertexOutput,
+                prompt: msg.content.prompt
+              }
+            }
+          ],
+          timestamp: msg.timestamp,
+        }));
+
         return {
           id,
           state: null,
           threads: { 
-            main: history.slice(-15) as ChatHistory[] 
+            main: formattedHistory,
           }
         };
       },
       save: async (id, data) => {
         const latest = data.threads?.main?.at(-1);
         if (latest) {
-          await gemmaRepository.saveChatHistory(id, "whatsapp", latest);
+          const chatHistory = {
+            content: JSON.parse(latest.content[0]?.text ?? ''),
+            role: latest.role,
+            timestamp: "",
+          }
+          await gemmaRepository.saveChatHistory(id, "whatsapp", chatHistory);
         }
       }
     };
