@@ -16,6 +16,8 @@ class UserRoute {
   initializeRoutes() {
     this.router.get("/", checkAuthTokenHeader, asyncHandler(this.controller.getUsers));
     this.router.get("/:mobile_no", checkAuthTokenHeader, userParamValidator, asyncHandler(this.controller.getUserByMobileNo));
+    this.router.get("/:mobile_no/diagnosis/history", userParamValidator, asyncHandler(this.controller.getDiagnosisHistoryByMobileNo));
+
 
     this.router.post("/", checkAuthTokenHeader, createUserBodyValidator, asyncHandler(this.controller.createUser));
 

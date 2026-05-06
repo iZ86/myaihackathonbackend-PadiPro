@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
 import userService from "./user-service";
+import { MediaData } from "../media/media-model";
 
 export default class UserController {
 
@@ -55,4 +56,16 @@ export default class UserController {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
+
+  async getDiagnosisHistoryByMobileNo(req: Request, res: Response) {
+      const mobileNo: string = String(req.params.mobile_no);
+  
+      const result: Result<MediaData[]> = await userService.getDiagnosisHistoryByMobileNo(mobileNo);
+  
+      if (result.isSuccess()) {
+        return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+      } else if (result.isFailure()) {
+        return res.sendResponse(result.getStatusCode(), result.getMessage());
+      }
+    }
 }

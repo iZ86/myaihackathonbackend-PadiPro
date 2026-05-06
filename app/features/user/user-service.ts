@@ -4,11 +4,14 @@ import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
 import userRepository from "./user-repository";
 import { GeoPoint } from "firebase-admin/firestore";
+import { MediaData } from "../media/media-model";
+import mediaService from "../media/media-service";
 
 interface IUserService {
   getUsers(): Promise<Result<UserData[]>>;
   getUserByMobileNo(mobile_no: string): Promise<Result<UserData>>;
   createUser(mobile_no: string, name: string): Promise<Result<UserData>>;
+  getDiagnosisHistoryByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
 }
 
 class UserService implements IUserService {
@@ -67,6 +70,22 @@ class UserService implements IUserService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully updated.");
+  }
+
+  
+
+  public async getDiagnosisHistoryByMobileNo(mobile_no: string): Promise<Result<MediaData[]>> {
+    const userResult: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+    const imageAndVideosResult: Result<MediaData[]> = await mediaService.getImagesAndVideosMetaDataByMobileNo(mobile_no);
+
+    if (imageAndVideosResult.isFailure()) {
+      return imageAndVideosResult;
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageAndVideosResult.getData(), "Diagnosis history successfully retrieved.");
   }
 
 }
