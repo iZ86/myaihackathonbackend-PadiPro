@@ -1,7 +1,4 @@
-import * as admin from 'firebase-admin';
 import { db } from '../../database/db-connection';
-import { WhatsappImageData } from './whatsapp-model';
-import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface IWhatsappRepository {
