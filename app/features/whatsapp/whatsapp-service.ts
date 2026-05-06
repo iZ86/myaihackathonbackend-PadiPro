@@ -21,9 +21,6 @@ import mainService from '../main/main-service';
 import { LocationTutorialImages, MediaData } from '../media/media-model';
 import mediaService from '../media/media-service';
 
-// Testing to hold vertex sessions
-const userVertexSession: { [mobile_no: string]: string } = {};
-
 //downloading img sent by user and saved into buffer
 export class MediaService {
   async fetch(mediaId: string, url: string): Promise<Buffer> {
@@ -241,18 +238,6 @@ export class WhatsappService {
       const replyText: string = handleTextResult.getData();
       await this.reply.sendText(msg.from, replyText);
     }
-  }
-
-  private async getOrCreateVertexSession(mobile_no: string): Promise<string> {
-    return userVertexSession[mobile_no] ?? await (async () => {
-      const createVertexSessionResult: Result<VertexSessionInfoData> = await vertexService.createVertexSession();
-      if (createVertexSessionResult.isSuccess()) {
-        const vertexSession: VertexSessionInfoData = createVertexSessionResult.getData();
-        userVertexSession[mobile_no] = vertexSession.session;
-        return vertexSession.session;
-      }
-      throw new Error("handleText failed to create vertex session.");
-    })();
   }
 
   private async handleImage(msg: IImageMessage, user: UserData): Promise<void> {
