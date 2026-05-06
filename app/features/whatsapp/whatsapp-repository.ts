@@ -22,17 +22,6 @@ class WhatsappRepository implements IWhatsappRepository {
 
 
 
-  private extFromMime(mimeType: string): string {
-    const map: Record<string, string> = {
-      'image/jpeg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-      'image/gif': '.gif',
-      'video/mp4': '.mp4',
-    };
-    return map[mimeType] ?? '';
-  }
-
 
   public async generateAndStoreOTP(mobile_no: string): Promise<string> {
     const docRef = db.collection('OTP').doc(mobile_no);
