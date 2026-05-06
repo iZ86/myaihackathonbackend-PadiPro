@@ -1,5 +1,5 @@
 import { db } from '../../database/db-connection';
-import { MediaData } from './media-model';
+import { MediaData, LocationTutorialImages } from './media-model';
 import { ImageOutputDetection } from '../gemini/gemini-model';
 
 interface IMediaRepository {
@@ -8,6 +8,7 @@ interface IMediaRepository {
   updateImageDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
   deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
   saveMediaMetaData(imageName: string, mobile_no: string, mimeType: string, storagePath: string, downloadUrl: string, caption?: string, sha256?: string): Promise<boolean>;
+  getLocationTutorialImages(): Promise<LocationTutorialImages | undefined>;
 }
 
 
@@ -117,6 +118,20 @@ class MediaRepository implements IMediaRepository {
       return true;
     } catch (error) {
       throw new Error(`saveMedia repository error`, { cause: error });
+    }
+  }
+
+  
+  public async getLocationTutorialImages(): Promise<LocationTutorialImages | undefined> {
+    try {
+      const doc = await db.collection('tutorial').doc('location').get();
+      if (!doc.exists) {
+        return undefined;
+      }
+      const { step_1, step_2, step_3 } = doc.data() as LocationTutorialImages;
+      return { step_1, step_2, step_3 };
+    } catch (error) {
+      throw new Error(`getLocationTutorialImages repository error`, { cause: error });
     }
   }
 }
