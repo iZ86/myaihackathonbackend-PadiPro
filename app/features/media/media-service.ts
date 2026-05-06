@@ -1,6 +1,6 @@
 import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
-import { MediaData, MediaFileData } from "./media-model";
+import { LocationTutorialImages, MediaData, MediaFileData } from "./media-model";
 import mediaRepository from "./media-repository";
 import * as admin from 'firebase-admin';
 import crypto from 'crypto';
@@ -19,6 +19,7 @@ interface IMediaService {
   saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
   updateImageOrVideoDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<Result<MediaData>>;
+  getLocationTutorialImages(): Promise<Result<LocationTutorialImages>>;
 }
 
 
@@ -322,6 +323,18 @@ class MediaService implements IMediaService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedMedia.getData(), "Updated media diagnosis.");
+  }
+
+
+
+  public async getLocationTutorialImages(): Promise<Result<LocationTutorialImages>> {
+    const locationTutorialImages: LocationTutorialImages | undefined = await mediaRepository.getLocationTutorialImages();
+
+    if (!locationTutorialImages) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Location tutorial images not found.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, locationTutorialImages, "Location tutorial images found.");
   }
 }
 
