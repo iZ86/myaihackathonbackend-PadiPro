@@ -1,5 +1,6 @@
 import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import { speechConfig } from "../../config/config";
 import { db } from "../../database/db-connection";
 import { Storage } from '@google-cloud/storage';
 
@@ -13,7 +14,7 @@ class WebchatService implements IWebchatService {
 
   constructor() {
     this.storage = new Storage({
-      projectId: 'myai-hackathon-beta',
+      projectId: speechConfig.GOOGLE_CLOUD_PROJECT,
       // keyFilename: 'service-account.json',
     });
     this.bucket = this.storage.bucket('myai-hackathon-beta.firebasestorage.app');
