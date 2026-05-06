@@ -1,12 +1,17 @@
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
+import { MediaData } from "../media/media-model";
 import vertexService from "../vertex/vertex-service";
 import { VertexAnswerQueryData, VertexSessionInfoData } from "../vertex/vertex-model";
 import { WeatherData } from "../weather/weather-model";
 import weatherService from "../weather/weather-service";
+import { ImageOutput } from "../gemini/gemini-model";
+import geminiService from "../gemini/gemini-service";
+import mediaService from "../media/media-service";
 
 interface IMainService {
   handleText(mobile_no: string, text: string): Promise<Result<string>>;
+  handleImage(mobile_no: string, mediaName: string): Promise<Result<string>>;
 }
 
 // Testing to hold vertex sessions
@@ -35,6 +40,96 @@ class MainService implements IMainService {
     } else {
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, sendQueryVertex.answer.answerText, "handleText success.");
     }
+  }
+
+  public async handleImage(mobile_no: string, mediaName: string): Promise<Result<string>> {
+
+
+    const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
+    if (imageResult.isFailure()) {
+      throw new Error("handleImage failed to retrieve image.");
+    }
+
+    const image: MediaData = imageResult.getData();
+
+    const geminiImageResult: Result<ImageOutput> = await geminiService.image(image.download_url);
+    if (geminiImageResult.isFailure()) {
+
+      const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      if (deleteImageResult.isFailure()) {
+        throw new Error("handleImage delete image failed.");
+      }
+
+      if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
+
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, "We are currently experiencing high demand, please try again later.");
+
+      } else if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS && geminiImageResult.getMessage() === "Resource has been exhausted (e.g. check quota).") {
+
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, "You are sending images too frequently, please send again in 1 minute.");
+
+      }
+      throw Error(`handleImage error, gemini error code ${geminiImageResult.getStatusCode()}: ${geminiImageResult.getMessage()}`);
+    }
+
+    const imageOutput: ImageOutput = geminiImageResult.getData();
+
+    if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
+
+      const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      if (deleteImageResult.isFailure()) {
+        throw new Error("handleImage delete image failed.");
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.", "handleImage success.");
+
+    } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
+
+      const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
+      if (!image.isFailure()) {
+        throw new Error("handleImage failed to update image dianogsis");
+      }
+
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "No visible signs of disease detected. The rice plants appear healthy based on this image.", "handleImage success.");
+
+    } else {
+
+      const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
+      if (!image.isFailure()) {
+        throw new Error("handleImage failed to update image dianogsis");
+      }
+
+
+      console.log(`[Whatsapp] Syncing weather status`);
+      await this.syncUserWeather(mobile_no);
+      console.log(`[Whatsapp] Weather status synced`);
+
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+      console.log(`[Vertex] Creating session`);
+      const session: string = await this.getOrCreateVertexSession(mobile_no);
+      console.log(`[Vertex] Session created`);
+
+      const defaultQuery: string = `What causes ${imageOutput.detections[0]?.disease}? Generate a 7-day plan to solve it in a farm. `;
+
+      console.log(`[Vertex] Sending response to Vertex`);
+      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(defaultQuery + weatherQuery, session);
+      console.log(`[Vertex] Response received`);
+
+      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+      if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
+        return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "I’m not confident in identifying this condition based on my current knowledge. Please provide more details.", "handleImage success.");
+      } else {
+
+        // Generate sendText response
+
+        return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, sendQueryVertex.answer.answerText, "handleImage success.");
+
+        // Generate sendImage response
+
+        // Generate sendDocument response
+      }
+    }
+
   }
 
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
