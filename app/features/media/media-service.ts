@@ -2,6 +2,7 @@ import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { MediaData } from "./media-model";
 import mediaRepository from "./media-repository";
+import * as admin from 'firebase-admin';
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -9,7 +10,8 @@ interface IMediaService {
 
 
 class MediaService implements IMediaService {
- 
+  private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
+
   public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>> {
     const media: MediaData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
     if (!media) {
