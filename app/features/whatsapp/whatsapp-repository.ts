@@ -11,8 +11,6 @@ interface IWhatsappRepository {
 }
 
 class WhatsappRepository implements IWhatsappRepository {
-  private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
-  private readonly collection = 'images';
 
 
 
