@@ -43,17 +43,21 @@ class GemmaService implements IGemmaService {
     console.log("[Gemma] Input entered:", input);
     const store = {
       get: async (id: string) => {
-        const history = await gemmaRepository.getChatHistory(id) ?? [];
+        const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
+        const contextMessages = history.slice(-15);
+        console.log(`[Gemma] Providing ${contextMessages.length} messages of context.`);
         return { 
           id: id,
-          messages: history 
+          messages: contextMessages
         };
       },
       save: async (mobile_no: string, data: any) => {
-        console.log("[Gemma] Saving into chat_history as document ID:", mobile_no);
+        console.log("[Gemma] Saving into chat_history for user:", mobile_no);
         const messages = (data && data.messages) ? data.messages : [];
-        const lastFive = messages.slice(-5);
-        await gemmaRepository.saveChatHistory(mobile_no, lastFive);
+        const latestMessage = messages[messages.length - 1];
+        if (latestMessage) {
+          await gemmaRepository.saveChatHistory(mobile_no, "whatsapp", latestMessage);
+        }
       }
     };
 
