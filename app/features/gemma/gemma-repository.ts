@@ -42,6 +42,7 @@ class GemmaRepository implements IGemmaRepository {
       const docRef = db.collection('chat_history').doc(type).collection(mobile_no).doc();
       await docRef.create({
         ...data,
+        timestamp: new Date(),
       });
 
       return mobile_no;

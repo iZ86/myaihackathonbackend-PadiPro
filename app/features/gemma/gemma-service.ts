@@ -43,6 +43,7 @@ class GemmaService implements IGemmaService {
     const store: SessionStore<any> = {
       get: async (id) => {
         const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
+        console.log("[Gemma] History Data: ", history);
         return {
           id,
           state: null,
