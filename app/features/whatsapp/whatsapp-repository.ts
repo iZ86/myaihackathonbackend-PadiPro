@@ -15,7 +15,6 @@ interface IWhatsappRepository {
       sha256?: string;
     },
   ): Promise<boolean>;
-  updateImageDiagnosis(media_id: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
   deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
@@ -31,35 +30,6 @@ class WhatsappRepository implements IWhatsappRepository {
 
 
 
-  public async updateImageDiagnosis(
-    media_id: string, 
-    detections: Array<ImageOutputDetection>,
-  ): Promise<boolean> {
-    try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaId', '==', media_id)
-        .limit(1)
-        .get();
-
-      if (snapshot.empty) {
-        console.warn(`No record found for media_id: ${media_id}`);
-        return false;
-      }
-
-      const doc = snapshot.docs[0];
-      if (!doc) return false;
-
-      await doc.ref.update({
-        detections: detections,
-        updatedAt: new Date().toISOString() 
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Update Diagnosis Error:', error);
-      throw error;
-    }
-  }
 
   public async deleteImageByMediaId(media_id: string): Promise<boolean> {
     try {
