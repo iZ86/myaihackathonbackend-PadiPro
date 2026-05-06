@@ -14,6 +14,7 @@ interface IMediaService {
   saveVideo(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoFile(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  saveAudio(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
@@ -222,6 +223,30 @@ class MediaService implements IMediaService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Video file saved.");
 
+  }
+
+  public async saveAudio(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+
+    const audioFileResult: Result<MediaFileData> = await this.saveAudioFile(audioName, mimeType, buffer, mobile_no);
+    if (audioFileResult.isFailure()) {
+      return audioFileResult;
+    }
+
+    const audioFile: MediaFileData = audioFileResult.getData();
+
+    try {
+      this.saveAudioMetaData(audioFile.mediaName, mimeType, audioFile.storage_path, audioFile.download_url, mobile_no, caption, sha256);
+    } catch (error) {
+      this.deleteMediaByMediaName(audioFile.mediaName);
+      throw new Error('saveAudio failed to save', { cause: error });
+    }
+
+    const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(audioFile.mediaName);
+    if (audioData.isFailure()) {
+      throw new Error('saveAudio failed to get saved audio.');
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Audio saved.");
   }
 
   public async saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
