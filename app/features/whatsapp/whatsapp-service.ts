@@ -243,45 +243,6 @@ export class WhatsappService {
     }
   }
 
-  private async generateWeatherQuery(mobile_no: string): Promise<string> {
-
-    const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
-
-    let weatherQuery: string = "";
-
-    if (weatherResult.isSuccess()) {
-      const weather: WeatherData = weatherResult.getData();
-      const condition = weather.weatherCondition?.replace(/_/g, " ").toLowerCase();
-      const temp = `${weather.temperature?.degrees}°${weather.temperature?.unit === "CELSIUS" ? "C" : "F"}`;
-      const feelsLike = weather.dewPoint ? `dew point ${weather.dewPoint.degrees}°C` : "";
-      const humidity = `humidity ${weather.relativeHumidity}%`;
-      const wind = `wind ${weather.wind?.speed?.value} ${weather.wind?.speed?.unit?.replace(/_/g, " ").toLowerCase()} from ${weather.wind?.direction?.cardinal?.replace(/_/g, " ")}`;
-      const gusts = weather.wind?.gust?.value ? `, gusting to ${weather.wind.gust.value} km/h` : "";
-      const cloud = `cloud cover ${weather.cloudCover}%`;
-      const rainChance = `${weather.precipitation?.probability?.percent}% chance of ${weather.precipitation?.probability?.type?.toLowerCase()}`;
-      const thunderChance = (weather.thunderstormProbability ? weather.thunderstormProbability > 0 : false) ? `, ${weather.thunderstormProbability}% chance of thunderstorms` : "";
-      const qpf = (weather.precipitation?.qpf.quantity ? weather.precipitation?.qpf?.quantity > 0 : false)
-        ? `, expected rainfall ${weather.precipitation?.qpf.quantity} ${weather.precipitation?.qpf.unit.toLowerCase()}`
-        : "";
-
-
-      weatherQuery =
-        "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
-        `\nCurrent weather conditions:` +
-        `\n- Condition: ${condition}` +
-        `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
-        `\n- Wind: ${wind}${gusts}` +
-        `\n- Sky: ${cloud}` +
-        `\n- Precipitation: ${rainChance}${thunderChance}${qpf}`;
-    } else if (weatherResult.isFailure() && weatherResult.getMessage() !== "User weather not found.") {
-      // If the weather is still not set by here. Means that the user has no location set.
-      // Hence, don't throw error unless its something else other than no user location set.
-      throw new Error(`handleText could not getWeather due to other reasons: ${weatherResult.getMessage()}`);
-    }
-
-    return weatherQuery;
-  }
-
   private async getOrCreateVertexSession(mobile_no: string): Promise<string> {
     return userVertexSession[mobile_no] ?? await (async () => {
       const createVertexSessionResult: Result<VertexSessionInfoData> = await vertexService.createVertexSession();
