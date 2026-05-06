@@ -329,12 +329,6 @@ export class WhatsappService {
     }
   }
 
-  public async getImagesbyMobileNo(mobile_no: string): Promise<Result<WhatsappImageData[]>> {
-    const images: WhatsappImageData[] = await whatsappRepository.getImagesByMobileNo(mobile_no);
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, images, "Diagnosis history successfully retrieved.");
-  }
-
   private async sendIntroductionMessage(message: WhatsappMessage) {
     await this.reply.sendText(
       message.from,
