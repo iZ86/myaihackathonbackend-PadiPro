@@ -12,12 +12,25 @@ class GemmaRepository implements IGemmaRepository {
 
   public async getChatHistory(mobile_no: string, type: string): Promise<ChatHistory[] | undefined> {
     try {
-      const snapshot = await db.collection('chat_history').doc(type).collection(mobile_no).orderBy('timestamp', 'desc').get();
+      const snapshot = await db.collection('chat_history').doc(type).collection(mobile_no).orderBy('timestamp', 'asc').get();
       if (snapshot.empty) return [];
 
-      return snapshot.docs.map((doc) => ({
-        ...doc.data(),
-      })) as ChatHistory[];
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        
+        if (data.role === 'model' && typeof data.content[0]?.text === 'string') {
+          try {
+            // Only parse the reply not the entire JSON
+            const parsed = JSON.parse(data.content[0].text);
+            if (parsed.reply) {
+              data.content[0].text = parsed.reply;
+            }
+          } catch (e) {
+            // Don't transform data if not JSON  
+          }
+        }
+        return data as ChatHistory
+      });
     } catch (error) {
       console.error('Firestore Get Error:', error);
       throw error;
