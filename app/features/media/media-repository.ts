@@ -7,6 +7,7 @@ interface IMediaRepository {
   getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined>;
   updateImageDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
   deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
+  saveMediaMetaData(imageName: string, mobile_no: string, mimeType: string, storagePath: string, downloadUrl: string, caption?: string, sha256?: string): Promise<boolean>;
 }
 
 
@@ -91,6 +92,31 @@ class MediaRepository implements IMediaRepository {
       return true;
     } catch (error) {
       throw new Error(`deleteMediaByMediaName repository error`, { cause: error });
+    }
+  }
+
+  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<boolean> {
+    try {
+
+      //save img data to firestore
+      const docRef = db.collection(this.collection).doc();
+
+      const data = {
+        from: mobile_no,
+        mediaName: mediaName,
+        mimeType: mimeType,
+        storage_path: storagePath,
+        download_url: downloadUrl,
+        created_at: new Date().toISOString(),
+        caption: caption,
+        sha256: sha256,
+      };
+
+      await docRef.create(data);
+
+      return true;
+    } catch (error) {
+      throw new Error(`saveMedia repository error`, { cause: error });
     }
   }
 }
