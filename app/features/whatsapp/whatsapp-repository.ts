@@ -5,7 +5,6 @@ import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface IWhatsappRepository {
-  deleteImageByMediaId(media_id: string): Promise<boolean>;
 }
 
 interface LocationTutorialImages {
@@ -21,34 +20,6 @@ class WhatsappRepository implements IWhatsappRepository {
 
 
 
-  public async deleteImageByMediaId(media_id: string): Promise<boolean> {
-    try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaId', '==', media_id)
-        .limit(1)
-        .get();
-
-      if (snapshot.empty) return false;
-
-      const doc = snapshot.docs[0];
-      if (!doc) return false;
-
-      const data = doc.data();
-
-      // 1. Delete from Storage bucket
-      if (data.storage_path) {
-        const file = this.bucket.file(data.storage_path);
-        await file.delete();
-      }
-
-      // 2. Delete from Firestore
-      await doc.ref.delete();
-      return true;
-    } catch (error) {
-      console.error('Delete Error:', error);
-      throw error;
-    }
-  }
 
 
   private extFromMime(mimeType: string): string {
