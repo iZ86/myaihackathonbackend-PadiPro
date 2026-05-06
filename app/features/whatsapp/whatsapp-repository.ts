@@ -5,7 +5,6 @@ import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface IWhatsappRepository {
-  getImageByMediaId(media_id: string): Promise<WhatsappImageData | undefined>;
   saveImage(
     mobile_no: string,
     buffer: Buffer,
@@ -31,25 +30,6 @@ class WhatsappRepository implements IWhatsappRepository {
   private readonly collection = 'images';
 
 
-  //also for future
-  public async getImageByMediaId(media_id: string): Promise<WhatsappImageData | undefined> {
-    try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaId', '==', media_id)
-        .limit(1)
-        .get();
-
-      if (snapshot.empty) return undefined;
-
-      const doc = snapshot.docs[0];
-      if (!doc) return undefined;
-
-      return { id: doc.id, ...doc.data() } as unknown as WhatsappImageData;
-    } catch (error) {
-      console.error('Firestore Get Error:', error);
-      throw error;
-    }
-  }
 
   public async updateImageDiagnosis(
     media_id: string, 
