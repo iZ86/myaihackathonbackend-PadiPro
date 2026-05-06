@@ -43,16 +43,19 @@ class WebchatService implements IWebchatService {
     const uploadFileName = `${dir}/${Date.now()}-${fileName}`;
     const file = this.bucket.file(uploadFileName);
 
-    const [url] = await file.getSignedUrl({
-      version: 'v4',
-      action: 'write',
-      expires: Date.now() + 5 * 60 * 1000, // 5 min
-      contentType: contentType,
-    });
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, url, "Upload url created");
+    try {
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 5 * 60 * 1000, // 5 min
+        contentType: contentType,
+      });
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, url, "Upload url created");
+    } catch (error) {
+      console.error('Fetch Error:', error);
+      throw error;
+    }
   }
-
 }
 
 export default new WebchatService();
