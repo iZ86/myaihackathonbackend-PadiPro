@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { genkit } from "genkit/beta";
+import { genkit, SessionStore } from "genkit/beta";
 import { googleAI } from "@genkit-ai/google-genai";
 import { ChatInputSchema, ChatOutputSchema, ChatOutput, ChatHistory, ChatInput, } from "./gemma-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
@@ -40,23 +40,21 @@ class GemmaService implements IGemmaService {
   );
 
   public async chat(input: ChatInput): Promise<Result<ChatOutput>> {
-    const store = {
-      get: async (id: string) => {
+    const store: SessionStore<any> = {
+      get: async (id) => {
         const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
-        const contextMessages = history.slice(-15);
-        console.log(`[Gemma] Providing ${contextMessages.length} messages of context.`);
-        return { 
-          id: id,
-          messages: contextMessages
+        return {
+          id,
+          state: null,
+          threads: { 
+            main: history.slice(-15) as ChatHistory[] 
+          }
         };
       },
-      save: async (mobile_no: string, data: any) => {
-        console.log("[Gemma] Saving into chat_history for user:", mobile_no);
-        console.log("[Gemma] Saving data:", data);
-        const messages = (data && data.messages) ? data.messages : [];
-        const latestMessage = messages[messages.length - 1];
-        if (latestMessage) {
-          await gemmaRepository.saveChatHistory(mobile_no, "whatsapp", latestMessage);
+      save: async (id, data) => {
+        const latest = data.threads?.main?.at(-1);
+        if (latest) {
+          await gemmaRepository.saveChatHistory(id, "whatsapp", latest);
         }
       }
     };
