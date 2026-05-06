@@ -17,6 +17,7 @@ import {
 } from './whatsapp-model';
 import whatsappRepository from './whatsapp-repository';
 import whatsappConverter from './whatsapp-converter';
+import mainService from '../main/main-service';
 
 // Testing to hold vertex sessions
 const userVertexSession: { [mobile_no: string]: string } = {};
@@ -227,27 +228,16 @@ export class WhatsappService {
   }
 
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
-    const mobile_no: string = user.mobile_no;
-
-    await this.syncUserWeather(mobile_no);
-
-    const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
 
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
 
-    const session: string = await this.getOrCreateVertexSession(mobile_no);
+    const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
 
-
-    const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(msg.body + weatherQuery, session);
-
-
-    const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-    if (sendQueryVertex.answer.answerText === "A summary could not be generated for your search query. Here are some search results.") {
-      await this.reply.sendText(msg.from, "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?")
-    } else {
-      await this.reply.sendText(msg.from, sendQueryVertex.answer.answerText);
+    if (handleTextResult.isSuccess()) {
+      const replyText: string = handleTextResult.getData();
+      await this.reply.sendText(msg.from, replyText);
     }
   }
 
