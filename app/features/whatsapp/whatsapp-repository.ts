@@ -5,18 +5,10 @@ import { ImageOutputDetection } from '../gemini/gemini-model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface IWhatsappRepository {
-}
-
   
 }
 
 class WhatsappRepository implements IWhatsappRepository {
-
-
-
-
-
-
 
   public async generateAndStoreOTP(mobile_no: string): Promise<string> {
     const docRef = db.collection('OTP').doc(mobile_no);
