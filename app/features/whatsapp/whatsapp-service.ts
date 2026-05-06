@@ -18,7 +18,7 @@ import {
 import whatsappRepository from './whatsapp-repository';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
-import { MediaData } from '../media/media-model';
+import { LocationTutorialImages, MediaData } from '../media/media-model';
 import mediaService from '../media/media-service';
 
 // Testing to hold vertex sessions
@@ -435,15 +435,16 @@ export class WhatsappService {
   }
 
   private async sendLocationInstructionMessage(to: string): Promise<void> {
-    const images = await whatsappRepository.getLocationTutorialImages();
-    if (!images) {
-      console.warn('[sendLocationInstruction] no tutorial images found');
-      return;
+    const locationTutorialImagesResult: Result<LocationTutorialImages> = await mediaService.getLocationTutorialImages();
+    if (locationTutorialImagesResult.isFailure()) {
+      throw new Error(`sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`);
     }
+
+    const locationTutorialImages: LocationTutorialImages = locationTutorialImagesResult.getData();
     await this.reply.sendText(to, "Before we start, please set up your location by following the steps below:");
-    await this.reply.sendImage(to, { link: images.step_1 }, 'Step 1');
-    await this.reply.sendImage(to, { link: images.step_2 }, 'Step 2');
-    await this.reply.sendImage(to, { link: images.step_3 }, 'Step 3');
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_1 }, 'Step 1');
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_2 }, 'Step 2');
+    await this.reply.sendImage(to, { link: locationTutorialImages.step_3 }, 'Step 3');
   }
 
   private async getImageByMediaId(mediaId: string): Promise<Result<WhatsappImageData>> {
