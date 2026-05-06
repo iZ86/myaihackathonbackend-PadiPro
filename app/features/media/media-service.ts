@@ -11,6 +11,7 @@ interface IMediaService {
   saveImage(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageFile(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveVideoFile(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
 
@@ -148,6 +149,20 @@ class MediaService implements IMediaService {
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Image file saved.");
 
+  }
+
+  public async saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+    const saveVideoResult: boolean = await mediaRepository.saveMediaMetaData(videoName, mimeType, storagePath, downloadUrl, mobile_no, caption, sha256);
+    if (!saveVideoResult) {
+      throw new Error("saveVideoMetaData failed to save video.");
+    }
+
+    const savedVideo: Result<MediaData> = await this.getMediaMetaDataByMediaName(videoName);
+    if (savedVideo.isFailure()) {
+      throw new Error("savedVideoMetaData failed to get saved video.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedVideo.getData(), "Video metadata saved.");
   }
 
   public async saveVideoFile(videoName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>> {
