@@ -8,6 +8,7 @@ import crypto from 'crypto';
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
   deleteMediaByMediaName(mediaName: string): Promise<Result<null>>;
+  saveImage(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveImageFile(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
 }
@@ -78,6 +79,30 @@ class MediaService implements IMediaService {
       'audio/mpeg': '.mp3'
     };
     return map[mimeType] ?? '';
+  }
+
+  public async saveImage(imageName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+
+    const imageFileResult: Result<MediaFileData> = await this.saveImageFile(imageName, mimeType, buffer, mobile_no);
+    if (imageFileResult.isFailure()) {
+      return imageFileResult;
+    }
+
+    const imageFile: MediaFileData = imageFileResult.getData();
+
+    try {
+      await this.saveImageMetaData(imageFile.mediaName, mimeType, imageFile.storage_path, imageFile.download_url, mobile_no, caption, sha256);
+    } catch (error) {
+      this.deleteMediaByMediaName(imageFile.mediaName);
+      throw new Error('saveImage failed to save', { cause: error });
+    }
+
+    const imageData: Result<MediaData> = await this.getMediaMetaDataByMediaName(imageFile.mediaName);
+    if (imageData.isFailure()) {
+      throw new Error('saveImage failed to get saved image.');
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, imageData.getData(), "Image saved.");
   }
 
   public async saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
