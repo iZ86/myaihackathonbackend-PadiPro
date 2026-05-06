@@ -5,6 +5,8 @@ import mediaRepository from "./media-repository";
 import * as admin from 'firebase-admin';
 import crypto from 'crypto';
 import { ImageOutputDetection } from "../gemini/gemini-model";
+import userService from "../user/user-service";
+import { UserData } from "../user/user-model";
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -20,6 +22,7 @@ interface IMediaService {
   saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
   updateImageOrVideoDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<Result<MediaData>>;
   getLocationTutorialImages(): Promise<Result<LocationTutorialImages>>;
+  getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
 }
 
 
@@ -175,7 +178,7 @@ class MediaService implements IMediaService {
       this.deleteMediaByMediaName(videoFile.mediaName);
       throw new Error('saveVideo failed to save', { cause: error });
     }
-    
+
     const videoData: Result<MediaData> = await this.getMediaMetaDataByMediaName(videoFile.mediaName);
     if (videoData.isFailure()) {
       throw new Error('saveVideo failed to get saved video.');
@@ -335,6 +338,18 @@ class MediaService implements IMediaService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, locationTutorialImages, "Location tutorial images found.");
+  }
+
+  public async getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<Result<MediaData[]>> {
+
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const imageAndVideos: MediaData[] = await mediaRepository.getImagesAndVideosMetaDataByMobileNo(mobile_no);
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageAndVideos, "Diagnosis history successfully retrieved.");
   }
 }
 
