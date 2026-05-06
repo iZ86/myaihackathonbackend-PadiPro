@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
 import whatsappService from './whatsapp-service';
-import { RawWebhookBody, WhatsappImageData } from './whatsapp-model';
+import { RawWebhookBody } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 import whatsappRepository from './whatsapp-repository';
