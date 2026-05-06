@@ -9,6 +9,12 @@ export interface MediaData {
   sha256?: string,
 }
 
+export interface MediaFileData {
+  mediaName: string,
+  storage_path: string,
+  download_url: string
+}
+
 export interface LocationTutorialImages {
   step_1: string;
   step_2: string;
