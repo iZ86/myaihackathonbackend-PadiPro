@@ -49,18 +49,6 @@ export class WhatsappController {
     }
   }
 
-  async getImagesByMobileNo(req: Request, res: Response) {
-    const mobileNo: string = String(req.params.mobile_no);
-
-    const result: Result<WhatsappImageData[]> = await whatsappService.getImagesbyMobileNo(mobileNo);
-
-    if (result.isSuccess()) {
-      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
-    } else if (result.isFailure()) {
-      return res.sendResponse(result.getStatusCode(), result.getMessage());
-    }
-  }
-
   async generateOTP(req: Request, res: Response): Promise<void> {
     try {
       const { mobile_no } = req.body;
