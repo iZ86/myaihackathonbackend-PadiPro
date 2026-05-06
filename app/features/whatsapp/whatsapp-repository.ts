@@ -7,10 +7,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 interface IWhatsappRepository {
 }
 
-interface LocationTutorialImages {
-  step_1: string;
-  step_2: string;
-  step_3: string;
+  
 }
 
 class WhatsappRepository implements IWhatsappRepository {
