@@ -1,10 +1,12 @@
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { MediaData } from "../media/media-model";
+import { UserData } from "../user/user-model";
 import vertexService from "../vertex/vertex-service";
 import { VertexAnswerQueryData, VertexSessionInfoData } from "../vertex/vertex-model";
 import { WeatherData } from "../weather/weather-model";
 import weatherService from "../weather/weather-service";
+import userService from "../user/user-service";
 import { ImageOutput } from "../gemini/gemini-model";
 import geminiService from "../gemini/gemini-service";
 import mediaService from "../media/media-service";
@@ -13,6 +15,7 @@ interface IMainService {
   handleText(mobile_no: string, text: string): Promise<Result<string>>;
   handleImage(mobile_no: string, mediaName: string): Promise<Result<string>>;
   handleVideo(mobile_no: string, mediaName: string): Promise<Result<string>>;
+  handleLocation(mobile_no: string, latitude: number, longitude: number): Promise<Result<UserData>>;
 }
 
 // Testing to hold vertex sessions
@@ -217,6 +220,23 @@ class MainService implements IMainService {
       }
     }
 
+  }
+
+
+  public async handleLocation(mobile_no: string, latitude: number, longitude: number): Promise<Result<UserData>> {
+
+
+    const userResult: Result<UserData> = await userService.updateUserCoordsByMobileNo(latitude, longitude, mobile_no);
+    if (userResult.isFailure()) {
+      return Result.fail(userResult.getStatusCode(), userResult.getMessage());
+    }
+
+    const user: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+    if (user.isFailure()) {
+      return Result.fail(user.getStatusCode(), user.getMessage());
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "handleLocation success.");
   }
 
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
