@@ -1,3 +1,4 @@
+import * as admin from "firebase-admin";
 import { db } from "../../database/db-connection";
 import { ChatHistory } from "./chat-model";
 
@@ -33,7 +34,7 @@ class ChatRepository implements IChatRepository {
       const docRef = db.collection("chat_history").doc(type.toLowerCase()).collection(mobile_no).doc();
       await docRef.create({
         ...data,
-        timestamp: new Date(),
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       return mobile_no;
