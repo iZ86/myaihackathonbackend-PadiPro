@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Result } from "../../../libs/Result";
 import whatsappService from './whatsapp-service';
-import { RawWebhookBody } from './whatsapp-model';
+import { OTPExpiresAtData, RawWebhookBody } from './whatsapp-model';
 import userService from '../user/user-service';
 import { UserData } from '../user/user-model';
 import whatsappRepository from './whatsapp-repository';
@@ -49,7 +49,7 @@ export class WhatsappController {
 
     const { mobile_no } = req.body;
 
-    const result: Result<null> = await whatsappService.generateOTP(mobile_no);
+    const result: Result<OTPExpiresAtData> = await whatsappService.generateOTP(mobile_no);
 
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());

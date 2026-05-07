@@ -5,7 +5,8 @@ import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
   SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse, Timeline,
-  OTPData
+  OTPData,
+  OTPExpiresAtData
 } from './whatsapp-model';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
@@ -423,7 +424,7 @@ export class WhatsappService {
     await this.reply.sendImage(to, { link: locationTutorialImages.step_3 }, 'Step 3');
   }
 
-  public async generateOTP(mobile_no: string): Promise<Result<null>> {
+  public async generateOTP(mobile_no: string): Promise<Result<OTPExpiresAtData>> {
 
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
@@ -444,9 +445,17 @@ export class WhatsappService {
     if (generatedOTPResult.isFailure()) {
       throw new Error("generateOTP failed to get generated OTP.");
     }
+
+    const generatedOTP: OTPData = generatedOTPResult.getData();
+
     await this.reply.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, `OTP has been sent to ${mobile_no}`);
+    const otpExpiresAt: OTPExpiresAtData = {
+      expires_at: generatedOTP.expires_at
+    }
+
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otpExpiresAt, `OTP has been sent to ${mobile_no}`);
   }
 
   private async getOTPByMobileNo(mobile_no: string): Promise<Result<OTPData>> {
