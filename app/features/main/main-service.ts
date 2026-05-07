@@ -89,7 +89,7 @@ class MainService implements IMainService {
     } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
-      if (!image.isFailure()) {
+      if (image.isFailure()) {
         throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
@@ -98,7 +98,7 @@ class MainService implements IMainService {
     } else {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
-      if (!image.isFailure()) {
+      if (image.isFailure()) {
         throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
