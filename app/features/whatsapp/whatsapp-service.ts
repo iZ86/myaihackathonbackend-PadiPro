@@ -268,30 +268,27 @@ export class WhatsappService {
   }
 
   private async handleText(msg: ITextMessage, user: UserData): Promise<void> {
+    console.log('start handling texzt');
 
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
 
     const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
+    console.log('finish querying');
 
     if (handleTextResult.isSuccess()) {
-      // const replyText: string = handleTextResult.getData();
-      // await this.reply.sendText(msg.from, replyText);
+      const replyText: string = handleTextResult.getData();
+      await this.reply.sendText(msg.from, replyText);
 
-      console.log(handleTextResult.getData);
-      const cleaned = this.cleanPrefix(handleTextResult.getData());
-      console.log(cleaned);
-      const json = JSON.parse(cleaned);
-      console.log(json);
-      const doc = await this.generateDocuments(json);
-      console.log(doc);
-      const mediaId = await this.reply.uploadMedia(doc, {
-        filename: 'timeline.docx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      });
-      console.log(mediaId);
-      await this.reply.sendDoc(msg.from, {mediaId: mediaId});
+      // const cleaned = this.cleanPrefix(handleTextResult.getData());
+      // const json = JSON.parse(cleaned);
+      // const doc = await this.generateDocuments(json);
+      // const mediaId = await this.reply.uploadMedia(doc, {
+      //   filename: 'timeline.docx',
+      //   mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      // });
+      // await this.reply.sendDoc(msg.from, {mediaId: mediaId});
     }
   }
 
