@@ -286,7 +286,10 @@ export class WhatsappService {
       console.log(json);
       const doc = await this.generateDocuments(json);
       console.log(doc);
-      const mediaId = await this.reply.uploadMedia(doc);
+      const mediaId = await this.reply.uploadMedia(doc, {
+        filename: 'timeline.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
       console.log(mediaId);
       await this.reply.sendDoc(msg.from, {mediaId: mediaId});
     }
