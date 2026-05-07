@@ -16,7 +16,7 @@ class ChatRoute {
 
   initializeRoutes() {
     // Get request by Whatsapp to confirm if the server is able to receive messages
-    this.router.get("/", (req, res) => {
+    this.router.get("/whatsapp", (req, res) => {
       const { "hub.mode": mode, "hub.challenge": challenge, "hub.verify_token": token } = req.query;
 
       if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
