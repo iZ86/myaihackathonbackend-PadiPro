@@ -1,5 +1,6 @@
 import { db } from '../../database/db-connection';
 import { Timestamp } from 'firebase-admin/firestore';
+import { OTPData } from './whatsapp-model';
 
 interface IWhatsappRepository {
   
@@ -47,6 +48,23 @@ class WhatsappRepository implements IWhatsappRepository {
     await db.collection('OTP').doc(mobileNo).delete();
     return true;
   }
+
+  public async getOTPByMobileNo(mobile_no: string): Promise<OTPData | undefined> {
+    const snapshot = await db.collection(this.collection)
+    .where('mobile_no', '==', mobile_no).
+    limit(1)
+    .get();
+
+    if (snapshot.empty) return undefined;
+
+    const doc = snapshot.docs[0];
+    if (!doc) return undefined;
+
+    const otpData: OTPData = doc.data() as OTPData;
+
+    return otpData;
+  }
+
 }
 
 export default new WhatsappRepository();
