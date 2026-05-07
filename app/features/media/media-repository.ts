@@ -101,6 +101,8 @@ class MediaRepository implements IMediaRepository {
     storagePath: string,
     downloadUrl: string,
     mobile_no: string,
+    caption: string,
+    sha256: string,
   ): Promise<boolean> {
     try {
       //save img data to firestore

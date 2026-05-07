@@ -53,7 +53,7 @@ class MainService implements IMainService {
   public async handleImage(mobile_no: string, mediaName: string): Promise<Result<string>> {
     const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (imageResult.isFailure()) {
-      throw new Error("handleImage failed to retrieve image.");
+      throw new Error(`handleImage failed to retrieve image: ${imageResult.getMessage()}`);
     }
 
     const image: MediaData = imageResult.getData();
@@ -62,7 +62,7 @@ class MainService implements IMainService {
     if (geminiImageResult.isFailure()) {
       const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteImageResult.isFailure()) {
-        throw new Error("handleImage delete image failed.");
+        throw new Error(`handleImage delete image failed: ${deleteImageResult.isFailure()}`);
       }
 
       if (
@@ -93,7 +93,7 @@ class MainService implements IMainService {
     if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
       const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteImageResult.isFailure()) {
-        throw new Error("handleImage delete image failed.");
+        throw new Error(`handleImage delete image failed: ${deleteImageResult.getMessage()}`);
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
@@ -105,8 +105,8 @@ class MainService implements IMainService {
         mediaName,
         imageOutput.detections,
       );
-      if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+      if (image.isFailure()) {
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
       return Result.succeed(
@@ -119,8 +119,8 @@ class MainService implements IMainService {
         mediaName,
         imageOutput.detections,
       );
-      if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+      if (image.isFailure()) {
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
       console.log(`[Whatsapp] Syncing weather status`);
@@ -167,7 +167,7 @@ class MainService implements IMainService {
   public async handleVideo(mobile_no: string, mediaName: string): Promise<Result<string>> {
     const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (videoResult.isFailure()) {
-      throw new Error("handleVideo failed to retrieve video.");
+      throw new Error(`handleVideo failed to retrieve video: ${videoResult.getMessage()}`);
     }
 
     const video: MediaData = videoResult.getData();
@@ -176,7 +176,7 @@ class MainService implements IMainService {
     if (geminiImageResult.isFailure()) {
       const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteVideoResult.isFailure()) {
-        throw new Error("handleVideo delete video failed.");
+        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
       }
 
       if (
@@ -207,7 +207,7 @@ class MainService implements IMainService {
     if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
       const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteVideoResult.isFailure()) {
-        throw new Error("handleVideo delete video failed.");
+        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
@@ -219,8 +219,8 @@ class MainService implements IMainService {
         mediaName,
         imageOutput.detections,
       );
-      if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+      if (image.isFailure()) {
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
@@ -232,8 +232,8 @@ class MainService implements IMainService {
         mediaName,
         imageOutput.detections,
       );
-      if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+      if (image.isFailure()) {
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
       console.log(`[Whatsapp] Syncing weather status`);

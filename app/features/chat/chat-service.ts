@@ -256,7 +256,7 @@ class ChatService implements IChatService {
   ): Promise<Result<string>> {
     const mediaResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (mediaResult.isFailure()) {
-      throw new Error("handleMedia failed to retrieve media.");
+      throw new Error(`handleMedia failed to retrieve media: ${mediaResult.getMessage()}`);
     }
     const media: MediaData = mediaResult.getData();
 
@@ -264,7 +264,7 @@ class ChatService implements IChatService {
     if (geminiMediaResult.isFailure()) {
       const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteMediaResult.isFailure()) {
-        throw new Error("handleMedia delete media failed.");
+        throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
       }
 
       if (
@@ -294,7 +294,7 @@ class ChatService implements IChatService {
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
       const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteMediaResult.isFailure()) {
-        throw new Error("handleMedia delete media failed.");
+        throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
       }
       await this.sendText(
         mobile_no,
@@ -307,8 +307,8 @@ class ChatService implements IChatService {
         mediaName,
         mediaOutput.detections,
       );
-      if (!media.isFailure()) {
-        throw new Error("handleMedia failed to update media diagnosis");
+      if (media.isFailure()) {
+        throw new Error(`handleMedia failed to update media diagnosis: ${media.getMessage()}`);
       }
       await this.sendText(
         mobile_no,
@@ -320,8 +320,8 @@ class ChatService implements IChatService {
         mediaName,
         mediaOutput.detections,
       );
-      if (!media.isFailure() || !mediaOutput.detections[0]) {
-        throw new Error("handleMedia failed to update media diagnosis");
+      if (media.isFailure() || !mediaOutput.detections[0]) {
+        throw new Error(`handleMedia failed to update media diagnosis: ${media.getMessage()}`);
       }
       const diseaseName = mediaOutput.detections[0].disease;
       await this.sendText(

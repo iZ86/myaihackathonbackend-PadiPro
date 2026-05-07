@@ -22,16 +22,8 @@ import { LocationTutorialImages, MediaData } from "../media/media-model";
 import mediaService from "../media/media-service";
 import { ChatInput } from "../chat/chat-model";
 import chatService from "../chat/chat-service";
-import {
-  Document,
-  ImageRun,
-  Packer,
-  Paragraph,
-  HeadingLevel,
-  BorderStyle,
-  TextRun,
-} from "docx";
 import mainService from "../main/main-service";
+import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
 
 interface Timeline {
   day: string;
@@ -42,7 +34,6 @@ interface Timeline {
 export class WhatsappService {
   private readonly baseUrl = "https://graph.facebook.com";
   private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? "v25.0";
-
   //downloading img sent by user and saved into buffer
   async fetch(mediaId: string, url: string): Promise<Buffer> {
     const response = await fetch(url, {
@@ -53,11 +44,7 @@ export class WhatsappService {
   }
 
   // Parse raw message form Whatsapp to reusable format (WhatsappMessage)
-  parse(
-    rawMsg: RawMessage,
-    contact: RawContact | undefined,
-    meta: RawMetadata | undefined,
-  ): WhatsappMessage {
+  parse(rawMsg: RawMessage, contact: RawContact | undefined, meta: RawMetadata | undefined): WhatsappMessage {
     const base = {
       from: rawMsg.from,
       messageId: rawMsg.id,
@@ -118,9 +105,7 @@ export class WhatsappService {
         } satisfies ILocationMessage;
 
       default:
-        throw new Error(
-          `Unsupported message type: ${(rawMsg as RawMessage).type}`,
-        );
+        throw new Error(`Unsupported message type: ${(rawMsg as RawMessage).type}`);
     }
   }
 
@@ -129,12 +114,7 @@ export class WhatsappService {
     return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
   }
   private async post(
-    payload:
-      | SendTextPayload
-      | SendImagePayload
-      | SendAudioPayload
-      | SendVideoPayload
-      | SendDocPayload,
+    payload: SendTextPayload | SendImagePayload | SendAudioPayload | SendVideoPayload | SendDocPayload,
   ): Promise<SendReplyResponse> {
     const res = await fetch(this.endpoint, {
       method: "POST",
@@ -144,15 +124,11 @@ export class WhatsappService {
       },
       body: JSON.stringify(payload),
     });
-    if (!res.ok)
-      throw new Error(`Reply failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new Error(`Reply failed (${res.status}): ${await res.text()}`);
     return res.json() as Promise<SendReplyResponse>;
   }
 
-  async uploadMedia(
-    buffer: Buffer,
-    options?: { filename?: string; mimeType?: string },
-  ): Promise<string> {
+  async uploadMedia(buffer: Buffer, options?: { filename?: string; mimeType?: string }): Promise<string> {
     const url = `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/media`;
     const formData = new FormData();
     const blob = new Blob([new Uint8Array(buffer)], {
@@ -168,18 +144,13 @@ export class WhatsappService {
       },
       body: formData,
     });
-    if (!res.ok)
-      throw new Error(`Upload failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`);
 
     const data = (await res.json()) as { id: string };
     return data.id;
   }
 
-  async sendText(
-    to: string,
-    body: string,
-    previewUrl: boolean = false,
-  ): Promise<SendReplyResponse> {
+  async sendText(to: string, body: string, previewUrl: boolean = false): Promise<SendReplyResponse> {
     const payload: SendTextPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -192,9 +163,7 @@ export class WhatsappService {
 
   async sendImage(
     to: string,
-    source:
-      | { mediaId: string; link?: never }
-      | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
     caption?: string,
   ): Promise<SendReplyResponse> {
     const image =
@@ -214,14 +183,9 @@ export class WhatsappService {
 
   async sendAudio(
     to: string,
-    source:
-      | { mediaId: string; link?: never }
-      | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
   ): Promise<SendReplyResponse> {
-    const audio =
-      "mediaId" in source && source.mediaId
-        ? { id: source.mediaId }
-        : { link: source.link! };
+    const audio = "mediaId" in source && source.mediaId ? { id: source.mediaId } : { link: source.link! };
 
     const payload: SendAudioPayload = {
       messaging_product: "whatsapp",
@@ -235,9 +199,7 @@ export class WhatsappService {
 
   async sendVideo(
     to: string,
-    source:
-      | { mediaId: string; link?: never }
-      | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
     caption?: string,
   ): Promise<SendReplyResponse> {
     const video =
@@ -251,6 +213,33 @@ export class WhatsappService {
       to,
       type: "video",
       video,
+    };
+    return this.post(payload);
+  }
+
+  async sendDocument(
+    to: string,
+    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    options?: { caption?: string; filename?: string },
+  ): Promise<SendReplyResponse> {
+    const document =
+      "mediaId" in source && source.mediaId
+        ? {
+            id: source.mediaId,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          }
+        : {
+            link: source.link!,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          };
+    const payload: SendDocPayload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "document",
+      document,
     };
     return this.post(payload);
   }
@@ -285,18 +274,12 @@ export class WhatsappService {
           return this.handleLocation(message, user);
       }
     } catch (error) {
-      await this.sendText(
-        message.from,
-        "We seem to be having some issues, please try again in an hour or so.",
-      );
+      await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
       throw error;
     }
   }
 
-  private async handleText(
-    msg: ITextMessage,
-    user: UserData,
-  ): Promise<ChatInput | void> {
+  private async handleText(msg: ITextMessage, user: UserData): Promise<ChatInput | void> {
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
@@ -308,10 +291,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleImage(
-    msg: IImageMessage,
-    user: UserData,
-  ): Promise<ChatInput | void> {
+  private async handleImage(msg: IImageMessage, user: UserData): Promise<ChatInput | void> {
     if (msg.mediaId && msg.url) {
       console.log(`[Whatsapp] Detected message as: Image`);
 
@@ -328,14 +308,11 @@ export class WhatsappService {
       );
       console.log(`[Whatsapp] Saved image to Firestore and Storage`);
       if (saveImageResult.isFailure()) {
-        throw new Error(
-          `handleImage failed to saveImage: ${saveImageResult.getMessage()}`,
-        );
+        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
 
       const savedImage: MediaData = saveImageResult.getData();
-      const imageResult: Result<MediaData> =
-        await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
+      const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
       if (imageResult.isFailure()) {
         throw new Error("handleImage failed to retrieve image.");
       }
@@ -351,10 +328,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleAudio(
-    msg: IAudioMessage,
-    user: UserData,
-  ): Promise<ChatInput | void> {
+  private async handleAudio(msg: IAudioMessage, user: UserData): Promise<ChatInput | void> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleAudio URL invalid.");
     }
@@ -369,10 +343,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleVideo(
-    msg: IVideoMessage,
-    user: UserData,
-  ): Promise<ChatInput | void> {
+  private async handleVideo(msg: IVideoMessage, user: UserData): Promise<ChatInput | void> {
     if (msg.mediaId && msg.url) {
       console.log(`[Whatsapp] Detected message as: Video`);
 
@@ -390,14 +361,11 @@ export class WhatsappService {
       console.log(`[Whatsapp] Saved video to Firestore and Storage`);
 
       if (saveVideoResult.isFailure()) {
-        throw new Error(
-          `handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`,
-        );
+        throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
       }
 
       const savedVideo: MediaData = saveVideoResult.getData();
-      const imageResult: Result<MediaData> =
-        await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
+      const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
       if (imageResult.isFailure()) {
         throw new Error("handleVideo failed to retrieve video.");
       }
@@ -412,25 +380,19 @@ export class WhatsappService {
     }
   }
 
-  private async handleLocation(
-    msg: ILocationMessage,
-    user: UserData,
-  ): Promise<void> {
+  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
 
-    const handleLocationResult: Result<UserData> =
-      await chatService.handleLocation(
-        user.mobile_no,
-        msg.latitude,
-        msg.longitude,
-      );
+    const handleLocationResult: Result<UserData> = await chatService.handleLocation(
+      user.mobile_no,
+      msg.latitude,
+      msg.longitude,
+    );
 
     if (handleLocationResult.isFailure()) {
-      throw new Error(
-        `handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`,
-      );
+      throw new Error(`handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`);
     } else if (handleLocationResult.isSuccess()) {
       await this.sendText(msg.from, "Location updated successfully.");
     }
@@ -453,30 +415,20 @@ export class WhatsappService {
   }
 
   private async sendLocationInstructionMessage(to: string): Promise<void> {
-    const locationTutorialImagesResult: Result<LocationTutorialImages> =
-      await mediaService.getLocationTutorialImages();
+    const locationTutorialImagesResult: Result<LocationTutorialImages> = await mediaService.getLocationTutorialImages();
     if (locationTutorialImagesResult.isFailure()) {
-      throw new Error(
-        `sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`,
-      );
+      throw new Error(`sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`);
     }
 
-    const locationTutorialImages: LocationTutorialImages =
-      locationTutorialImagesResult.getData();
-    await this.sendText(
-      to,
-      "Before we start, please set up your location by following the steps below:",
-    );
+    const locationTutorialImages: LocationTutorialImages = locationTutorialImagesResult.getData();
+    await this.sendText(to, "Before we start, please set up your location by following the steps below:");
     await this.sendImage(to, { link: locationTutorialImages.step_1 }, "Step 1");
     await this.sendImage(to, { link: locationTutorialImages.step_2 }, "Step 2");
     await this.sendImage(to, { link: locationTutorialImages.step_3 }, "Step 3");
   }
 
   public async sendOTP(to: string, otp: string): Promise<void> {
-    await this.sendText(
-      to,
-      `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`,
-    );
+    await this.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
   }
 
   private cleanInternalTag(str: string): string {
@@ -484,8 +436,29 @@ export class WhatsappService {
   }
 
   private cleanPrefix(input: string): string {
-    const start = input.indexOf("{");
-    return input.slice(start);
+    const cleaned = input
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const start = cleaned.indexOf("[");
+
+    if (start === -1) {
+      throw new Error("No JSON array found");
+    }
+
+    let bracketCount = 0;
+
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === "[") bracketCount++;
+      if (cleaned[i] === "]") bracketCount--;
+
+      if (bracketCount === 0) {
+        return cleaned.slice(start, i + 1);
+      }
+    }
+
+    throw new Error("Incomplete JSON array");
   }
 
   private cleanTimeline(timeline: Timeline[]): Timeline[] {
@@ -496,7 +469,7 @@ export class WhatsappService {
     }));
   }
 
-  public buildChildren(timeline: Timeline[]): Paragraph[] {
+  private buildChildren(timeline: Timeline[]): Paragraph[] {
     const children: Paragraph[] = [];
 
     // Title
