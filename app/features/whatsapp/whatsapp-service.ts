@@ -370,12 +370,12 @@ export class WhatsappService {
         await this.sendText(
             message.from,
             `
-            Welcome to PadiPro! 🌾💪 
+            Welcome to PadiPro! 🌾💪
             \nI'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
             \nYou may respond by:
-            \n1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸 
-            \n2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬 
-            \n3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️ 
+            \n1. Uploading an image for us to diagnose and provide you with the recommended solution(s) 🌾 📸
+            \n2. Ask questions regarding rice plant diseases commonly found in Malaysia ❓ 💬
+            \n3. Send us your live location for us to determine the local weather and climate in future diagnostics 🌥️ 🌧️
             \nI'm able to respond to both text and image messages, now let's get started!
             `,
         );

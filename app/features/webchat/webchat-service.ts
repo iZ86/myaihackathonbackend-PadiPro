@@ -2,8 +2,8 @@ import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { firebaseConfig, firestoreConfig, speechConfig } from "../../config/config";
 import { Storage } from '@google-cloud/storage';
-import { ChatHistory } from "../gemma/gemma-model";
-import gemmaRepository from "../gemma/gemma-repository";
+import { ChatHistory } from "../chat/chat-model";
+import chatHistory from "../chat/chat-repository";
 import mainService from "../main/main-service";
 import { UserData } from "../user/user-model";
 
@@ -54,7 +54,7 @@ class WebchatService implements IWebchatService {
   }
 
   async getWebChatHistory(mobile_no: string): Promise<Result<ChatHistory[]>> {
-    const response = await gemmaRepository.getChatHistory(mobile_no, 'webchat') ?? [];
+    const response = await chatHistory.getChatHistory(mobile_no, 'webchat') ?? [];
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, response, "Successfully get web chat history");
   }

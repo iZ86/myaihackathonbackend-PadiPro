@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
 import webchatService from "./webchat-service";
-import { ChatHistory } from "../gemma/gemma-model";
+import { ChatHistory } from "../chat/chat-model";
 import { UserData } from "../user/user-model";
 
 
