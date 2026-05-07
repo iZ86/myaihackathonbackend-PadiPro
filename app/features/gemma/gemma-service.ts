@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { genkit } from "genkit/beta";
+import { genkit, SessionStore } from "genkit/beta";
+import { MessageSchema } from "genkit/model";
 import { googleAI } from "@genkit-ai/google-genai";
-import { ChatInputSchema, ChatOutputSchema, ChatOutput, ChatHistory, ChatInput, } from "./gemma-model";
+import { ChatInputSchema, ChatOutputSchema, ChatOutput, ChatInput, Message } from "./gemma-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { geminiServiceConfig } from "../../config/config";
@@ -40,36 +41,72 @@ class GemmaService implements IGemmaService {
   );
 
   public async chat(input: ChatInput): Promise<Result<ChatOutput>> {
-    const store = {
-      get: async (id: string) => {
+    const store: SessionStore<any> = {
+      get: async (id) => {
         const history = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
-        const contextMessages = history.slice(-15);
-        console.log(`[Gemma] Providing ${contextMessages.length} messages of context.`);
-        return { 
-          id: id,
-          messages: contextMessages
+        const formattedHistory: Message[] = history.slice(-15).map((msg) => ({
+          role: msg.role === "editor" ? "model" : msg.role, 
+          content: [
+            {
+              text: typeof msg.content === 'string'
+                ? msg.content
+                : typeof msg.content === 'object'
+                  ? msg.content.reply ?? JSON.stringify(msg.content)
+                  : String(msg.content),
+            }
+          ],
+          timestamp: msg.timestamp,
+        }));
+
+        return {
+          id,
+          state: null,
+          threads: { 
+            main: formattedHistory,
+          }
         };
       },
-      save: async (mobile_no: string, data: any) => {
-        console.log("[Gemma] Saving into chat_history for user:", mobile_no);
-        console.log("[Gemma] Saving data:", data);
-        const messages = (data && data.messages) ? data.messages : [];
-        const latestMessage = messages[messages.length - 1];
-        if (latestMessage) {
-          await gemmaRepository.saveChatHistory(mobile_no, "whatsapp", latestMessage);
+      save: async (id, data) => {
+        const thread = data.threads?.main ?? [];
+        const existing = await gemmaRepository.getChatHistory(id, "whatsapp") ?? [];
+        const newEntries = thread.slice(existing.length);
+        
+        for (const entry of newEntries) {
+          const text = entry.content[0]?.text ?? '';
+          
+          let content;
+          try {
+            const sanitized = text
+              .replace(/\r?\n/g, '\\n')
+              .replace(/\r/g, '\\r')
+              .trim();
+            content = JSON.parse(sanitized);
+          } catch {
+            content = { reply: text };
+          }
+
+          await gemmaRepository.saveChatHistory(id, "whatsapp", {
+            role: entry.role,
+            content,
+            timestamp: "",
+          });
         }
       }
-    };
+    }
 
-    const session = ai.createSession({
-      sessionId: input.mobile_no,
-      store: store
-    });
+    let session;
+    try {
+      session = await ai.loadSession(input.mobile_no, { store });
+    } catch {
+      session = ai.createSession({
+        sessionId: input.mobile_no,
+        store
+      });
+    }
 
     const chat = session.chat();
     const { output } = await chat.send({
-      prompt: `INSTRUCTION: Remember what users say. Always provide a reply and vertexOutput status code.
-                USER MESSAGE: ${input.message}`,
+      prompt: input.message,
       output: {
         schema: ChatOutputSchema
       }

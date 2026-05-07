@@ -4,7 +4,7 @@ import { ChatInput, ChatOutput } from "./gemma-model";
 import gemmaService from "./gemma-service";
 
 /** Handles HTTP requests and delegates to ChatService. */
-export default class GeminiController {
+export default class GemmaController {
   async chat(req: Request, res: Response) {
     const input: ChatInput = {
       mobile_no: req.body.mobile_no,

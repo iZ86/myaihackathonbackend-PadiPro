@@ -2,13 +2,13 @@ import { Router } from "express";
 import { expressHandler } from "@genkit-ai/express";
 import { asyncHandler } from "../../utils/utils";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
-import GeminiController from "./gemma-controller";
+import GemmaController from "./gemma-controller";
 import gemmaService from "./gemma-service";
 
 /** Routes for the Chat domain. */
 class GeminiRoute {
   router = Router();
-  controller = new GeminiController();
+  controller = new GemmaController();
 
   constructor() {
     this.initializeRoutes();
