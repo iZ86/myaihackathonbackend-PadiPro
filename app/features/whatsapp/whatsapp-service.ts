@@ -4,7 +4,8 @@ import { UserData } from '../user/user-model';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
-  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse, Timeline
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse, Timeline,
+  OTPData
 } from './whatsapp-model';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
@@ -13,7 +14,7 @@ import mediaService from '../media/media-service';
 import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
 import userService from '../user/user-service';
 import whatsappRepository from './whatsapp-repository';
-import { ENUM_STATUS_CODES_SUCCESS } from '../../../libs/status-codes-enum';
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from '../../../libs/status-codes-enum';
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -446,6 +447,21 @@ export class WhatsappService {
     await this.reply.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, `OTP has been sent to ${mobile_no}`);
+  }
+
+  private async getOTPByMobileNo(mobile_no: string): Promise<Result<OTPData>> {
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otp: OTPData | undefined = await whatsappRepository.getOTPByMobileNo(mobile_no);
+    if (!otp) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "OTP not found.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otp, "OTP retrieved.");
   }
 
   private cleanInternalTag(str: string): string {
