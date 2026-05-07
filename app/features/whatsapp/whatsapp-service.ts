@@ -11,6 +11,9 @@ import mainService from '../main/main-service';
 import { LocationTutorialImages, MediaData } from '../media/media-model';
 import mediaService from '../media/media-service';
 import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
+import userService from '../user/user-service';
+import whatsappRepository from './whatsapp-repository';
+import { ENUM_STATUS_CODES_SUCCESS } from '../../../libs/status-codes-enum';
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -421,6 +424,28 @@ export class WhatsappService {
 
   public async sendOTP(to: string, otp: string): Promise<void> {
     await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
+  }
+
+  public async generateOTP(mobile_no: string): Promise<Result<null>> {
+
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otp: string = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+
+    const saveOTPResult: boolean = await whatsappRepository.saveOTP(mobile_no, otp, expiresAt);
+    if (!saveOTPResult) {
+      throw new Error("OTP failed to be saved.");
+    }
+
+    await this.reply.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, `OTP has been sent to ${mobile_no}`);
   }
 
   private cleanInternalTag(str: string): string {
