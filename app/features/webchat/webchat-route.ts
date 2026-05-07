@@ -14,6 +14,7 @@ class WebchatRoute {
 
   initializeRoutes() {
     this.router.post("/upload/url", checkAuthTokenHeader, generateUploadUrlrBodyValidator, asyncHandler(this.controller.generateUploadUrl));
+    this.router.get("/history/:mobile_no", checkAuthTokenHeader, asyncHandler(this.controller.getWebchatHistory));
   }
 }
 
