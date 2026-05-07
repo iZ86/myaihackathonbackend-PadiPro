@@ -493,7 +493,7 @@ export class WhatsappService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
     }
 
-    if (otpData.OTP !== otp) {
+    if (otpData.otp !== otp) {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
     }
 

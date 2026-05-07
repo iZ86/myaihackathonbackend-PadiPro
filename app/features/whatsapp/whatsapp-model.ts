@@ -184,6 +184,6 @@ export interface OTPExpiresAtData {
 
 export interface OTPData extends OTPExpiresAtData {
   mobile_no: string;
-  OTP: string;
+  otp: string;
 }
 
