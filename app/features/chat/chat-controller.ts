@@ -1,0 +1,45 @@
+import { Request, Response } from "express";
+import { Result } from "../../../libs/Result";
+import { ChatInput, ChatOutput } from "./chat-model";
+import chatService from "./chat-service";
+import { RawWebhookBody } from "../whatsapp/whatsapp-model";
+
+/** Handles HTTP requests and delegates to ChatService. */
+export default class ChatController {
+    async chatWhatsapp(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
+        try {
+            // Act immediately — WhatsApp retries if no 200 within 20s
+            res.sendStatus(200);
+
+            const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+            if (!value?.messages?.length) return; // status update or empty ping
+
+            const result: Result<ChatOutput> = await chatService.chat(value);
+            if (result.isSuccess()) {
+                return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+            } else if (result.isFailure()) {
+                return res.sendResponse(result.getStatusCode(), result.getMessage());
+            }
+        } catch (err) {
+            console.error("[Whatsapp] Error reading message:", err);
+        }
+    }
+
+    // WIP
+    async chatWeb(req: Request, res: Response) {
+        const input: ChatInput = {
+            mobile_no: req.body.mobile_no,
+            message: req.body.message,
+            media_url: req.body.media_url,
+            created_by: req.body.created_by,
+        };
+
+        const result: Result<ChatOutput> = await chatService.chat(input);
+
+        if (result.isSuccess()) {
+            return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+        } else if (result.isFailure()) {
+            return res.sendResponse(result.getStatusCode(), result.getMessage());
+        }
+    }
+}

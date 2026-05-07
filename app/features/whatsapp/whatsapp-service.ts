@@ -252,18 +252,11 @@ export class WhatsappService {
             throw new Error("handleText does not have message.body");
         }
 
-        const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
-
-        if (handleTextResult.isSuccess()) {
-            const replyText: string = handleTextResult.getData();
-            await this.sendText(msg.from, replyText);
-
-            // const cleaned = this.cleanPrefix(handleTextResult.getData());
-            // const json = JSON.parse(cleaned);
-            // const doc = await this.generateDocuments(json);
-            // const mediaId = await this.reply.uploadMedia(doc);
-            // await this.reply.sendDoc(msg.from, {mediaId: mediaId})
-        }
+        return {
+            mobile_no: user.mobile_no,
+            created_by: "WHATSAPP",
+            message: msg.body,
+        };
     }
 
     private async handleImage(msg: IImageMessage, user: UserData): Promise<ChatInput | void> {
