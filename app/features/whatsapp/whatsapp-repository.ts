@@ -22,19 +22,6 @@ class WhatsappRepository implements IWhatsappRepository {
     return true;
   }
 
-  public async verifyOTP(mobileNo: string, inputOtp: string): Promise<boolean> {
-    const doc = await db.collection('OTP').doc(mobileNo).get();
-    if (!doc.exists) return false;
-
-    const { otp, expires_at } = doc.data()!;
-
-    if (expires_at.toDate() < new Date()) return false;
-    if (String(otp) !== String(inputOtp)) return false;
-
-    await db.collection('OTP').doc(mobileNo).delete();
-    return true;
-  }
-
   public async getOTPByMobileNo(mobile_no: string): Promise<OTPData | undefined> {
     const snapshot = await db.collection(this.collection)
     .where('mobile_no', '==', mobile_no).
