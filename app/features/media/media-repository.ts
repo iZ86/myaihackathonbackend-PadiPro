@@ -96,7 +96,7 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string): Promise<boolean> {
+  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption: string, sha256: string): Promise<boolean> {
     try {
 
       //save img data to firestore
