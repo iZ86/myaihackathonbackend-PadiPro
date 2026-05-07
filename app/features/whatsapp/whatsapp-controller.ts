@@ -1,88 +1,86 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
-import whatsappService from './whatsapp-service';
-import { RawWebhookBody } from './whatsapp-model';
-import userService from '../user/user-service';
-import { UserData } from '../user/user-model';
-import whatsappRepository from './whatsapp-repository';
+import whatsappService from "./whatsapp-service";
+import { RawWebhookBody } from "./whatsapp-model";
+import userService from "../user/user-service";
+import { UserData } from "../user/user-model";
+import whatsappRepository from "./whatsapp-repository";
 
 export class WhatsappController {
+    async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
+        try {
+            // Act immediately — WhatsApp retries if no 200 within 20s
+            res.sendStatus(200);
 
-  async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
-    try {
-      // Act immediately — WhatsApp retries if no 200 within 20s
-      res.sendStatus(200);
+            const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+            if (!value?.messages?.length) return; // status update or empty ping
 
-      const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-      if (!value?.messages?.length) return; // status update or empty ping
+            const rawMsg = value.messages[0];
+            const contact = value.contacts?.[0];
+            const meta = value.metadata;
 
-      const rawMsg = value.messages[0];
-      const contact = value.contacts?.[0];
-      const meta = value.metadata;
+            const message = whatsappService.parse(rawMsg!, contact, meta);
 
-      const message = whatsappService.parse(rawMsg!, contact, meta);
+            //check if user exist
+            if (contact && contact.wa_id) {
+                const mobile_no: string = contact.wa_id;
 
-      //check if user exist
-      if (contact && contact.wa_id) {
-        const mobile_no: string = contact.wa_id;
+                let newUser: boolean = false;
+                let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-        let newUser: boolean = false;
-        let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+                if (userResult.isFailure()) {
+                    userResult = await userService.createUser(contact.wa_id, contact.profile.name);
+                    newUser = true;
+                }
 
-        if (userResult.isFailure()) {
-          userResult = await userService.createUser(contact.wa_id, contact.profile.name);
-          newUser = true;
+                if (userResult.isSuccess()) {
+                    //call service logic
+
+                    const user: UserData = userResult.getData();
+                    let locationExist: boolean = !!user.coords;
+
+                    await whatsappService.handle(message, userResult.getData(), newUser, locationExist);
+                }
+            }
+        } catch (err) {
+            console.error("handleWebhook error:", err);
+        }
+    }
+
+    async generateOTP(req: Request, res: Response): Promise<void> {
+        try {
+            const { mobile_no } = req.body;
+
+            if (!mobile_no) {
+                res.status(400).json({ message: "mobile_no is required" });
+                return;
+            }
+
+            const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
+
+            await whatsappService.sendOTP(mobile_no, otp);
+
+            res.status(200).json({ message: "OTP generated" });
+            return;
+        } catch (error: any) {
+            console.error("GENERATE OTP ERROR:", error);
+            res.status(500).json({
+                message: error.message || "Failed to generate OTP",
+            });
+            return;
+        }
+    }
+
+    async verifyOTP(req: Request, res: Response): Promise<void> {
+        const { mobile_no, otp } = req.body;
+        if (!mobile_no || !otp) {
+            res.status(400).json({ message: "mobile_no and otp are required" });
+            return;
         }
 
-        if (userResult.isSuccess()) {
-          //call service logic
-
-          const user: UserData = userResult.getData();
-          let locationExist: boolean = !(!user.coords);
-
-          await whatsappService.handle(message, userResult.getData(), newUser, locationExist);
-        }
-
-      }
-    } catch (err) {
-      console.error('handleWebhook error:', err);
+        const valid = await whatsappRepository.verifyOTP(mobile_no, otp);
+        valid
+            ? res.status(200).json({ message: "OTP verified" })
+            : res.status(400).json({ message: "Invalid or expired OTP" });
     }
-  }
-
-  async generateOTP(req: Request, res: Response): Promise<void> {
-    try {
-      const { mobile_no } = req.body;
-
-      if (!mobile_no) {
-        res.status(400).json({ message: 'mobile_no is required' });
-        return;
-      }
-
-      const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
-
-      await whatsappService.sendOTP(mobile_no, otp);
-      
-      res.status(200).json({ message: 'OTP generated' });
-      return;
-    }catch(error: any) {
-      console.error("GENERATE OTP ERROR:", error);
-      res.status(500).json({
-        message: error.message || 'Failed to generate OTP'
-      });
-      return;
-    }
-  }
-
-  async verifyOTP(req: Request, res: Response): Promise<void> {
-    const { mobile_no, otp } = req.body;
-    if (!mobile_no || !otp) {
-      res.status(400).json({ message: 'mobile_no and otp are required' });
-      return;
-    }
-
-    const valid = await whatsappRepository.verifyOTP(mobile_no, otp);
-    valid
-      ? res.status(200).json({ message: 'OTP verified' })
-      : res.status(400).json({ message: 'Invalid or expired OTP' });
-  }
 }
