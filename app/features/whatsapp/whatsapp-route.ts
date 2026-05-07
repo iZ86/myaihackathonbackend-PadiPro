@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../utils/utils";
 import { WhatsappController } from './whatsapp-controller';
-import { generateOTPBodyValidator } from "./whatsapp-validator";
+import { generateOTPBodyValidator, verifyOTPBodyValidator } from "./whatsapp-validator";
 
 class WhatsappRoute {
     router = Router();
@@ -28,7 +28,7 @@ class WhatsappRoute {
 
         //OTP service 
         this.router.post('/otp/generate', generateOTPBodyValidator, this.controller.generateOTP.bind(this.controller));
-        this.router.post('/otp/verify', this.controller.verifyOTP.bind(this.controller));
+        this.router.post('/otp/verify', verifyOTPBodyValidator, this.controller.verifyOTP.bind(this.controller));
     }
 }
 
