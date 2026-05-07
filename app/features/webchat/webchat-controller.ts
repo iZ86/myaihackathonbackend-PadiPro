@@ -33,7 +33,7 @@ export default class WebchatController {
 
   async updateUserCoordsByMobileNo(req: Request, res: Response) {
     const mobile_no: string = String(req.params.mobile_no);
-    const lat: number = req.body.lang;
+    const lat: number = req.body.lat;
     const long: number = req.body.long;
 
     const result: Result<UserData> = await webchatService.updateUserCoordsByMobileNo(mobile_no, lat, long);
