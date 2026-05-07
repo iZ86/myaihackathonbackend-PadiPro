@@ -1,6 +1,6 @@
 import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
-import { speechConfig } from "../../config/config";
+import { firebaseConfig, firestoreConfig, speechConfig } from "../../config/config";
 import { Storage } from '@google-cloud/storage';
 import { ChatHistory } from "../gemma/gemma-model";
 import gemmaRepository from "../gemma/gemma-repository";
@@ -19,9 +19,9 @@ class WebchatService implements IWebchatService {
 
   constructor() {
     this.storage = new Storage({
-      projectId: speechConfig.GOOGLE_CLOUD_PROJECT,
+      projectId: firestoreConfig.PROJECT_ID,
     });
-    this.bucket = this.storage.bucket('myai-hackathon-beta.firebasestorage.app');
+    this.bucket = this.storage.bucket(firebaseConfig.BUCKET);
   }
 
   async generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>> {
