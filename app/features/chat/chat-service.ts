@@ -74,13 +74,6 @@ class ChatService implements IChatService {
         processedHistory.shift();
       }
 
-      const messages = processedHistory.map((item) => {
-        return {
-          role: (item.role === "user" ? "user" : "model") as "user" | "model",
-          content: [{ text: item.message ?? "" }],
-        };
-      });
-
       // System Prompt
       const systemPrompt = `
           Based on the chat history and newest message from the user, return the following in a contextual manner.
@@ -108,7 +101,7 @@ class ChatService implements IChatService {
       // Parse data into Gemini 3.1
       const { output } = await ai.generate({
         system: systemPrompt,
-        messages: messages,
+        messages: processedHistory,
         output: {
           schema: ChatFlowOutputSchema,
         },
@@ -173,14 +166,17 @@ class ChatService implements IChatService {
     const mediaName = media_name ?? "";
 
     // Save user message into chat history
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by.toLowerCase(), {
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, {
       role: "user",
       timestamp: "",
       message: message,
-      media_url: media_url,
+      media_url: media_url ?? "",
       media_name: media_name ?? "",
     });
     if (!saveChatHistoryResult) {
+      console.log("[Chat] Failed message", message);
+      console.log("[Chat] Failed media URL", media_url);
+      console.log("[Chat] Failed media name", media_name);
       throw Error(`Failed to save chat history.`);
     }
 
@@ -188,7 +184,7 @@ class ChatService implements IChatService {
     if (media_url && media_url != "") {
       const mediaResult: Result<string> = await this.handleMedia(mobile_no, mediaName, "WHATSAPP", message ?? "");
       if (mediaResult.isFailure()) {
-        this.sendText(mobile_no, created_by.toLowerCase(), mediaResult.getMessage());
+        this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return Result.fail(mediaResult.getStatusCode(), mediaResult.getMessage());
       }
     }
@@ -199,9 +195,9 @@ class ChatService implements IChatService {
       if (!output?.reply) {
         throw Error(`AI failed to generate a reply.`);
       }
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by.toLowerCase(), output);
+      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
       if (textResult.isFailure()) {
-        this.sendText(mobile_no, created_by.toLowerCase(), textResult.getMessage());
+        this.sendText(mobile_no, created_by, textResult.getMessage());
         return Result.fail(textResult.getStatusCode(), textResult.getMessage());
       }
     }
@@ -377,7 +373,7 @@ class ChatService implements IChatService {
       throw Error(`Failed to save chat history.`);
     }
 
-    if (type === "WHATSAPP") {
+    if (type.toUpperCase() === "WHATSAPP") {
       whatsappService.sendText(mobile_no, message);
     }
 
