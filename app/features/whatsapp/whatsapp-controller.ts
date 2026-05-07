@@ -57,17 +57,17 @@ export class WhatsappController {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
-  
-  async verifyOTP(req: Request, res: Response): Promise<void> {
-    const { mobile_no, otp } = req.body;
-    if (!mobile_no || !otp) {
-      res.status(400).json({ message: 'mobile_no and otp are required' });
-      return;
-    }
 
-    const valid = await whatsappRepository.verifyOTP(mobile_no, otp);
-    valid
-      ? res.status(200).json({ message: 'OTP verified' })
-      : res.status(400).json({ message: 'Invalid or expired OTP' });
+  async verifyOTP(req: Request, res: Response): Promise<void> {
+
+    const { mobile_no, otp } = req.body;
+
+    const result: Result<null> = await whatsappService.verifyOTP(mobile_no, otp);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
   }
 }
