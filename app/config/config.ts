@@ -8,7 +8,7 @@ export const serverConfig = {
 export const firestoreConfig = {
   DEV_MODE: process.env.FIRESTORE_DEV_MODE ?? 'PROD',
   EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST as string,
-  PROJECT_ID: process.env.FIRESTORE_PROJECT_ID as string,
+  PROJECT_ID: process.env.FIRESTORE_PROJECT_ID as string
 }
 
 export const geminiServiceConfig = {
@@ -32,3 +32,7 @@ export const vertexServiceConfig = {
 export const speechConfig = {
   GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT as string
 };
+
+export const firebaseConfig = {
+  BUCKET: process.env.FIREBASE_STORAGE_BUCKET as string
+}

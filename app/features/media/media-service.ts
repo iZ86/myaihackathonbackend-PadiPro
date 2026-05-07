@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { ImageOutputDetection } from "../gemini/gemini-model";
 import userService from "../user/user-service";
 import { UserData } from "../user/user-model";
+import { firebaseConfig } from "../../config/config";
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -27,7 +28,7 @@ interface IMediaService {
 
 
 class MediaService implements IMediaService {
-  private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
+  private readonly bucket = admin.storage().bucket(firebaseConfig.BUCKET);
   private readonly imageCollection: string = 'images';
   private readonly videoCollection: string = 'videos';
   private readonly audioCollection: string = 'audios';
@@ -120,7 +121,7 @@ class MediaService implements IMediaService {
   }
 
   public async saveImageMetaData(imageName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
-    const saveImageResult: boolean = await mediaRepository.saveMediaMetaData(imageName, mimeType, storagePath, downloadUrl, mobile_no, caption, sha256);
+    const saveImageResult: boolean = await mediaRepository.saveMediaMetaData(imageName, mimeType, storagePath, downloadUrl, mobile_no);
     if (!saveImageResult) {
       throw new Error("saveImageMetaData failed to save image.");
     }
@@ -188,7 +189,7 @@ class MediaService implements IMediaService {
   }
 
   public async saveVideoMetaData(videoName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
-    const saveVideoResult: boolean = await mediaRepository.saveMediaMetaData(videoName, mimeType, storagePath, downloadUrl, mobile_no, caption, sha256);
+    const saveVideoResult: boolean = await mediaRepository.saveMediaMetaData(videoName, mimeType, storagePath, downloadUrl, mobile_no);
     if (!saveVideoResult) {
       throw new Error("saveVideoMetaData failed to save video.");
     }
@@ -256,7 +257,7 @@ class MediaService implements IMediaService {
   }
 
   public async saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
-    const saveAudioResult: boolean = await mediaRepository.saveMediaMetaData(audioName, mimeType, storagePath, downloadUrl, mobile_no, caption, sha256);
+    const saveAudioResult: boolean = await mediaRepository.saveMediaMetaData(audioName, mimeType, storagePath, downloadUrl, mobile_no);
     if (!saveAudioResult) {
       throw new Error("saveAudio failed to save audio.");
     }
