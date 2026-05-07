@@ -177,8 +177,13 @@ export interface Timeline {
   description: string;
 }
 
-export interface OTPData {
-  mobile_no: string;
-  OTP: string;
+
+export interface OTPExpiresAtData {
   expires_at: string;
 }
+
+export interface OTPData extends OTPExpiresAtData {
+  mobile_no: string;
+  OTP: string;
+}
+
