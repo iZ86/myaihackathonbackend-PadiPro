@@ -1,14 +1,16 @@
 import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { speechConfig } from "../../config/config";
-import { db } from "../../database/db-connection";
 import { Storage } from '@google-cloud/storage';
 import { ChatHistory } from "../gemma/gemma-model";
 import gemmaRepository from "../gemma/gemma-repository";
+import mainService from "../main/main-service";
+import { UserData } from "../user/user-model";
 
 interface IWebchatService {
   generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>>;
   getWebChatHistory(mobile_no: string): Promise<Result<ChatHistory[]>>;
+  updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>>;
 }
 
 class WebchatService implements IWebchatService {
@@ -55,6 +57,15 @@ class WebchatService implements IWebchatService {
     const response = await gemmaRepository.getChatHistory(mobile_no, 'webchat') ?? [];
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, response, "Successfully get web chat history");
+  }
+
+  async updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>> {
+    const response: Result<UserData> = await mainService.handleLocation(mobile_no, lat, long);
+
+    if (response.isFailure()) {
+      throw new Error(`handleLocation failed to updateUserCoords ${response.getMessage()}`);
+    }
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, response.getData(), response.getMessage());
   }
 }
 

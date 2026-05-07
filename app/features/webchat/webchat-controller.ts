@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
 import webchatService from "./webchat-service";
 import { ChatHistory } from "../gemma/gemma-model";
+import { UserData } from "../user/user-model";
 
 
 export default class WebchatController {
@@ -22,6 +23,20 @@ export default class WebchatController {
     const mobile_no: string = String(req.params.mobile_no);
 
     const result: Result<ChatHistory[]> = await webchatService.getWebChatHistory(mobile_no);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
+
+  async updateUserCoordsByMobileNo(req: Request, res: Response) {
+    const mobile_no: string = String(req.params.mobile_no);
+    const lat: number = req.body.lang;
+    const long: number = req.body.long;
+
+    const result: Result<UserData> = await webchatService.updateUserCoordsByMobileNo(mobile_no, lat, long);
 
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
