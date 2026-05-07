@@ -16,14 +16,22 @@ class GeminiRoute {
 
   initializeRoutes() {
     // Might not need .bind
-    this.router.post("/", checkAuthTokenHeader, asyncHandler(this.controller.chat.bind(this.controller)));
+    this.router.post(
+      "/",
+      checkAuthTokenHeader,
+      asyncHandler(this.controller.chat.bind(this.controller)),
+    );
 
     // Genkit native route — exposes the flow directly (supports streaming via genkit/beta/client)
     this.router.post("/flow", expressHandler(geminiService.chatFlow));
-    
+
     // Additional routes for images (diagnosis of paddy plants)
-    this.router.post("/image/", checkAuthTokenHeader, asyncHandler(this.controller.image.bind(this.controller)));
-    this.router.post("/image/flow", expressHandler(geminiService.imageFlow));
+    this.router.post(
+      "/media/",
+      checkAuthTokenHeader,
+      asyncHandler(this.controller.media.bind(this.controller)),
+    );
+    this.router.post("/media/flow", expressHandler(geminiService.mediaFlow));
   }
 }
 

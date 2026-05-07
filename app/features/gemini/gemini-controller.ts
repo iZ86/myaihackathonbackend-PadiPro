@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
-import { ChatInput, ChatOutput, ImageInput, ImageOutput } from "./gemini-model";
+import { ChatInput, ChatOutput, MediaInput, MediaOutput } from "./gemini-model";
 import geminiService from "./gemini-service";
 
 /** Handles HTTP requests and delegates to ChatService. */
@@ -14,18 +14,26 @@ export default class GeminiController {
     const result: Result<ChatOutput> = await geminiService.chat(input);
 
     if (result.isSuccess()) {
-      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+      return res.sendResponse(
+        result.getStatusCode(),
+        result.getMessage(),
+        result.getData(),
+      );
     } else if (result.isFailure()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
 
-  async image(req: Request, res: Response) {
-    const image_url: string = req.body.image_url
-    const result: Result<ImageOutput> = await geminiService.image(image_url);
+  async media(req: Request, res: Response) {
+    const media_url: string = req.body.media_url;
+    const result: Result<MediaOutput> = await geminiService.media(media_url);
 
     if (result.isSuccess()) {
-      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+      return res.sendResponse(
+        result.getStatusCode(),
+        result.getMessage(),
+        result.getData(),
+      );
     } else if (result.isFailure()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage());
     }

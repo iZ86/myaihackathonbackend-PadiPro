@@ -7,7 +7,7 @@ export const ChatInputSchema = z.object({
       z.object({
         role: z.enum(["user", "model"]),
         content: z.string(),
-      })
+      }),
     )
     .optional(),
 });
@@ -16,26 +16,31 @@ export const ChatOutputSchema = z.object({
   reply: z.string(),
 });
 
-export const ImageInputSchema = z.object({
-  image_url: z
+export const MediaInputSchema = z.object({
+  media_url: z
     .string()
-    .describe("Base64 encoded string or URL of media")
-    .refine((val) => val.startsWith('http'), "Must be a valid Data URL or media link") // We'll be using the downloadable link in the firestore ya
+    .describe("Downloadable URL of media")
+    .refine(
+      (val) => val.startsWith("http"),
+      "Must be a valid Data URL or media link",
+    ), // We'll be using the downloadable link in the firestore ya
 });
 
-const ImageOutputDetectionSchema = z.object({
+const MediaOutputDetectionSchema = z.object({
   disease: z.string(),
   severity: z.number().min(0).max(1).describe("The severity score from 0 to 1"),
   score: z.number().min(0).max(1).describe("The confidence score of the model"),
 });
 
-export const ImageOutputSchema = z.object({
-  detections: z.array(ImageOutputDetectionSchema).describe("List of all detected diseases with metadata"),
+export const MediaOutputSchema = z.object({
+  detections: z
+    .array(MediaOutputDetectionSchema)
+    .describe("List of all detected diseases with metadata"),
   chart: z.string().describe("Base64 encoded PNG buffer").optional(),
 });
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
-export type ImageInput = z.infer<typeof ImageInputSchema>;
-export type ImageOutput = z.infer<typeof ImageOutputSchema>;
-export type ImageOutputDetection = z.infer<typeof ImageOutputDetectionSchema>;
+export type MediaInput = z.infer<typeof MediaInputSchema>;
+export type MediaOutput = z.infer<typeof MediaOutputSchema>;
+export type MediaOutputDetection = z.infer<typeof MediaOutputDetectionSchema>;

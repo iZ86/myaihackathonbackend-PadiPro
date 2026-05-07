@@ -1,8 +1,21 @@
 import "dotenv/config";
 import { genkit, GenkitError } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
-import { ChatInput, ChatInputSchema, ChatOutputSchema, ChatOutput, ImageInput, ImageOutput, ImageOutputDetection, ImageOutputSchema, ImageInputSchema } from "./gemini-model";
-import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import {
+  ChatInput,
+  ChatInputSchema,
+  ChatOutputSchema,
+  ChatOutput,
+  MediaInput,
+  MediaOutput,
+  MediaOutputDetection,
+  MediaOutputSchema,
+  MediaInputSchema,
+} from "./gemini-model";
+import {
+  ENUM_STATUS_CODES_FAILURE,
+  ENUM_STATUS_CODES_SUCCESS,
+} from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { geminiServiceConfig } from "../../config/config";
 import { ENUM_PADDY_DISEASE } from "./gemini-enums";
@@ -16,7 +29,7 @@ const ai = genkit({
 
 interface IGeminiService {
   chat(input: ChatInput): Promise<Result<ChatOutput>>;
-  image(image_url: string): Promise<Result<ImageOutput>>;
+  media(media_url: string): Promise<Result<MediaOutput>>;
 }
 
 class GeminiService implements IGeminiService {
@@ -37,26 +50,26 @@ class GeminiService implements IGeminiService {
 
       const { text } = await ai.generate({ messages });
       return { reply: text };
-    }
+    },
   );
 
-  public readonly imageFlow = ai.defineFlow(
+  public readonly mediaFlow = ai.defineFlow(
     {
-      name: "imageFlow",
-      inputSchema: ImageInputSchema,
-      outputSchema: ImageOutputSchema,
+      name: "MediaFlow",
+      inputSchema: MediaInputSchema,
+      outputSchema: MediaOutputSchema,
     },
-    async ({ image_url }) => {
+    async ({ media_url }) => {
       const diseaseList = Object.values(ENUM_PADDY_DISEASE)
-        .filter((v) => typeof v === 'string')
+        .filter((v) => typeof v === "string")
         .join(", ");
 
       const systemPrompt = `
         You are an expert in diagnosing paddy plant diseases. 
-        Analyze the image and provide a diagnosis based on these rules:
+        Analyze the Media and provide a diagnosis based on these rules:
 
         For disease:
-        - If the image is not a paddy plant: return "NOT DETECTED" with severity 0.
+        - If the Media is not a paddy plant: return "NOT DETECTED" with severity 0.
         - If the plant is healthy: return "HEALTHY" with severity 0.
         - If a disease is found: return the name from this list: [${diseaseList}].
 
@@ -70,30 +83,36 @@ class GeminiService implements IGeminiService {
         - Provide any disease found with a score of > 0.4, else you can skip adding them.
       `;
 
-      console.log(`[Gemini] Diagnosing image`);
-      const isVideo = image_url.endsWith('.mp4') || image_url.endsWith('.mov'); 
-      const contentType = isVideo ? "video/mp4" : "image/jpeg";
+      console.log(`[Gemini] Diagnosing Media`);
+      const isVideo = media_url.endsWith(".mp4") || media_url.endsWith(".mov");
+      const contentType = isVideo ? "video/mp4" : "Media/jpeg";
       const { output } = await ai.generate({
         system: systemPrompt,
         messages: [
           {
             role: "user",
             content: [
-              { text: "Analyze this image for paddy disease and estimate severity." },
-              { media: { url: image_url, contentType: contentType } },
+              {
+                text: "Analyze this Media for paddy disease and estimate severity.",
+              },
+              { media: { url: media_url, contentType: contentType } },
             ],
           },
         ],
         output: {
-          schema: ImageOutputSchema,
+          schema: MediaOutputSchema,
         },
       });
-      console.log(`[Gemini] Image diagnosis Complete`);
+      console.log(`[Gemini] Media diagnosis Complete`);
 
       console.log(`[Chartjs] Creating detections chart base64 string`);
-      let chart: string = '';
-      let disease: string = output?.detections[0]?.disease ?? '';
-      if (disease !== '' && disease !== 'NOT DETECTED' && disease !== 'HEALTHY') {
+      let chart: string = "";
+      let disease: string = output?.detections[0]?.disease ?? "";
+      if (
+        disease !== "" &&
+        disease !== "NOT DETECTED" &&
+        disease !== "HEALTHY"
+      ) {
         const detections = output?.detections ?? [];
         chart = await this.generateDetectionChart(detections);
       }
@@ -101,34 +120,47 @@ class GeminiService implements IGeminiService {
 
       return {
         detections: output?.detections ?? [],
-        chart: chart ?? '', 
+        chart: chart ?? "",
       };
-    }
+    },
   );
 
   public async chat(input: ChatInput): Promise<Result<ChatOutput>> {
     const output = await this.chatFlow(input);
 
     if (!output?.reply) {
-      return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to generate a reply.");
+      return Result.fail(
+        ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR,
+        "AI failed to generate a reply.",
+      );
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Chat response generated.");
+    return Result.succeed(
+      ENUM_STATUS_CODES_SUCCESS.OK,
+      output,
+      "Chat response generated.",
+    );
   }
 
-  public async image(image_url: string): Promise<Result<ImageOutput>> {
-
-    const input: ImageInput = {
-      image_url
+  public async media(media_url: string): Promise<Result<MediaOutput>> {
+    const input: MediaInput = {
+      media_url,
     };
 
     try {
-      const output = await this.imageFlow(input);
+      const output = await this.mediaFlow(input);
       if (!output.detections[0]?.disease) {
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the image.");
+        return Result.fail(
+          ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR,
+          "AI failed to read the Media.",
+        );
       }
 
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Diagnosis generated.");
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
+        output,
+        "Diagnosis generated.",
+      );
     } catch (error) {
       if (error instanceof GenkitError) {
         let errorMessage: string = error.message;
@@ -140,35 +172,48 @@ class GeminiService implements IGeminiService {
           }
         }
         if (error.code === 503) {
-          return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, errorMessage);
+          return Result.fail(
+            ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
+            errorMessage,
+          );
         } else if (error.code === 429) {
-          return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, errorMessage);
+          return Result.fail(
+            ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS,
+            errorMessage,
+          );
         }
       }
       throw error;
     }
   }
 
-  private async generateDetectionChart (detections: ImageOutputDetection[]): Promise<string> {
-    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 500, height: 250 });
+  private async generateDetectionChart(
+    detections: MediaOutputDetection[],
+  ): Promise<string> {
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({
+      width: 500,
+      height: 250,
+    });
     const configuration: ChartConfiguration = {
-      type: 'bar',
+      type: "bar",
       data: {
-        labels: detections.map(d => d.disease),
-        datasets: [{
-          label: 'Severity Level',
-          data: detections.map(d => d.severity),
-          backgroundColor: detections.map(d => {
-            if (d.severity <= 0.3) return '#FFEB3B';
-            if (d.severity <= 0.7) return '#FB8C00';
-            return '#F44336';
-          }),
-          barThickness: 20,
-          borderRadius: 4,
-        }]
+        labels: detections.map((d) => d.disease),
+        datasets: [
+          {
+            label: "Severity Level",
+            data: detections.map((d) => d.severity),
+            backgroundColor: detections.map((d) => {
+              if (d.severity <= 0.3) return "#FFEB3B";
+              if (d.severity <= 0.7) return "#FB8C00";
+              return "#F44336";
+            }),
+            barThickness: 20,
+            borderRadius: 4,
+          },
+        ],
       },
       options: {
-        indexAxis: 'y',
+        indexAxis: "y",
         responsive: false,
         scales: {
           x: {
@@ -176,51 +221,52 @@ class GeminiService implements IGeminiService {
             max: 1.0,
             title: {
               display: true,
-              text: 'Severity',
-              font: { size: 12, weight: 'bold' }
+              text: "Severity",
+              font: { size: 12, weight: "bold" },
             },
             grid: { display: false },
           },
           y: {
             grid: { display: false },
             ticks: {
-              font: { size: 11, weight: 'bold' },
-              color: '#333'
-            }
-          }
+              font: { size: 11, weight: "bold" },
+              color: "#333",
+            },
+          },
         },
         plugins: {
           legend: {
             display: true,
-            position: 'bottom',
+            position: "bottom",
             labels: {
               generateLabels: (chart) => [
-                { text: 'Mild (≤ 0.3)', fillStyle: '#FFEB3B' },
-                { text: 'Moderate (0.3 - 0.7)', fillStyle: '#FB8C00' },
-                { text: 'Severe (> 0.7)', fillStyle: '#F44336' }
-              ]
-            }
+                { text: "Mild (≤ 0.3)", fillStyle: "#FFEB3B" },
+                { text: "Moderate (0.3 - 0.7)", fillStyle: "#FB8C00" },
+                { text: "Severe (> 0.7)", fillStyle: "#F44336" },
+              ],
+            },
           },
           title: {
             display: true,
-            text: 'Disease Severity Analysis',
-            font: { size: 14 }
+            text: "Disease Severity Analysis",
+            font: { size: 14 },
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const val = context.parsed.x ?? 0;
-                let status = val <= 0.3 ? 'Mild' : val <= 0.7 ? 'Moderate' : 'Severe';
+                let status =
+                  val <= 0.3 ? "Mild" : val <= 0.7 ? "Moderate" : "Severe";
                 return ` Severity: ${val} (${status})`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
-    return buffer.toString('base64');
+    return buffer.toString("base64");
   }
 }
 
