@@ -15,7 +15,7 @@ class WebchatRoute {
   initializeRoutes() {
     this.router.post("/upload/url", checkAuthTokenHeader, generateUploadUrlrBodyValidator, asyncHandler(this.controller.generateUploadUrl));
     this.router.get("/history/:mobile_no", checkAuthTokenHeader, asyncHandler(this.controller.getWebchatHistory));
-    this.router.post("/location/:mobile_no", checkAuthTokenHeader, updateUserCoordsByMobileNoBodyValidator, asyncHandler(this.controller.updateUserCoordsByMobileNo));
+    this.router.patch("/location/:mobile_no", checkAuthTokenHeader, updateUserCoordsByMobileNoBodyValidator, asyncHandler(this.controller.updateUserCoordsByMobileNo));
   }
 }
 
