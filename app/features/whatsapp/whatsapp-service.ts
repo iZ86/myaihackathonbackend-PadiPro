@@ -4,19 +4,13 @@ import { UserData } from '../user/user-model';
 import {
   WhatsappMessage, ITextMessage, IImageMessage, IAudioMessage, IVideoMessage, ILocationMessage,
   RawMessage, RawContact, RawMetadata,
-  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse
+  SendTextPayload, SendImagePayload, SendAudioPayload, SendVideoPayload, SendDocPayload, SendReplyResponse, Timeline
 } from './whatsapp-model';
 import whatsappConverter from './whatsapp-converter';
 import mainService from '../main/main-service';
 import { LocationTutorialImages, MediaData } from '../media/media-model';
 import mediaService from '../media/media-service';
 import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
-
-interface Timeline {
-  day: string;
-  solution: string;
-  description: string;
-}
 
 //downloading img sent by user and saved into buffer
 export class MediaService {
@@ -282,14 +276,19 @@ export class WhatsappService {
     const handleTextResult: Result<string> = await mainService.handleText(user.mobile_no, msg.body);
 
     if (handleTextResult.isSuccess()) {
-      const replyText: string = handleTextResult.getData();
-      await this.reply.sendText(msg.from, replyText);
+      // const replyText: string = handleTextResult.getData();
+      // await this.reply.sendText(msg.from, replyText);
 
-      // const cleaned = this.cleanPrefix(handleTextResult.getData());
-      // const json = JSON.parse(cleaned);
-      // const doc = await this.generateDocuments(json);
-      // const mediaId = await this.reply.uploadMedia(doc);
-      // await this.reply.sendDoc(msg.from, {mediaId: mediaId})
+      console.log(handleTextResult.getData);
+      const cleaned = this.cleanPrefix(handleTextResult.getData());
+      console.log(cleaned);
+      const json = JSON.parse(cleaned);
+      console.log(json);
+      const doc = await this.generateDocuments(json);
+      console.log(doc);
+      const mediaId = await this.reply.uploadMedia(doc);
+      console.log(mediaId);
+      await this.reply.sendDoc(msg.from, {mediaId: mediaId});
     }
   }
 
@@ -420,8 +419,29 @@ export class WhatsappService {
   }
 
   private cleanPrefix(input: string): string {
-    const start = input.indexOf("{");
-    return input.slice(start);
+    const cleaned = input
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const start = cleaned.indexOf("[");
+
+    if (start === -1) {
+      throw new Error("No JSON array found");
+    }
+
+    let bracketCount = 0;
+
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === "[") bracketCount++;
+      if (cleaned[i] === "]") bracketCount--;
+
+      if (bracketCount === 0) {
+        return cleaned.slice(start, i + 1);
+      }
+    }
+
+    throw new Error("Incomplete JSON array");
   }
 
   private cleanTimeline(timeline: Timeline[]): Timeline[] {
