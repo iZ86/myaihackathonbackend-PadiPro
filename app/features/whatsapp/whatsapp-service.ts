@@ -440,6 +440,10 @@ export class WhatsappService {
       throw new Error("OTP failed to be saved.");
     }
 
+    const generatedOTPResult: Result<OTPData> = await this.getOTPByMobileNo(mobile_no);
+    if (generatedOTPResult.isFailure()) {
+      throw new Error("generateOTP failed to get generated OTP.");
+    }
     await this.reply.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, `OTP has been sent to ${mobile_no}`);
