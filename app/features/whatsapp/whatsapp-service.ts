@@ -278,17 +278,26 @@ export class WhatsappService {
     console.log('finish querying');
 
     if (handleTextResult.isSuccess()) {
-      const replyText: string = handleTextResult.getData();
-      await this.reply.sendText(msg.from, replyText);
+      // const replyText: string = handleTextResult.getData();
+      // await this.reply.sendText(msg.from, replyText);
 
-      // const cleaned = this.cleanPrefix(handleTextResult.getData());
-      // const json = JSON.parse(cleaned);
-      // const doc = await this.generateDocuments(json);
-      // const mediaId = await this.reply.uploadMedia(doc, {
-      //   filename: 'timeline.docx',
-      //   mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      // });
-      // await this.reply.sendDoc(msg.from, {mediaId: mediaId});
+      const cleaned = this.cleanPrefix(handleTextResult.getData());
+      const json = JSON.parse(cleaned);
+      const doc = await this.generateDocuments(json);
+
+      const mediaId = await this.reply.uploadMedia(doc, {
+        filename: 'timeline.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+
+      const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, msg.from)
+      console.log(`[Whatsapp] Saved document to Firestore and Storage`);
+
+      if (saveImageResult.isFailure()) {
+        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+      }
+
+      await this.reply.sendDoc(msg.from, {mediaId: mediaId});
     }
   }
 

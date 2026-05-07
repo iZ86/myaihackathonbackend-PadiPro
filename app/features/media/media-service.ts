@@ -21,6 +21,9 @@ interface IMediaService {
   saveAudio(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioMetaData(audioName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
   saveAudioFile(audioName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
+  saveDocument(docName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
+  saveDocumentMetaData(docName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>>;
+  saveDocumentFile(docName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>>;
   updateImageOrVideoDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<Result<MediaData>>;
   getLocationTutorialImages(): Promise<Result<LocationTutorialImages>>;
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
@@ -32,6 +35,7 @@ class MediaService implements IMediaService {
   private readonly imageCollection: string = 'images';
   private readonly videoCollection: string = 'videos';
   private readonly audioCollection: string = 'audios';
+  private readonly docCollection: string = 'documents';
 
   public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>> {
     const media: MediaData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
@@ -91,7 +95,8 @@ class MediaService implements IMediaService {
       'image/webp': '.webp',
       'image/gif': '.gif',
       'video/mp4': '.mp4',
-      'audio/mpeg': '.mp3'
+      'audio/mpeg': '.mp3',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
     };
     return map[mimeType] ?? '';
   }
@@ -292,6 +297,68 @@ class MediaService implements IMediaService {
 
     const mediaFileData: MediaFileData = {
       mediaName: sha256AudioName,
+      storage_path: storagePath,
+      download_url: download_url
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Audio file saved.");
+  }
+
+  public async saveDocument(docName: string, mimeType: string, buffer: Buffer, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+    const audioFileResult: Result<MediaFileData> = await this.saveDocumentFile(docName, mimeType, buffer, mobile_no);
+    if (audioFileResult.isFailure()) {
+      return audioFileResult;
+    }
+
+    const audioFile: MediaFileData = audioFileResult.getData();
+
+    try {
+      this.saveAudioMetaData(audioFile.mediaName, mimeType, audioFile.storage_path, audioFile.download_url, mobile_no, caption, sha256);
+    } catch (error) {
+      this.deleteMediaByMediaName(audioFile.mediaName);
+      throw new Error('saveAudio failed to save', { cause: error });
+    }
+
+    const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(audioFile.mediaName);
+    if (audioData.isFailure()) {
+      throw new Error('saveAudio failed to get saved audio.');
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Audio saved.");
+  }
+
+  public async saveDocumentMetaData(docName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<Result<MediaData>> {
+    const saveAudioResult: boolean = await mediaRepository.saveMediaMetaData(docName, mimeType, storagePath, downloadUrl, mobile_no, caption ?? "", sha256  ?? "");
+    if (!saveAudioResult) {
+      throw new Error("saveAudio failed to save audio.");
+    }
+
+    const savedAudio: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
+    if (savedAudio.isFailure()) {
+      throw new Error("savedAudioMetaData failed to get saved audio.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedAudio.getData(), "Audio metadata saved.");
+  }
+
+  public async saveDocumentFile(docName: string, mimeType: string, buffer: Buffer, mobile_no: string): Promise<Result<MediaFileData>> {
+    const ext = this.extFromMime(mimeType);
+    const sha256DocName: string = crypto.createHash('sha256').update(`${docName}${mobile_no}${Date.now()}`).digest('hex');
+    const storagePath = `${this.docCollection}/${mobile_no}/${sha256DocName}${ext}`;
+    const file = this.bucket.file(storagePath);
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: mimeType,
+        mobile_no: mobile_no,
+      },
+    });
+
+    await file.makePublic();
+    const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
+
+    const mediaFileData: MediaFileData = {
+      mediaName: sha256DocName,
       storage_path: storagePath,
       download_url: download_url
     }
