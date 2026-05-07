@@ -46,29 +46,18 @@ export class WhatsappController {
   }
 
   async generateOTP(req: Request, res: Response): Promise<void> {
-    try {
-      const { mobile_no } = req.body;
 
-      if (!mobile_no) {
-        res.status(400).json({ message: 'mobile_no is required' });
-        return;
-      }
+    const { mobile_no } = req.body;
 
-      const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
+    const result: Result<null> = await whatsappService.generateOTP(mobile_no);
 
-      await whatsappService.sendOTP(mobile_no, otp);
-
-      res.status(200).json({ message: 'OTP generated' });
-      return;
-    } catch (error: any) {
-      console.error("GENERATE OTP ERROR:", error);
-      res.status(500).json({
-        message: error.message || 'Failed to generate OTP'
-      });
-      return;
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
-
+  
   async verifyOTP(req: Request, res: Response): Promise<void> {
     const { mobile_no, otp } = req.body;
     if (!mobile_no || !otp) {
