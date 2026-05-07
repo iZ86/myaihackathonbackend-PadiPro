@@ -50,13 +50,34 @@ class ChatService implements IChatService {
     },
     async ({ mobile_no, created_by }) => {
       // Get chat history
-      const chatHistory = (await chatRepository.getChatHistory(mobile_no, created_by)) ?? [];
-      const latestHistory = chatHistory.slice(-16);
-      const messages = latestHistory.map((item) => {
-        const contentParts: any[] = [];
+      const chatHistory = await chatRepository.getChatHistory(mobile_no, created_by);
+      if (!chatHistory) {
+        throw new Error(`Failed to retrieve chat history for mobile_no: ${mobile_no}`);
+      }
+
+      // Flatten responses since Genkit must have the order of messages be User -> Model -> User and so forth
+      const processedHistory = chatHistory.slice(-16).reduce((acc: any[], item) => {
+        const role = (item.role === "user" ? "user" : "model") as "user" | "model";
+        const lastMessage = acc[acc.length - 1];
+
+        if (lastMessage && lastMessage.role === role) {
+          lastMessage.content.push({ text: item.message ?? "" });
+        } else {
+          acc.push({
+            role: role,
+            content: [{ text: item.message ?? "" }],
+          });
+        }
+        return acc;
+      }, []);
+      while (processedHistory.length > 0 && processedHistory[0].role === "model") {
+        processedHistory.shift();
+      }
+
+      const messages = processedHistory.map((item) => {
         return {
-          role: item.role,
-          content: contentParts,
+          role: (item.role === "user" ? "user" : "model") as "user" | "model",
+          content: [{ text: item.message ?? "" }],
         };
       });
 
