@@ -423,10 +423,6 @@ export class WhatsappService {
     await this.reply.sendImage(to, { link: locationTutorialImages.step_3 }, 'Step 3');
   }
 
-  public async sendOTP(to: string, otp: string): Promise<void> {
-    await this.reply.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
-  }
-
   public async generateOTP(mobile_no: string): Promise<Result<null>> {
 
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
