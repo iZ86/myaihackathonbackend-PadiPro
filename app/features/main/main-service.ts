@@ -51,7 +51,7 @@ class MainService implements IMainService {
 
     const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (imageResult.isFailure()) {
-      throw new Error("handleImage failed to retrieve image.");
+      throw new Error(`handleImage failed to retrieve image: ${imageResult.getMessage()}`);
     }
 
     const image: MediaData = imageResult.getData();
@@ -61,7 +61,7 @@ class MainService implements IMainService {
 
       const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteImageResult.isFailure()) {
-        throw new Error("handleImage delete image failed.");
+        throw new Error(`handleImage delete image failed: ${deleteImageResult.isFailure()}`);
       }
 
       if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
@@ -82,7 +82,7 @@ class MainService implements IMainService {
 
       const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteImageResult.isFailure()) {
-        throw new Error("handleImage delete image failed.");
+        throw new Error(`handleImage delete image failed: ${deleteImageResult.getMessage()}`);
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.", "handleImage success.");
 
@@ -90,7 +90,7 @@ class MainService implements IMainService {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
       if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "No visible signs of disease detected. The rice plants appear healthy based on this image.", "handleImage success.");
@@ -99,7 +99,7 @@ class MainService implements IMainService {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
       if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
 
@@ -143,7 +143,7 @@ class MainService implements IMainService {
 
     const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (videoResult.isFailure()) {
-      throw new Error("handleVideo failed to retrieve video.");
+      throw new Error(`handleVideo failed to retrieve video: ${videoResult.getMessage()}`);
     }
 
     const video: MediaData = videoResult.getData();
@@ -153,7 +153,7 @@ class MainService implements IMainService {
 
       const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteVideoResult.isFailure()) {
-        throw new Error("handleVideo delete video failed.");
+        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
       }
 
       if (geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE && geminiImageResult.getMessage() === "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.") {
@@ -170,7 +170,7 @@ class MainService implements IMainService {
 
       const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
       if (deleteVideoResult.isFailure()) {
-        throw new Error("handleVideo delete video failed.");
+        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.", "handleVideo success.");
 
@@ -178,7 +178,7 @@ class MainService implements IMainService {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
       if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "No visible signs of disease detected. The rice plants appear healthy based on this image.", "handleVideo success.");
 
@@ -186,7 +186,7 @@ class MainService implements IMainService {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
       if (!image.isFailure()) {
-        throw new Error("handleImage failed to update image dianogsis");
+        throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
 
