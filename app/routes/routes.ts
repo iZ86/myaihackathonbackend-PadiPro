@@ -5,6 +5,7 @@ import geminiRoute from "../features/gemini/gemini-route";
 import vertexRoute from "../features/vertex/vertex-route";
 import whatsappRoute from "../features/whatsapp/whatsapp-route";
 import webchatRoute from "../features/webchat/webchat-route";
+import chatRoute from "../features/chat/chat-route";
 export default class Routes {
   constructor(app: Application) {
     app.use("/api/v1/users", userRoute);
@@ -13,5 +14,6 @@ export default class Routes {
     app.use("/api/v1/vertex", vertexRoute);
     app.use("/api/v1/whatsapp", whatsappRoute);
     app.use("/api/v1/webchat", webchatRoute);
+    app.use("/api/v1/chat", chatRoute);
   }
 }
