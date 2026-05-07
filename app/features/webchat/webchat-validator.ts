@@ -12,3 +12,15 @@ export const generateUploadUrlrBodyValidator: any = [
     .isString().withMessage("contentType must be a string."),
   validate,
 ];
+
+export const updateUserCoordsByMobileNoBodyValidator: any = [
+  body('lat')
+    .trim()
+    .notEmpty().withMessage("Missing lat.")
+    .isNumeric().withMessage("lat must be a numeric."),
+  body('long')
+    .trim()
+    .notEmpty().withMessage("Missing long.")
+    .isNumeric().withMessage("long must be a numeric."),
+  validate,
+];
