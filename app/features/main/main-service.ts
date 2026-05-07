@@ -177,7 +177,7 @@ class MainService implements IMainService {
     } else if (imageOutput.detections[0]?.disease === "HEALTHY") {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
-      if (!image.isFailure()) {
+      if (image.isFailure()) {
         throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "No visible signs of disease detected. The rice plants appear healthy based on this image.", "handleVideo success.");
@@ -185,7 +185,7 @@ class MainService implements IMainService {
     } else {
 
       const image: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(mediaName, imageOutput.detections);
-      if (!image.isFailure()) {
+      if (image.isFailure()) {
         throw new Error(`handleImage failed to update image dianogsis: ${image.getMessage()}`);
       }
 
