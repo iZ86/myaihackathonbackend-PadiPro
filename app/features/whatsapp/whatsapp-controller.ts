@@ -9,43 +9,39 @@ import whatsappRepository from './whatsapp-repository';
 export class WhatsappController {
 
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
-    try {
-      // Act immediately — WhatsApp retries if no 200 within 20s
-      res.sendStatus(200);
+    // Act immediately — WhatsApp retries if no 200 within 20s
+    res.sendStatus(200);
 
-      const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-      if (!value?.messages?.length) return; // status update or empty ping
+    const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+    if (!value?.messages?.length) return; // status update or empty ping
 
-      const rawMsg = value.messages[0];
-      const contact = value.contacts?.[0];
-      const meta = value.metadata;
+    const rawMsg = value.messages[0];
+    const contact = value.contacts?.[0];
+    const meta = value.metadata;
 
-      const message = whatsappService.parse(rawMsg!, contact, meta);
+    const message = whatsappService.parse(rawMsg!, contact, meta);
 
-      //check if user exist
-      if (contact && contact.wa_id) {
-        const mobile_no: string = contact.wa_id;
+    //check if user exist
+    if (contact && contact.wa_id) {
+      const mobile_no: string = contact.wa_id;
 
-        let newUser: boolean = false;
-        let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+      let newUser: boolean = false;
+      let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-        if (userResult.isFailure()) {
-          userResult = await userService.createUser(contact.wa_id, contact.profile.name);
-          newUser = true;
-        }
-
-        if (userResult.isSuccess()) {
-          //call service logic
-
-          const user: UserData = userResult.getData();
-          let locationExist: boolean = !(!user.coords);
-
-          await whatsappService.handle(message, userResult.getData(), newUser, locationExist);
-        }
-
+      if (userResult.isFailure()) {
+        userResult = await userService.createUser(contact.wa_id, contact.profile.name);
+        newUser = true;
       }
-    } catch (err) {
-      console.error('handleWebhook error:', err);
+
+      if (userResult.isSuccess()) {
+        //call service logic
+
+        const user: UserData = userResult.getData();
+        let locationExist: boolean = !(!user.coords);
+
+        await whatsappService.handle(message, userResult.getData(), newUser, locationExist);
+      }
+
     }
   }
 
@@ -61,10 +57,10 @@ export class WhatsappController {
       const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
 
       await whatsappService.sendOTP(mobile_no, otp);
-      
+
       res.status(200).json({ message: 'OTP generated' });
       return;
-    }catch(error: any) {
+    } catch (error: any) {
       console.error("GENERATE OTP ERROR:", error);
       res.status(500).json({
         message: error.message || 'Failed to generate OTP'
