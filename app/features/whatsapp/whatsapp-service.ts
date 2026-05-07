@@ -464,6 +464,38 @@ export class WhatsappService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otp, "OTP retrieved.");
   }
 
+  public async verifyOTP(mobile_no: string, otp: string): Promise<Result<null>> {
+
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otpResult: Result<OTPData> = await this.getOTPByMobileNo(mobile_no);
+
+    if (otpResult.isFailure()) {
+      return otpResult;
+    }
+
+    const otpData: OTPData = otpResult.getData();
+
+    if (new Date(otpData.expires_at) < new Date()) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
+    }
+
+    if (otpData.OTP !== otp) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
+    }
+
+    const deleteOTPResult: boolean = await whatsappRepository.deleteOTPByOTPAndMobileNo(otp, mobile_no);
+    if (!deleteOTPResult) {
+      throw new Error("verifyOTP failed to delete OTP.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, "OTP verified successfully.");
+  }
+
   private cleanInternalTag(str: string): string {
     return str.replace(/\[\.\.\.]\(asc_slot:\/\/[^)]+\)/g, "").trim();
   }
