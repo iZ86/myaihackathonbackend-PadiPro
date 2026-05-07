@@ -23,22 +23,14 @@ class WebchatService implements IWebchatService {
   public async generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>> {
     let dir: string = 'image';
 
-    switch (contentType) {
-      case 'image':
-        dir = 'image';
-        break;
-
-      case 'video':
-        dir = 'video';
-        break;
-
-      case 'audio':
-        dir = 'audio';
-        break;
-
-      default:
-        dir = 'image';
-        break;
+    if (contentType.includes('image')) {
+      dir = 'images';
+    } else if (contentType.includes('video')) {
+      dir = 'videos';
+    } else if (contentType.includes('audio')) {
+      dir = 'audios';
+    } else {
+      dir = 'images';
     }
 
     const uploadFileName = `${dir}/${Date.now()}-${fileName}`;
