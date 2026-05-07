@@ -1,25 +1,33 @@
-import { db } from '../../database/db-connection';
-import { MediaData, LocationTutorialImages } from './media-model';
-import { ImageOutputDetection } from '../gemini/gemini-model';
+import { db } from "../../database/db-connection";
+import { MediaData, LocationTutorialImages } from "./media-model";
+import { MediaOutputDetection } from "../gemini/gemini-model";
 
 interface IMediaRepository {
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]>;
   getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined>;
-  updateImageDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>): Promise<boolean>;
+  updateImageDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<boolean>;
   deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
-  saveMediaMetaData(imageName: string, mobile_no: string, mimeType: string, storagePath: string, downloadUrl: string, caption?: string, sha256?: string): Promise<boolean>;
+  saveMediaMetaData(
+    imageName: string,
+    mobile_no: string,
+    mimeType: string,
+    storagePath: string,
+    downloadUrl: string,
+    caption?: string,
+    sha256?: string,
+  ): Promise<boolean>;
   getLocationTutorialImages(): Promise<LocationTutorialImages | undefined>;
 }
 
-
 class MediaRepository implements IMediaRepository {
-  private readonly collection: string = 'media';
+  private readonly collection: string = "media";
 
   public async getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]> {
     try {
-      const snapshot = await db.collection(this.collection)
-        .where('from', '==', mobile_no)
-        .where('mimeType', 'in', ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'])
+      const snapshot = await db
+        .collection(this.collection)
+        .where("from", "==", mobile_no)
+        .where("mimeType", "in", ["image/jpeg", "image/png", "image/webp", "video/mp4"])
         .get();
 
       if (snapshot.empty) return [];
@@ -35,10 +43,7 @@ class MediaRepository implements IMediaRepository {
 
   public async getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined> {
     try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaName', '==', mediaName)
-        .limit(1)
-        .get();
+      const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
 
       if (snapshot.empty) return undefined;
 
@@ -51,12 +56,9 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async updateImageDiagnosis(mediaName: string, detections: Array<ImageOutputDetection>,): Promise<boolean> {
+  public async updateImageDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<boolean> {
     try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaName', '==', mediaName)
-        .limit(1)
-        .get();
+      const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
 
       if (snapshot.empty) {
         console.warn(`No record found for media_id: ${mediaName}`);
@@ -68,7 +70,7 @@ class MediaRepository implements IMediaRepository {
 
       await doc.ref.update({
         detections: detections,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       return true;
@@ -79,10 +81,7 @@ class MediaRepository implements IMediaRepository {
 
   public async deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean> {
     try {
-      const snapshot = await db.collection(this.collection)
-        .where('mediaName', '==', mediaName)
-        .limit(1)
-        .get();
+      const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
 
       if (snapshot.empty) return false;
 
@@ -96,9 +95,14 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string): Promise<boolean> {
+  public async saveMediaMetaData(
+    mediaName: string,
+    mimeType: string,
+    storagePath: string,
+    downloadUrl: string,
+    mobile_no: string,
+  ): Promise<boolean> {
     try {
-
       //save img data to firestore
       const docRef = db.collection(this.collection).doc();
 
@@ -108,7 +112,7 @@ class MediaRepository implements IMediaRepository {
         mimeType: mimeType,
         storage_path: storagePath,
         download_url: downloadUrl,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       await docRef.create(data);
@@ -119,10 +123,9 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  
   public async getLocationTutorialImages(): Promise<LocationTutorialImages | undefined> {
     try {
-      const doc = await db.collection('tutorial').doc('location').get();
+      const doc = await db.collection("tutorial").doc("location").get();
       if (!doc.exists) {
         return undefined;
       }
