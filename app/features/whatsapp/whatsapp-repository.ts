@@ -7,7 +7,7 @@ interface IWhatsappRepository {
 
 class WhatsappRepository implements IWhatsappRepository {
 
-  private readonly collection: string = 'OTP';
+  private readonly collection: string = 'otp';
 
 
   public async saveOTP(mobile_no: string, otp: string, expiresAt: Date): Promise<boolean> {
