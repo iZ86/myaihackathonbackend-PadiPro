@@ -455,7 +455,7 @@ export class WhatsappService {
     }
 
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otpExpiresAt, `OTP has been sent to ${mobile_no}`);
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otpExpiresAt, `OTP has been sent to ${mobile_no}.`);
   }
 
   private async getOTPByMobileNo(mobile_no: string): Promise<Result<OTPData>> {
