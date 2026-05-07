@@ -169,7 +169,7 @@ class ChatService implements IChatService {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, {
       role: "user",
       timestamp: "",
-      message: message,
+      message: message ?? "",
       media_url: media_url ?? "",
       media_name: media_name ?? "",
     });
@@ -367,7 +367,7 @@ class ChatService implements IChatService {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
       timestamp: "",
-      message: message,
+      message: message ?? "",
     });
     if (!saveChatHistoryResult) {
       throw Error(`Failed to save chat history.`);
