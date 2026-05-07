@@ -7,31 +7,37 @@ import chatService from "./chat-service";
 
 /** Routes for the Chat domain. */
 class ChatRoute {
-    router = Router();
-    controller = new ChatController();
+  router = Router();
+  controller = new ChatController();
 
-    constructor() {
-        this.initializeRoutes();
-    }
+  constructor() {
+    this.initializeRoutes();
+  }
 
-    initializeRoutes() {
-        // Handler for Whatsapp, will change data to standardised format for parsing in main shared function
-        this.router.post(
-            "/whatsapp",
-            checkAuthTokenHeader,
-            asyncHandler(this.controller.chatWhatsapp.bind(this.controller)),
-        );
+  initializeRoutes() {
+    // Get request by Whatsapp to confirm if the server is able to receive messages
+    this.router.get("/", (req, res) => {
+      const { "hub.mode": mode, "hub.challenge": challenge, "hub.verify_token": token } = req.query;
 
-        // Handler for Webchat
-        this.router.post(
-            "/webchat",
-            checkAuthTokenHeader,
-            asyncHandler(this.controller.chatWeb.bind(this.controller)),
-        );
+      if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+        return res.status(200).send(challenge);
+      }
+      return res.status(403).end();
+    });
 
-        // Genkit related, using only for testing
-        this.router.post("/flow", expressHandler(chatService.chatFlow));
-    }
+    // Handler for Whatsapp, will change data to standardised format for parsing in main shared function
+    this.router.post(
+      "/whatsapp",
+      checkAuthTokenHeader,
+      asyncHandler(this.controller.chatWhatsapp.bind(this.controller)),
+    );
+
+    // Handler for Webchat
+    this.router.post("/webchat", checkAuthTokenHeader, asyncHandler(this.controller.chatWeb.bind(this.controller)));
+
+    // Genkit related, using only for testing
+    this.router.post("/flow", expressHandler(chatService.chatFlow));
+  }
 }
 
 export default new ChatRoute().router;
