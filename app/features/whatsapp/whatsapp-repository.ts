@@ -1,5 +1,4 @@
 import { db } from '../../database/db-connection';
-import { Timestamp } from 'firebase-admin/firestore';
 import { OTPData } from './whatsapp-model';
 
 interface IWhatsappRepository {
