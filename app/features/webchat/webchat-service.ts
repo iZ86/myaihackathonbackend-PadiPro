@@ -49,7 +49,6 @@ class WebchatService implements IWebchatService {
         version: 'v4',
         action: 'write',
         expires: Date.now() + 5 * 60 * 1000, // 5 min
-        contentType: contentType,
       });
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, url, "Upload url created");
     } catch (error) {
