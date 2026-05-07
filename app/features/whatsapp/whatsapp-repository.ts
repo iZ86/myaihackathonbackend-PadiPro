@@ -31,7 +31,7 @@ class WhatsappRepository implements IWhatsappRepository {
     return otpData;
   }
 
-  public async deleteOTPByOTPAndMobileNo(otp: string, mobile_no: string): Promise<boolean> {
+  public async deleteOTPByMobileNo(mobile_no: string): Promise<boolean> {
     const doc = await db.collection(this.collection).doc(mobile_no).get();
 
     if (!doc.exists) return false;

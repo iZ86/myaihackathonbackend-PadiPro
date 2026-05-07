@@ -497,7 +497,7 @@ export class WhatsappService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
     }
 
-    const deleteOTPResult: boolean = await whatsappRepository.deleteOTPByOTPAndMobileNo(otp, mobile_no);
+    const deleteOTPResult: boolean = await whatsappRepository.deleteOTPByMobileNo(mobile_no);
     if (!deleteOTPResult) {
       throw new Error("verifyOTP failed to delete OTP.");
     }
