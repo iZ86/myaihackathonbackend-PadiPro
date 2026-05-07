@@ -23,22 +23,14 @@ class WebchatService implements IWebchatService {
   public async generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>> {
     let dir: string = 'image';
 
-    switch (contentType) {
-      case 'image':
-        dir = 'image';
-        break;
-
-      case 'video':
-        dir = 'video';
-        break;
-
-      case 'audio':
-        dir = 'audio';
-        break;
-
-      default:
-        dir = 'image';
-        break;
+    if (contentType.includes('image')) {
+      dir = 'images';
+    } else if (contentType.includes('video')) {
+      dir = 'videos';
+    } else if (contentType.includes('audio')) {
+      dir = 'audios';
+    } else {
+      dir = 'images';
     }
 
     const uploadFileName = `${dir}/${Date.now()}-${fileName}`;
@@ -49,7 +41,6 @@ class WebchatService implements IWebchatService {
         version: 'v4',
         action: 'write',
         expires: Date.now() + 5 * 60 * 1000, // 5 min
-        contentType: contentType,
       });
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, url, "Upload url created");
     } catch (error) {

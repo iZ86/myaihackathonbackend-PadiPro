@@ -145,6 +145,16 @@ export type SendVideoPayload = {
     video: { id: string; link?: never; caption?: string } | { link: string; id?: never; caption?: string };
 };
 
+export type SendDocPayload = {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'document';
+  document:
+    | { id: string; link?: never; caption?: string; filename?: string }
+    | { link: string; id?: never; caption?: string; filename?: string };
+};
+
 //response from sending msg for better console logging
 export interface SendReplyResponse {
     messaging_product: string;
