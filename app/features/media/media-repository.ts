@@ -96,7 +96,7 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string, caption?: string, sha256?: string): Promise<boolean> {
+  public async saveMediaMetaData(mediaName: string, mimeType: string, storagePath: string, downloadUrl: string, mobile_no: string): Promise<boolean> {
     try {
 
       //save img data to firestore
@@ -108,9 +108,7 @@ class MediaRepository implements IMediaRepository {
         mimeType: mimeType,
         storage_path: storagePath,
         download_url: downloadUrl,
-        created_at: new Date().toISOString(),
-        caption: caption,
-        sha256: sha256,
+        created_at: new Date().toISOString()
       };
 
       await docRef.create(data);
