@@ -54,7 +54,7 @@ class WhatsappRepository implements IWhatsappRepository {
 
     return true;
   }
-  
+
 }
 
 export default new WhatsappRepository();

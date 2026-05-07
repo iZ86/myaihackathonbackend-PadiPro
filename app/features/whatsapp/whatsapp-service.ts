@@ -58,7 +58,7 @@ export class ReplyService {
     const blob = new Blob([new Uint8Array(buffer)], { type: options?.mimeType ?? 'application/octet-stream' });
     formData.append('file', blob, options?.filename ?? 'upload');
     formData.append('messaging_product', 'whatsapp');
- 
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -67,7 +67,7 @@ export class ReplyService {
       body: formData,
     });
     if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`);
- 
+
     const data = await res.json() as { id: string };
     return data.id;
   }
@@ -151,15 +151,15 @@ export class ReplyService {
     const document =
       'mediaId' in source && source.mediaId
         ? {
-            id: source.mediaId,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          }
+          id: source.mediaId,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        }
         : {
-            link: source.link!,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          };
+          link: source.link!,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        };
     const payload: SendDocPayload = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -301,7 +301,7 @@ export class WhatsappService {
         throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
 
-      await this.reply.sendDoc(msg.from, {mediaId: mediaId});
+      await this.reply.sendDoc(msg.from, { mediaId: mediaId });
     }
   }
 
@@ -532,7 +532,7 @@ export class WhatsappService {
 
   public buildChildren(timeline: Timeline[]): Paragraph[] {
     const children: Paragraph[] = [];
-  
+
     // Title
     children.push(
       new Paragraph({
@@ -543,14 +543,14 @@ export class WhatsappService {
         spacing: { after: 320 },
       })
     );
-  
+
     // Group entries by day label, preserving insertion order
     const groups = new Map<string, Timeline[]>();
     for (const item of timeline) {
       if (!groups.has(item.day)) groups.set(item.day, []);
       groups.get(item.day)!.push(item);
     }
-  
+
     for (const [day, entries] of groups) {
       // Day heading
       children.push(
@@ -568,7 +568,7 @@ export class WhatsappService {
           },
         })
       );
-  
+
       entries.forEach((entry, i) => {
         // Step number + solution
         children.push(
@@ -585,7 +585,7 @@ export class WhatsappService {
             ],
           })
         );
-  
+
         // Description — indented, italic
         children.push(
           new Paragraph({
@@ -604,7 +604,7 @@ export class WhatsappService {
         );
       });
     }
-  
+
     return children;
   }
 
@@ -613,7 +613,7 @@ export class WhatsappService {
   ): Promise<Buffer> {
     const clean = this.cleanTimeline(timeline);
     const children = this.buildChildren(clean);
-  
+
     const doc = new Document({
       styles: {
         default: {
@@ -658,7 +658,7 @@ export class WhatsappService {
         },
       ],
     });
-  
+
     return Packer.toBuffer(doc);
   }
 }
