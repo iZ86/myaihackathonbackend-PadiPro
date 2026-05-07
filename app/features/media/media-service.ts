@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { ImageOutputDetection } from "../gemini/gemini-model";
 import userService from "../user/user-service";
 import { UserData } from "../user/user-model";
+import { firebaseConfig } from "../../config/config";
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -27,7 +28,7 @@ interface IMediaService {
 
 
 class MediaService implements IMediaService {
-  private readonly bucket = admin.storage().bucket("gs://myai-hackathon-t1.firebasestorage.app");
+  private readonly bucket = admin.storage().bucket(firebaseConfig.BUCKET);
   private readonly imageCollection: string = 'images';
   private readonly videoCollection: string = 'videos';
   private readonly audioCollection: string = 'audios';
