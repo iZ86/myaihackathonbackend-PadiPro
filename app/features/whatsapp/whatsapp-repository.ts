@@ -7,6 +7,7 @@ interface IWhatsappRepository {
 
 class WhatsappRepository implements IWhatsappRepository {
 
+  private readonly collection: string = 'OTP';
   public async generateAndStoreOTP(mobile_no: string): Promise<string> {
     const docRef = db.collection('OTP').doc(mobile_no);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
