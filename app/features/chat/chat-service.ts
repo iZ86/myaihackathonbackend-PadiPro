@@ -661,9 +661,9 @@ class ChatService implements IChatService {
     return children;
   }
 
-  public async generateDocuments(timeline: TimelineSolution[]): Promise<Buffer> {
+  public async generateDocuments(timeline: TimelineSolution[], base64URL?: string): Promise<Buffer> {
     const clean = this.cleanTimeline(timeline);
-    const children = this.buildChildren(clean);
+    const children = this.buildChildren(clean, base64URL);
 
     const doc = new Document({
       styles: {
