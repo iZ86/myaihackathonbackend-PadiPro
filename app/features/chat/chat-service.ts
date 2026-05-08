@@ -394,7 +394,7 @@ class ChatService implements IChatService {
     return Result.succeed(
       ENUM_STATUS_CODES_SUCCESS.OK,
       "Vertex successfully analyzed text and provided solution",
-      "handleText success.",
+      "handleDocument success.",
     );
   }
 
