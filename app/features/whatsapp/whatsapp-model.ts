@@ -161,10 +161,3 @@ export interface SendReplyResponse {
   contacts: { input: string; wa_id: string }[];
   messages: { id: string }[];
 }
-
-//timeline json format from vertex response
-export interface Timeline {
-  day: string;
-  solution: string;
-  description: string;
-}

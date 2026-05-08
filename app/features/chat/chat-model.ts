@@ -46,6 +46,13 @@ export const ChatFlowOutputSchema = z.object({
   vertexOutput: z.enum(["JSON", "TEXT"]).describe("Status code to determine next course of action").optional(),
 });
 
+//timeline json format from vertex response
+export interface TimelineSolution {
+  day: string;
+  solution: string;
+  description: string;
+}
+
 export const ChatOutputWebSchema = z.object({});
 
 export type ChatInput = z.infer<typeof ChatInputSchema>;

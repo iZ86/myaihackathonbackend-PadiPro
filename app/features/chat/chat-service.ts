@@ -10,6 +10,7 @@ import {
   ChatFlowOutputSchema,
   ChatOutputMessage,
   ChatFlowOutput,
+  TimelineSolution,
 } from "./chat-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
@@ -28,6 +29,7 @@ import { VertexAnswerQueryData, VertexSessionInfoData } from "../vertex/vertex-m
 import vertexService from "../vertex/vertex-service";
 import { WeatherData } from "../weather/weather-model";
 import weatherService from "../weather/weather-service";
+import { Document, ImageRun, Packer, Paragraph, HeadingLevel, BorderStyle, TextRun } from "docx";
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
@@ -383,6 +385,65 @@ class ChatService implements IChatService {
     });
   }
 
+  // Handling document
+  private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
+    const { vertexOutput, prompt, reply } = flowOutput;
+
+    // Send the base message generated from Gemini 3.1 first
+    await this.sendText(mobile_no, type, reply);
+
+    // Run Vertex Search if Gemini 3.1 thinks we need it
+    if (vertexOutput && prompt && prompt !== "") {
+      // Get weather query via Google Weather API
+      await this.syncUserWeather(mobile_no);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+
+      // Start Vertex, can consider dropping the session
+      const session: string = await this.getOrCreateVertexSession(mobile_no);
+
+      // Parse custom query and weather query appended into Vertex
+      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
+        prompt + weatherQuery,
+        session,
+      );
+      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+
+      if (
+        sendQueryVertex.answer.answerText ===
+        "A summary could not be generated for your search query. Here are some search results."
+      ) {
+        await this.sendText(
+          mobile_no,
+          type,
+          "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?",
+        );
+      } else {
+        const cleaned = this.cleanPrefix(sendQueryVertex.answer.answerText);
+        const json = JSON.parse(cleaned);
+        const doc = await this.generateDocuments(json);
+
+        const mediaId = await whatsappService.uploadMedia(doc, {
+          filename: 'timeline.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+
+        const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, msg.from)
+        console.log(`[Whatsapp] Saved document to Firestore and Storage`);
+
+        if (saveImageResult.isFailure()) {
+          throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+        }
+
+        await whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
+      }
+    }
+    return Result.succeed(
+      ENUM_STATUS_CODES_SUCCESS.OK,
+      "Vertex successfully analyzed text and provided solution",
+      "handleText success.",
+    );
+  }
+
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
     const getWeatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
 
@@ -460,6 +521,180 @@ class ChatService implements IChatService {
         throw new Error("handleText failed to create vertex session.");
       })())
     );
+  }
+
+  private cleanInternalTag(str: string): string {
+    return str.replace(/\[\.\.\.]\(asc_slot:\/\/[^)]+\)/g, "").trim();
+  }
+
+  private cleanPrefix(input: string): string {
+    const cleaned = input
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const start = cleaned.indexOf("[");
+
+    if (start === -1) {
+      throw new Error("No JSON array found");
+    }
+
+    let bracketCount = 0;
+
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === "[") bracketCount++;
+      if (cleaned[i] === "]") bracketCount--;
+
+      if (bracketCount === 0) {
+        return cleaned.slice(start, i + 1);
+      }
+    }
+
+    throw new Error("Incomplete JSON array");
+  }
+
+  private cleanTimeline(timeline: TimelineSolution[]): TimelineSolution[] {
+    return timeline.map((item) => ({
+      day: this.cleanInternalTag(item.day ?? ""),
+      solution: this.cleanInternalTag(item.solution ?? ""),
+      description: this.cleanInternalTag(item.description ?? ""),
+    }));
+  }
+
+  private buildChildren(timeline: TimelineSolution[], base64URL?: string): Paragraph[] {
+    const children: Paragraph[] = [];
+
+    // Title
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [new TextRun({ text: "Timeline for Solution", bold: true })],
+        spacing: { after: 320 },
+      }),
+      ...(base64URL){
+        []
+      }
+    );
+
+    // Group entries by day label, preserving insertion order
+    const groups = new Map<string, TimelineSolution[]>();
+    for (const item of timeline) {
+      if (!groups.has(item.day)) groups.set(item.day, []);
+      groups.get(item.day)!.push(item);
+    }
+
+    for (const [day, entries] of groups) {
+      // Day heading
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun({ text: day, bold: true })],
+          spacing: { before: 360, after: 120 },
+          border: {
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 4,
+              color: "2E75B6",
+              space: 1,
+            },
+          },
+        }),
+      );
+
+      entries.forEach((entry, i) => {
+        // Step number + solution
+        children.push(
+          new Paragraph({
+            spacing: { before: 160, after: 60 },
+            children: [
+              new TextRun({
+                text: `Step ${i + 1}: `,
+                bold: true,
+                size: 24,
+                color: "2E75B6",
+              }),
+              new TextRun({ text: entry.solution, size: 24 }),
+            ],
+          }),
+        );
+
+        // Description — indented, italic
+        children.push(
+          new Paragraph({
+            spacing: { before: 0, after: 160 },
+            indent: { left: 480 },
+            children: [
+              new TextRun({
+                text: "→ ",
+                bold: true,
+                color: "888888",
+                size: 22,
+              }),
+              new TextRun({
+                text: entry.description,
+                italics: true,
+                color: "555555",
+                size: 22,
+              }),
+            ],
+          }),
+        );
+      });
+    }
+
+    return children;
+  }
+
+  public async generateDocuments(timeline: TimelineSolution[]): Promise<Buffer> {
+    const clean = this.cleanTimeline(timeline);
+    const children = this.buildChildren(clean);
+
+    const doc = new Document({
+      styles: {
+        default: {
+          document: { run: { font: "Arial", size: 24 } },
+        },
+        paragraphStyles: [
+          {
+            id: "Heading1",
+            name: "Heading 1",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: { size: 36, bold: true, font: "Arial", color: "1F3864" },
+            paragraph: {
+              spacing: { before: 0, after: 240 },
+              outlineLevel: 0,
+            },
+          },
+          {
+            id: "Heading2",
+            name: "Heading 2",
+            basedOn: "Normal",
+            next: "Normal",
+            quickFormat: true,
+            run: { size: 28, bold: true, font: "Arial", color: "2E75B6" },
+            paragraph: {
+              spacing: { before: 240, after: 120 },
+              outlineLevel: 1,
+            },
+          },
+        ],
+      },
+      sections: [
+        {
+          properties: {
+            page: {
+              size: { width: 12240, height: 15840 },
+              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+            },
+          },
+          children,
+        },
+      ],
+    });
+
+    return Packer.toBuffer(doc);
   }
 }
 
