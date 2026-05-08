@@ -197,7 +197,7 @@ class ChatService implements IChatService {
       if (!output?.reply) {
         throw Error(`AI failed to generate a reply.`);
       }
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
+      const textResult: Result<string> = await this.handleDocument(mobile_no, created_by, output);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
         return Result.fail(textResult.getStatusCode(), textResult.getMessage());
@@ -355,36 +355,6 @@ class ChatService implements IChatService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "handleLocation success.");
   }
 
-  // Validate if the input is from Whatsapp
-  private isWhatsappInput(input: any): input is WhatsappRawValue {
-    return input && typeof input === "object" && "messaging_product" in input;
-  }
-
-  // Validate if the input is from Sky's frontend webchat
-  private isWebchatInput(input: any): input is WhatsappRawValue {
-    return input && typeof input === "object" && "messaging_product" in input;
-  }
-
-  private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "user",
-      timestamp: "",
-      message: message ?? "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
-    }
-
-    if (type.toUpperCase() === "WHATSAPP") {
-      whatsappService.sendText(mobile_no, message);
-    }
-
-    this.messages.push({
-      message: message,
-      type: "text",
-    });
-  }
-
   // Handling document
   private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
     const { vertexOutput, prompt, reply } = flowOutput;
@@ -418,23 +388,7 @@ class ChatService implements IChatService {
           "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?",
         );
       } else {
-        const cleaned = this.cleanPrefix(sendQueryVertex.answer.answerText);
-        const json = JSON.parse(cleaned);
-        const doc = await this.generateDocuments(json);
-
-        const mediaId = await whatsappService.uploadMedia(doc, {
-          filename: 'timeline.docx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        });
-
-        const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, mobile_no)
-        console.log(`[Whatsapp] Saved document to Firestore and Storage`);
-
-        if (saveImageResult.isFailure()) {
-          throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
-        }
-
-        await whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
+        await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
       }
     }
     return Result.succeed(
@@ -442,6 +396,72 @@ class ChatService implements IChatService {
       "Vertex successfully analyzed text and provided solution",
       "handleText success.",
     );
+  }
+
+  // Validate if the input is from Whatsapp
+  private isWhatsappInput(input: any): input is WhatsappRawValue {
+    return input && typeof input === "object" && "messaging_product" in input;
+  }
+
+  // Validate if the input is from Sky's frontend webchat
+  private isWebchatInput(input: any): input is WhatsappRawValue {
+    return input && typeof input === "object" && "messaging_product" in input;
+  }
+
+  private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+      role: "user",
+      timestamp: "",
+      message: message ?? "",
+    });
+    if (!saveChatHistoryResult) {
+      throw Error(`Failed to save chat history.`);
+    }
+
+    if (type.toUpperCase() === "WHATSAPP") {
+      whatsappService.sendText(mobile_no, message);
+    }
+
+    this.messages.push({
+      message: message,
+      type: "text",
+    });
+  }
+
+  private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+      role: "user",
+      timestamp: "",
+      message: message ?? "",
+    });
+    if (!saveChatHistoryResult) {
+      throw Error(`Failed to save chat history.`);
+    }
+
+    if (type.toUpperCase() === "WHATSAPP") {
+      const cleaned = this.cleanPrefix(message);
+      const json = JSON.parse(cleaned);
+      const doc = await this.generateDocuments(json);
+
+      //im keeping this at whatsappService cause it's exclusive to whatsapp
+      const mediaId = await whatsappService.uploadMedia(doc, {
+        filename: 'timeline.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+
+      const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, mobile_no)
+      console.log(`[Whatsapp] Saved document to Firestore and Storage`);
+
+      if (saveImageResult.isFailure()) {
+        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+      }
+      whatsappService.sendDocument(mobile_no, {mediaId: message});
+    }
+
+    this.messages.push({
+      message: message,
+      type: "text",
+    });
   }
 
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
