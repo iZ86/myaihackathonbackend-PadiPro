@@ -456,7 +456,7 @@ class ChatService implements IChatService {
         throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
       console.log(mobile_no, message);
-      whatsappService.sendDocument(mobile_no, {mediaId: message});
+      whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
     }
 
     this.messages.push({
