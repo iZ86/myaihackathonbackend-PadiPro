@@ -197,7 +197,7 @@ class ChatService implements IChatService {
       if (!output?.reply) {
         throw Error(`AI failed to generate a reply.`);
       }
-      const textResult: Result<string> = await this.handleDocument(mobile_no, created_by, output);
+      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
         return Result.fail(textResult.getStatusCode(), textResult.getMessage());
@@ -455,7 +455,7 @@ class ChatService implements IChatService {
       if (saveImageResult.isFailure()) {
         throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
-      console.log(mobile_no, message);
+
       whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
     }
 
