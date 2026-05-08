@@ -260,15 +260,15 @@ export class WhatsappService {
     try {
       switch (message.type) {
         case "text":
-          return this.handleText(message, user);
+          return await this.handleText(message, user);
         case "image":
-          return this.handleImage(message, user);
+          return await this.handleImage(message, user);
         case "audio":
-          return this.handleAudio(message, user);
+          return await this.handleAudio(message, user);
         case "video":
-          return this.handleVideo(message, user);
+          return await this.handleVideo(message, user);
         case "location":
-          return this.handleLocation(message, user);
+          return await this.handleLocation(message, user);
       }
     } catch (error) {
       await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
