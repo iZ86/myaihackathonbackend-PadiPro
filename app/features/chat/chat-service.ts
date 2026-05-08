@@ -355,6 +355,36 @@ class ChatService implements IChatService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "handleLocation success.");
   }
 
+  // Validate if the input is from Whatsapp
+  private isWhatsappInput(input: any): input is WhatsappRawValue {
+    return input && typeof input === "object" && "messaging_product" in input;
+  }
+
+  // Validate if the input is from Sky's frontend webchat
+  private isWebchatInput(input: any): input is WhatsappRawValue {
+    return input && typeof input === "object" && "messaging_product" in input;
+  }
+
+  private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+      role: "model",
+      timestamp: "",
+      message: message ?? "",
+    });
+    if (!saveChatHistoryResult) {
+      throw Error(`Failed to save chat history.`);
+    }
+
+    if (type.toUpperCase() === "WHATSAPP") {
+      whatsappService.sendText(mobile_no, message);
+    }
+
+    this.messages.push({
+      message: message,
+      type: "text",
+    });
+  }
+
   // Handling document
   private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
     const { vertexOutput, prompt, reply } = flowOutput;
