@@ -367,7 +367,7 @@ class ChatService implements IChatService {
 
   private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "user",
+      role: "model",
       timestamp: "",
       message: message ?? "",
     });
