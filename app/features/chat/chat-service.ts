@@ -197,7 +197,7 @@ class ChatService implements IChatService {
       if (!output?.reply) {
         throw Error(`AI failed to generate a reply.`);
       }
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
+      const textResult: Result<string> = await this.handleDocument(mobile_no, created_by, output);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
         return Result.fail(textResult.getStatusCode(), textResult.getMessage());
@@ -427,7 +427,7 @@ class ChatService implements IChatService {
           mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         });
 
-        const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, msg.from)
+        const saveImageResult: Result<MediaData> = await mediaService.saveDocument(mediaId, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc, mobile_no)
         console.log(`[Whatsapp] Saved document to Firestore and Storage`);
 
         if (saveImageResult.isFailure()) {
@@ -571,9 +571,25 @@ class ChatService implements IChatService {
         children: [new TextRun({ text: "Timeline for Solution", bold: true })],
         spacing: { after: 320 },
       }),
-      ...(base64URL){
-        []
-      }
+      ...(base64URL
+        ? [
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), c =>
+                  c.charCodeAt(0)
+                ),
+                transformation: {
+                  width: 200,
+                  height: 100
+                },
+                type: 'jpg'
+              })
+            ]
+          })
+        ]
+        : []
+      )
     );
 
     // Group entries by day label, preserving insertion order
