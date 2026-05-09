@@ -1,6 +1,7 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, json } from 'express';
 
 const router = Router();
+router.use(json()); 
 
 router.post('/send-media', async (req: Request, res: Response) => {
   try {
