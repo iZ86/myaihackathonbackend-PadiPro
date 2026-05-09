@@ -65,7 +65,7 @@ class GeminiService implements IGeminiService {
         .join(", ");
 
       const systemPrompt = `
-        You are an expert in diagnosing paddy plant diseases. 
+        You are an expert in diagnosing paddy plant diseases.
         Analyze the Media and provide a diagnosis based on these rules:
 
         For disease:
@@ -73,19 +73,19 @@ class GeminiService implements IGeminiService {
         - If the plant is healthy: return "HEALTHY" with severity 0.
         - If a disease is found: return the name from this list: [${diseaseList}].
 
-        For severity: 
+        For severity:
         - Provide a score from 0.0 to 1.0 (0 is healthy, 1.0 is total crop failure).
 
         For confidence:
         - Provide a score from 0.0 to 1.0 (0 means not detected, 1.0 is absolutely sure the disease is on the plant.)
-        
+
         For detections:
         - Provide any disease found with a score of > 0.4, else you can skip adding them.
       `;
 
       console.log(`[Gemini] Diagnosing Media`);
       const isVideo = media_url.endsWith(".mp4") || media_url.endsWith(".mov");
-      const contentType = isVideo ? "video/mp4" : "Media/jpeg";
+      const contentType = isVideo ? "video/mp4" : "image/jpeg";
       const { output } = await ai.generate({
         system: systemPrompt,
         messages: [
