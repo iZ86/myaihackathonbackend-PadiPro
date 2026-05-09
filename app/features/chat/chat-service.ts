@@ -316,10 +316,10 @@ class ChatService implements IChatService {
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteMediaResult.isFailure()) {
-        throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
-      }
+      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteMediaResult.isFailure()) {
+      //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
+      // }
       await this.sendText(
         mobile_no,
         type,
