@@ -222,15 +222,15 @@ export class WhatsappService {
     const document =
       "mediaId" in source && source.mediaId
         ? {
-          id: source.mediaId,
-          ...(options?.caption ? { caption: options.caption } : {}),
-          ...(options?.filename ? { filename: options.filename } : {}),
-        }
+            id: source.mediaId,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          }
         : {
-          link: source.link!,
-          ...(options?.caption ? { caption: options.caption } : {}),
-          ...(options?.filename ? { filename: options.filename } : {}),
-        };
+            link: source.link!,
+            ...(options?.caption ? { caption: options.caption } : {}),
+            ...(options?.filename ? { filename: options.filename } : {}),
+          };
     const payload: SendDocPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -330,13 +330,38 @@ export class WhatsappService {
       throw new Error("handleAudio URL invalid.");
     }
 
-    const buffer = await this.fetch(msg.mediaId, msg.url);
-    const transcript = await whatsappConverter.convertAndTranscribe(buffer);
+    console.log(`[Whatsapp] Detected message as: Audio`);
 
+    const buffer = await this.fetch(msg.mediaId, msg.url);
+    console.log(`[Whatsapp] Fetched audio buffer from Whatsapp`);
+
+    const saveAudioResult: Result<MediaData> = await mediaService.saveAudio(
+      msg.mediaId,
+      msg.mimeType ?? "audio/mp3",
+      buffer,
+      user.mobile_no,
+      undefined,
+      msg.sha256,
+    );
+    console.log(`[Whatsapp] Saved audio to Firestore and Storage`);
+
+    if (saveAudioResult.isFailure()) {
+      throw new Error(`handleAudio failed to saveAudio: ${saveAudioResult.getMessage()}`);
+    }
+    console.log(`[Whatsapp] Saved audio to Firestore and Storage`);
+
+    const savedAudio: MediaData = saveAudioResult.getData();
+    const audioResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedAudio.mediaName);
+    if (audioResult.isFailure()) {
+      throw new Error("handleAudio failed to retrieve audio.");
+    }
+
+    const audio: MediaData = audioResult.getData();
     return {
       mobile_no: user.mobile_no,
       created_by: "WHATSAPP",
-      message: transcript.text,
+      media_url: audio.download_url,
+      media_name: savedAudio.mediaName,
     };
   }
 
@@ -425,7 +450,6 @@ export class WhatsappService {
   }
 
   public async generateOTP(mobile_no: string): Promise<Result<OTPExpiresAtData>> {
-
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
     if (userResult.isFailure()) {
@@ -434,7 +458,6 @@ export class WhatsappService {
 
     const otp: string = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
 
     const saveOTPResult: boolean = await whatsappRepository.saveOTP(mobile_no, otp, expiresAt);
     if (!saveOTPResult) {
@@ -451,9 +474,8 @@ export class WhatsappService {
     await this.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
 
     const otpExpiresAt: OTPExpiresAtData = {
-      expires_at: generatedOTP.expires_at
-    }
-
+      expires_at: generatedOTP.expires_at,
+    };
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otpExpiresAt, `OTP has been sent to ${mobile_no}.`);
   }
@@ -474,7 +496,6 @@ export class WhatsappService {
   }
 
   public async verifyOTP(mobile_no: string, otp: string): Promise<Result<null>> {
-
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
     if (userResult.isFailure()) {
