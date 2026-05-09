@@ -11,6 +11,7 @@ import {
   ChatOutputMessage,
   ChatFlowOutput,
   TimelineSolution,
+  ChatHistory,
 } from "./chat-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
@@ -187,14 +188,17 @@ class ChatService implements IChatService {
     }
 
     // Save user message into chat history
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, {
+    const chatData: ChatHistory = {
       role: "user",
       timestamp: "",
       message: message ?? "",
-      media_type: media_type || undefined,
-      media_url: media_url ?? undefined,
-      media_name: media_name ?? undefined,
-    });
+    };
+    if (media_type) {
+      chatData.media_type = media_type;
+      chatData.media_url = media_url;
+      chatData.media_name = media_name;
+    }
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
     if (!saveChatHistoryResult) {
       throw Error(`Failed to save chat history.`);
     }
@@ -497,7 +501,7 @@ class ChatService implements IChatService {
       message: message ?? "",
     });
     if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
+      throw Error(`sendText failed to save chat history.`);
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
@@ -523,7 +527,7 @@ class ChatService implements IChatService {
       message: message ?? "",
     });
     if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
+      throw Error(`sendMedia failed to save chat history.`);
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
