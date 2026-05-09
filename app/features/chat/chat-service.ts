@@ -184,7 +184,7 @@ class ChatService implements IChatService {
 
     // Send media Gemini 3.0 for image diagnosis first if media_url exists
     if (media_url && media_url != "") {
-      const mediaResult: Result<string> = await this.handleMedia(mobile_no, mediaName, "WHATSAPP", message ?? "");
+      const mediaResult: Result<string> = await this.handleMedia(mobile_no, mediaName, created_by, message ?? "");
       if (mediaResult.isFailure()) {
         this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return Result.fail(mediaResult.getStatusCode(), mediaResult.getMessage());
