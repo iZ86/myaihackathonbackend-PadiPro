@@ -4,7 +4,6 @@ import { firebaseConfig, firestoreConfig, speechConfig } from "../../config/conf
 import { Storage } from '@google-cloud/storage';
 import { ChatHistory } from "../chat/chat-model";
 import chatHistory from "../chat/chat-repository";
-import mainService from "../main/main-service";
 import { UserData } from "../user/user-model";
 import chatService from "../chat/chat-service";
 
