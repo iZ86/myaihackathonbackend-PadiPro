@@ -100,6 +100,17 @@ class MediaService implements IMediaService {
   private readonly videoCollection: string = "videos";
   private readonly audioCollection: string = "audios";
   private readonly docCollection: string = "documents";
+  private static readonly MIME_TO_EXT: { [key: string]: string } = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "video/mp4": ".mp4",
+    "audio/mpeg": ".mp3",
+    "audio/ogg": ".ogg",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  };
+
 
   public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>> {
     const media: MediaData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
@@ -152,17 +163,7 @@ class MediaService implements IMediaService {
 
   private extFromMime(mimeType: string): string {
     const baseType = (mimeType.split(';')[0] ?? mimeType).trim();
-    const map: Record<string, string> = {
-      "image/jpeg": ".jpg",
-      "image/png": ".png",
-      "image/webp": ".webp",
-      "image/gif": ".gif",
-      "video/mp4": ".mp4",
-      "audio/mpeg": ".mp3",
-      "audio/ogg": ".ogg",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-    };
-    return map[baseType] ?? "";
+    return MediaService.MIME_TO_EXT[baseType] ?? "";
   }
 
   public async saveImage(
