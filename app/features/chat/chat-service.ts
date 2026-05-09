@@ -453,8 +453,8 @@ class ChatService implements IChatService {
       const mediaId = await whatsappService.uploadMedia(buffer,mediaOption);
       console.log(`[sendMedia] uploaded mediaId: ${mediaId}`);
       
-      await whatsappService.sendImage(mobile_no, {mediaId: mediaId}, message);
-      console.log(`[sendMedia] image sent to ${mobile_no}`);
+      const result = await whatsappService.sendImage(mobile_no, {mediaId: mediaId}, message);
+      console.log(`[sendMedia] sendImage response:`, JSON.stringify(result));
     }
 
     this.messages.push({
