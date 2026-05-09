@@ -428,6 +428,29 @@ class ChatService implements IChatService {
     });
   }
 
+  private async sendMedia(mobile_no: string, type: string, base64URL: string): Promise<void> {
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+      role: "model",
+      timestamp: "",
+      message: message ?? "",
+    });
+    if (!saveChatHistoryResult) {
+      throw Error(`Failed to save chat history.`);
+    }
+
+    if (type.toUpperCase() === "WHATSAPP") {
+      const mediaId = await whatsappService.uploadMedia(base64URL, {
+        filename: 'timeline.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    }
+
+    this.messages.push({
+      message: message,
+      type: "text",
+    });
+  }
+
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
