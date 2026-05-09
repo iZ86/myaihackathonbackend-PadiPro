@@ -5,6 +5,7 @@ export const ChatInputSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
   message: z.string().describe("User message").optional(),
+  media_type: z.enum(["image", "video", "audio", "document"]).describe("Type of the media uploaded, if any").optional(),
   media_url: z
     .string()
     .describe("Download URL for the uploaded media")
@@ -30,6 +31,7 @@ export const ChatHistorySchema = z.object({
   role: z.enum(["user", "model"]).describe("Who wrote the prompt"),
   timestamp: z.string(),
   message: z.string().describe("The reply you will send back to users").optional(),
+  media_type: z.enum(["image", "video", "audio", "document"]).describe("Type of the media uploaded, if any").optional(),
   media_url: z.string().describe("The downloadable URL of the media sent, if any").optional(),
   media_name: z.string().describe("Name for the uploaded media").optional(),
 });
