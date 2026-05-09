@@ -428,7 +428,7 @@ class ChatService implements IChatService {
     });
   }
 
-  private async sendMedia(mobile_no: string, type: string, base64URL: string): Promise<void> {
+  private async sendMedia(mobile_no: string, type: string, message: string, base64URL: string, mediaType: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "model",
       timestamp: "",
@@ -439,10 +439,20 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const mediaId = await whatsappService.uploadMedia(base64URL, {
-        filename: 'timeline.docx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      });
+      const buffer = Buffer.from(base64URL, "base64");
+      const type =
+        mediaType === "image"
+          ? {
+              filename: "image.png",
+              mimeType: "image/png",
+            }
+          : {
+              filename: "video.mp4",
+              mimeType: "video/mp4",
+            };
+      const mediaId = await whatsappService.uploadMedia(buffer,type);
+      
+      await whatsappService.sendImage(mobile_no, {mediaId: mediaId}, message);
     }
 
     this.messages.push({
@@ -479,7 +489,7 @@ class ChatService implements IChatService {
         throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
       }
 
-      whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
+      await whatsappService.sendDocument(mobile_no, {mediaId: mediaId});
     }
 
     this.messages.push({
