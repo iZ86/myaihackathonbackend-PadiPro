@@ -8,7 +8,7 @@ import mainService from "../main/main-service";
 import { UserData } from "../user/user-model";
 
 interface IWebchatService {
-  generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>>;
+  generateUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<Result<UploadUrls>>;
   getWebChatHistory(mobile_no: string): Promise<Result<ChatHistory[]>>;
   updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>>;
 }
@@ -37,7 +37,7 @@ class WebchatService implements IWebchatService {
       dir = 'images';
     }
 
-    const uploadFileName = `${dir}/${Date.now()}-${fileName}`;
+    const uploadFileName = `${dir}/${mobileNo}/${Date.now()}-${fileName}`;
     const file = this.bucket.file(uploadFileName);
 
     try {

@@ -7,10 +7,11 @@ import { UserData } from "../user/user-model";
 
 export default class WebchatController {
   async generateUploadUrl(req: Request, res: Response) {
+    const mobileNo: string = req.params.mobile_no as string;
     const fileName: string = req.body.fileName;
     const contentType: string = req.body.contentType;
 
-    const result: Result<string> = await webchatService.generateUploadUrl(fileName, contentType);
+    const result = await webchatService.generateUploadUrl(mobileNo, fileName, contentType);
 
     if (result.isSuccess()) {
       return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
