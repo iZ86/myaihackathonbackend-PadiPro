@@ -10,6 +10,7 @@ import { UserData } from "../user/user-model";
 interface UploadUrls {
   uploadUrl: string;
   downloadUrl: string;
+  storagePath: string;
 }
 
 interface IWebchatService {
@@ -56,7 +57,7 @@ class WebchatService implements IWebchatService {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl }, "Upload url created");
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl, storagePath: uploadFileName }, "Upload url created");
     } catch (error) {
       console.error('Fetch Error:', error);
       throw error;

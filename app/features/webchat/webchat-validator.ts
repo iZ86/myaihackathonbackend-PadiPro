@@ -24,3 +24,35 @@ export const updateUserCoordsByMobileNoBodyValidator: any = [
     .isNumeric().withMessage("long must be a numeric."),
   validate,
 ];
+
+export const saveMediaMetaDataByMobileNoBodyValidator: any = [
+  body('fileName')
+    .trim()
+    .notEmpty().withMessage("Missing fileName.")
+    .isString().withMessage("fileName must be a string."),
+  body('mimeType')
+    .trim()
+    .notEmpty().withMessage("Missing mimeType.")
+    .isMimeType().withMessage("mimeType must be a mimetype."),
+  body('storagePath')
+    .trim()
+    .notEmpty().withMessage("Missing storagePath.")
+    .isString().withMessage("storagePath must be a string."),
+  body('downloadUrl')
+    .trim()
+    .notEmpty().withMessage("Missing downloadUrl.")
+    .isURL().withMessage("downloadUrl must be a url."),
+  body('caption')
+    .trim()
+    .optional({ checkFalsy: true })
+    .isString().withMessage("caption must be a string."),
+  body('sha256')
+    .trim()
+    .notEmpty().withMessage("Missing sha256.")
+    .isString().withMessage("sha256 must be a string."),
+  body('fileType')
+    .trim()
+    .notEmpty().withMessage("Missing fileType.")
+    .isIn(['image', 'audio', 'video']).withMessage("fileType must be a image, audio or video."),
+  validate,
+];
