@@ -412,10 +412,10 @@ class ChatService implements IChatService {
             "Your audio is too long (max 60 seconds). Please send a shorter voice message.",
           );
           // delete the audio file
-          const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-          if (deleteMediaResult.isFailure()) {
-            throw new Error(`transcribeAudio delete media failed: ${deleteMediaResult.getMessage()}`);
-          }
+          // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+          // if (deleteMediaResult.isFailure()) {
+          //   throw new Error(`transcribeAudio delete media failed: ${deleteMediaResult.getMessage()}`);
+          // }
         }
       }
       throw Error("transcribeAudio failed to transcribe.", { cause: error });

@@ -60,10 +60,10 @@ class MainService implements IMainService {
 
     const geminiImageResult: Result<MediaOutput> = await geminiService.media(image.download_url);
     if (geminiImageResult.isFailure()) {
-      const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteImageResult.isFailure()) {
-        throw new Error(`handleImage delete image failed: ${deleteImageResult.isFailure()}`);
-      }
+      // const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteImageResult.isFailure()) {
+      //   throw new Error(`handleImage delete image failed: ${deleteImageResult.isFailure()}`);
+      // }
 
       if (
         geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
@@ -91,10 +91,10 @@ class MainService implements IMainService {
     const imageOutput: MediaOutput = geminiImageResult.getData();
 
     if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
-      const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteImageResult.isFailure()) {
-        throw new Error(`handleImage delete image failed: ${deleteImageResult.getMessage()}`);
-      }
+      // const deleteImageResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteImageResult.isFailure()) {
+      //   throw new Error(`handleImage delete image failed: ${deleteImageResult.getMessage()}`);
+      // }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
         "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.",
@@ -174,10 +174,10 @@ class MainService implements IMainService {
 
     const geminiImageResult: Result<MediaOutput> = await geminiService.media(video.download_url);
     if (geminiImageResult.isFailure()) {
-      const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteVideoResult.isFailure()) {
-        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
-      }
+      // const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteVideoResult.isFailure()) {
+      //   throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
+      // }
 
       if (
         geminiImageResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
@@ -205,10 +205,10 @@ class MainService implements IMainService {
     const imageOutput: MediaOutput = geminiImageResult.getData();
 
     if (imageOutput.detections[0]?.disease === "NOT DETECTED") {
-      const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteVideoResult.isFailure()) {
-        throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
-      }
+      // const deleteVideoResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteVideoResult.isFailure()) {
+      //   throw new Error(`handleVideo delete video failed: ${deleteVideoResult.getMessage()}`);
+      // }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
         "I couldn’t detect any rice paddies in this image. Please upload an image that clearly shows a rice field for analysis.",
