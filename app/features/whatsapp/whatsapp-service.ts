@@ -319,6 +319,7 @@ export class WhatsappService {
         mobile_no: user.mobile_no,
         created_by: "WHATSAPP",
         message: msg.caption,
+        media_type: "image",
         media_url: image.download_url,
         media_name: image.mediaName,
       };
@@ -337,14 +338,12 @@ export class WhatsappService {
 
     const saveAudioResult: Result<MediaData> = await mediaService.saveAudio(
       msg.mediaId,
-      msg.mimeType ?? "audio/mp3",
+      msg.mimeType ?? "audio/ogg",
       buffer,
       user.mobile_no,
       undefined,
       msg.sha256,
     );
-    console.log(`[Whatsapp] Saved audio to Firestore and Storage`);
-
     if (saveAudioResult.isFailure()) {
       throw new Error(`handleAudio failed to saveAudio: ${saveAudioResult.getMessage()}`);
     }
@@ -360,6 +359,7 @@ export class WhatsappService {
     return {
       mobile_no: user.mobile_no,
       created_by: "WHATSAPP",
+      media_type: "audio",
       media_url: audio.download_url,
       media_name: savedAudio.mediaName,
     };
@@ -396,6 +396,7 @@ export class WhatsappService {
       return {
         mobile_no: user.mobile_no,
         created_by: "WHATSAPP",
+        media_type: "video",
         media_url: video.download_url,
         media_name: savedVideo.mediaName,
       };
