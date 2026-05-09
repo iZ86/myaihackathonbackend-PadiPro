@@ -428,7 +428,7 @@ class ChatService implements IChatService {
     });
   }
 
-  public async sendMedia(mobile_no: string, type: string, message: string, base64URL: string, mediaType: string): Promise<void> {
+  private async sendMedia(mobile_no: string, type: string, message: string, base64URL: string, mediaType: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "model",
       timestamp: "",
