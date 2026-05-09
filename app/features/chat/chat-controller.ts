@@ -4,7 +4,7 @@ import { ChatInput, ChatOutput } from "./chat-model";
 import chatService from "./chat-service";
 import { RawWebhookBody } from "../whatsapp/whatsapp-model";
 import { whatsappConfig } from "../../config/config";
-import { ENUM_STATUS_CODES_FAILURE } from "../../../libs/status-codes-enum";
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 
 /** Handles HTTP requests and delegates to ChatService. */
 export default class ChatController {
@@ -23,7 +23,7 @@ export default class ChatController {
   async chatWhatsapp(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
     try {
       // Act immediately — WhatsApp retries if no 200 within 20s
-      res.sendStatus(200);
+      res.sendResponse(ENUM_STATUS_CODES_SUCCESS.OK);
 
       const value = req.body?.entry?.[0]?.changes?.[0]?.value;
       if (!value?.messages?.length) return; // status update or empty ping
