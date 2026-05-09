@@ -151,6 +151,7 @@ class MediaService implements IMediaService {
   }
 
   private extFromMime(mimeType: string): string {
+    const baseType = (mimeType.split(';')[0] ?? mimeType).trim();
     const map: Record<string, string> = {
       "image/jpeg": ".jpg",
       "image/png": ".png",
@@ -158,9 +159,10 @@ class MediaService implements IMediaService {
       "image/gif": ".gif",
       "video/mp4": ".mp4",
       "audio/mpeg": ".mp3",
+      "audio/ogg": ".ogg",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
     };
-    return map[mimeType] ?? "";
+    return map[baseType] ?? "";
   }
 
   public async saveImage(
@@ -237,7 +239,7 @@ class MediaService implements IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>> {
     const ext = this.extFromMime(mimeType);
-    if (ext.length === 0 || (ext !== ".jpg" && ext !== ".png" && ext !== ".webp")) {
+    if (ext.length === 0 || !(ext === ".jpg" || ext === ".png" || ext === ".webp")) {
       return Result.fail(
         ENUM_STATUS_CODES_FAILURE.UNSUPPORTED_MEDIA_TYPE,
         `File type ${mimeType} not supported for image uploads.`,
@@ -453,7 +455,7 @@ class MediaService implements IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>> {
     const ext = this.extFromMime(mimeType);
-    if (ext.length === 0 || ext !== ".mp3") {
+    if (ext.length === 0 || !(ext === ".mp3" || ext === ".ogg") ) {
       return Result.fail(
         ENUM_STATUS_CODES_FAILURE.UNSUPPORTED_MEDIA_TYPE,
         `File type ${mimeType} not supported for audio uploads.`,
