@@ -3,9 +3,23 @@ import { Result } from "../../../libs/Result";
 import { ChatInput, ChatOutput } from "./chat-model";
 import chatService from "./chat-service";
 import { RawWebhookBody } from "../whatsapp/whatsapp-model";
+import { whatsappConfig } from "../../config/config";
+import { ENUM_STATUS_CODES_FAILURE } from "../../../libs/status-codes-enum";
 
 /** Handles HTTP requests and delegates to ChatService. */
 export default class ChatController {
+
+
+  async handleWhatsapp(req: Request, res: Response) {
+    const { "hub.mode": mode, "hub.challenge": challenge, "hub.verify_token": token } = req.query;
+
+    if (mode === "subscribe" && token === whatsappConfig.VERIFY_TOKEN) {
+      return res.status(200).send(challenge);
+    }
+
+    return res.sendResponse(ENUM_STATUS_CODES_FAILURE.FORBIDDEN);
+  };
+
   async chatWhatsapp(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
     try {
       // Act immediately — WhatsApp retries if no 200 within 20s
