@@ -158,6 +158,7 @@ class MediaService implements IMediaService {
       "image/gif": ".gif",
       "video/mp4": ".mp4",
       "audio/mpeg": ".mp3",
+      "audio/ogg": ".ogg",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
     };
     return map[mimeType] ?? "";
@@ -453,7 +454,7 @@ class MediaService implements IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>> {
     const ext = this.extFromMime(mimeType);
-    if (ext.length === 0 || ext !== ".mp3") {
+    if (ext.length === 0 || (ext !== ".mp3" && ext !== ".ogg") ) {
       return Result.fail(
         ENUM_STATUS_CODES_FAILURE.UNSUPPORTED_MEDIA_TYPE,
         `File type ${mimeType} not supported for audio uploads.`,
