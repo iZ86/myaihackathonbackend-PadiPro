@@ -39,3 +39,10 @@ export const speechConfig = {
 export const firebaseConfig = {
   BUCKET: process.env.FIREBASE_STORAGE_BUCKET as string,
 };
+
+export const whatsappConfig = {
+  VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN as string,
+  API_VERSION: process.env.WHATSAPP_API_VERSION as string,
+  API_KEY: process.env.WHATSAPP_API_KEY as string,
+  PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID as string
+}
