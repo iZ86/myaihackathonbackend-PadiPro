@@ -31,6 +31,7 @@ export default class ChatController {
       mobile_no: req.body.mobile_no,
       message: req.body.message,
       media_url: req.body.media_url,
+      media_name: req.body.media_name,
       created_by: req.body.created_by,
     };
 
