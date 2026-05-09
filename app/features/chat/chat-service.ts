@@ -440,7 +440,7 @@ class ChatService implements IChatService {
 
     if (type.toUpperCase() === "WHATSAPP") {
       const buffer = Buffer.from(base64URL, "base64");
-      const type =
+      const mediaOption =
         mediaType === "image"
           ? {
               filename: "image.png",
@@ -450,9 +450,11 @@ class ChatService implements IChatService {
               filename: "video.mp4",
               mimeType: "video/mp4",
             };
-      const mediaId = await whatsappService.uploadMedia(buffer,type);
+      const mediaId = await whatsappService.uploadMedia(buffer,mediaOption);
+      console.log(`[sendMedia] uploaded mediaId: ${mediaId}`);
       
       await whatsappService.sendImage(mobile_no, {mediaId: mediaId}, message);
+      console.log(`[sendMedia] image sent to ${mobile_no}`);
     }
 
     this.messages.push({
