@@ -26,14 +26,15 @@ import chatService from "../chat/chat-service";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import whatsappRepository from "./whatsapp-repository";
 import userService from "../user/user-service";
+import { whatsappConfig } from "../../config/config";
 
 export class WhatsappService {
   private readonly baseUrl = "https://graph.facebook.com";
-  private readonly apiVersion = process.env.WHATSAPP_API_VERSION ?? "v25.0";
+  private readonly apiVersion = whatsappConfig.API_VERSION ?? "v25.0";
   //downloading img sent by user and saved into buffer
   async fetch(mediaId: string, url: string): Promise<Buffer> {
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}` },
+      headers: { Authorization: `Bearer ${whatsappConfig.API_KEY}` },
     });
     if (!response.ok) throw new Error(`Media fetch failed: ${response.status}`);
     return Buffer.from(await response.arrayBuffer());
@@ -107,7 +108,7 @@ export class WhatsappService {
 
   // Send message base function
   private get endpoint(): string {
-    return `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/messages`;
+    return `${this.baseUrl}/${this.apiVersion}/${whatsappConfig.PHONE_NUMBER_ID}/messages`;
   }
   private async post(
     payload: SendTextPayload | SendImagePayload | SendAudioPayload | SendVideoPayload | SendDocPayload,
@@ -116,7 +117,7 @@ export class WhatsappService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}`,
+        Authorization: `Bearer ${whatsappConfig.API_KEY}`,
       },
       body: JSON.stringify(payload),
     });
@@ -125,7 +126,7 @@ export class WhatsappService {
   }
 
   async uploadMedia(buffer: Buffer, options?: { filename?: string; mimeType?: string }): Promise<string> {
-    const url = `${this.baseUrl}/${this.apiVersion}/${process.env.PHONE_NUMBER_ID}/media`;
+    const url = `${this.baseUrl}/${this.apiVersion}/${whatsappConfig.PHONE_NUMBER_ID}/media`;
     const formData = new FormData();
     const blob = new Blob([new Uint8Array(buffer)], {
       type: options?.mimeType ?? "application/octet-stream",
@@ -136,7 +137,7 @@ export class WhatsappService {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_API_KEY}`,
+        Authorization: `Bearer ${whatsappConfig.API_KEY}`,
       },
       body: formData,
     });

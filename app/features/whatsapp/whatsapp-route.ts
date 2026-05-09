@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../utils/utils";
 import { WhatsappController } from './whatsapp-controller';
 import { generateOTPBodyValidator, verifyOTPBodyValidator } from "./whatsapp-validator";
+import { whatsappConfig } from "../../config/config";
 
 class WhatsappRoute {
     router = Router();
@@ -16,7 +17,7 @@ class WhatsappRoute {
         this.router.get("/", (req, res) => {
             const { "hub.mode": mode, "hub.challenge": challenge, "hub.verify_token": token } = req.query;
 
-            if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+            if (mode === "subscribe" && token === whatsappConfig.VERIFY_TOKEN) {
                 return res.status(200).send(challenge);
             }
             return res.status(403).end();

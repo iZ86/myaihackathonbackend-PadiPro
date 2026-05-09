@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/utils";
 import { checkAuthTokenHeader } from "../../middlewares/auth";
 import ChatController from "./chat-controller";
 import chatService from "./chat-service";
+import { whatsappConfig } from "../../config/config";
 
 /** Routes for the Chat domain. */
 class ChatRoute {
@@ -19,7 +20,7 @@ class ChatRoute {
     this.router.get("/whatsapp", (req, res) => {
       const { "hub.mode": mode, "hub.challenge": challenge, "hub.verify_token": token } = req.query;
 
-      if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+      if (mode === "subscribe" && token === whatsappConfig.VERIFY_TOKEN) {
         return res.status(200).send(challenge);
       }
       return res.status(403).end();
