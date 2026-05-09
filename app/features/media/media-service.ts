@@ -151,6 +151,7 @@ class MediaService implements IMediaService {
   }
 
   private extFromMime(mimeType: string): string {
+    const baseType = (mimeType.split(';')[0] ?? mimeType).trim();
     const map: Record<string, string> = {
       "image/jpeg": ".jpg",
       "image/png": ".png",
@@ -161,7 +162,7 @@ class MediaService implements IMediaService {
       "audio/ogg": ".ogg",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
     };
-    return map[mimeType] ?? "";
+    return map[baseType] ?? "";
   }
 
   public async saveImage(
