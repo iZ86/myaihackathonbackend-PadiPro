@@ -11,6 +11,7 @@ import {
   ChatOutputMessage,
   ChatFlowOutput,
   TimelineSolution,
+  ChatHistory,
 } from "./chat-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
@@ -46,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -167,7 +168,7 @@ class ChatService implements IChatService {
       }
     } else if (this.isWebchatInput(input)) {
       chatInput = {
-        mobile_no: "",
+        ...input,
         created_by: "WEBCHAT",
       };
     } else {
@@ -187,14 +188,17 @@ class ChatService implements IChatService {
     }
 
     // Save user message into chat history
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, {
+    const chatData: ChatHistory = {
       role: "user",
       timestamp: "",
       message: message ?? "",
-      media_type: media_type || undefined,
-      media_url: media_url ?? undefined,
-      media_name: media_name ?? undefined,
-    });
+    };
+    if (media_type) {
+      chatData.media_type = media_type;
+      chatData.media_url = media_url;
+      chatData.media_name = media_name;
+    }
+    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
     if (!saveChatHistoryResult) {
       throw Error(`Failed to save chat history.`);
     }
@@ -294,7 +298,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         return Result.fail(
           ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
@@ -316,10 +320,10 @@ class ChatService implements IChatService {
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteMediaResult.isFailure()) {
-        throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
-      }
+      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteMediaResult.isFailure()) {
+      //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
+      // }
       await this.sendText(
         mobile_no,
         type,
@@ -412,10 +416,10 @@ class ChatService implements IChatService {
             "Your audio is too long (max 60 seconds). Please send a shorter voice message.",
           );
           // delete the audio file
-          const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-          if (deleteMediaResult.isFailure()) {
-            throw new Error(`transcribeAudio delete media failed: ${deleteMediaResult.getMessage()}`);
-          }
+          // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+          // if (deleteMediaResult.isFailure()) {
+          //   throw new Error(`transcribeAudio delete media failed: ${deleteMediaResult.getMessage()}`);
+          // }
         }
       }
       throw Error("transcribeAudio failed to transcribe.", { cause: error });
@@ -497,7 +501,7 @@ class ChatService implements IChatService {
       message: message ?? "",
     });
     if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
+      throw Error(`sendText failed to save chat history.`);
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
@@ -523,7 +527,7 @@ class ChatService implements IChatService {
       message: message ?? "",
     });
     if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
+      throw Error(`sendMedia failed to save chat history.`);
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
@@ -716,19 +720,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 
