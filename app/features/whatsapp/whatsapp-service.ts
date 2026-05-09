@@ -19,7 +19,6 @@ import {
   OTPData,
   OTPExpiresAtData,
 } from "./whatsapp-model";
-import whatsappConverter from "./whatsapp-converter";
 import { LocationTutorialImages, MediaData } from "../media/media-model";
 import mediaService from "../media/media-service";
 import { ChatInput } from "../chat/chat-model";
