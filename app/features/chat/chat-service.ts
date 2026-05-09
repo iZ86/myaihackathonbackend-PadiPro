@@ -439,20 +439,16 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const buffer = Buffer.from(base64URL, "base64");
-      const mediaOption =
-        mediaType === "image"
-          ? {
-              mimeType: "image/jpeg",
-            }
-          : {
-              mimeType: "video/mp4",
-            };
-      const mediaId = await whatsappService.uploadMedia(buffer,mediaOption);
-      console.log(`[sendMedia] uploaded mediaId: ${mediaId}`);
-      
-      const result = await whatsappService.sendImage(mobile_no, {mediaId: mediaId}, message);
-      console.log(`[sendMedia] sendImage response:`, JSON.stringify(result));
+      if (mediaType === "image") {
+        const buffer = Buffer.from(base64URL, "base64");
+        const mediaId = await whatsappService.uploadMedia(buffer, {
+          filename: "image.png",
+          mimeType: "image/png",
+        });
+        await whatsappService.sendImage(mobile_no, { mediaId }, message);
+      } else {
+        await whatsappService.sendVideo(mobile_no, { link: base64URL }, message);
+      }
     }
 
     this.messages.push({
