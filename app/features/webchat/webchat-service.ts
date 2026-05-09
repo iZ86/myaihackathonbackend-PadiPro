@@ -7,8 +7,13 @@ import chatHistory from "../chat/chat-repository";
 import mainService from "../main/main-service";
 import { UserData } from "../user/user-model";
 
+interface UploadUrls {
+  uploadUrl: string;
+  downloadUrl: string;
+}
+
 interface IWebchatService {
-  generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>>;
+  generateUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<Result<UploadUrls>>;
   getWebChatHistory(mobile_no: string): Promise<Result<ChatHistory[]>>;
   updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>>;
 }
@@ -24,8 +29,8 @@ class WebchatService implements IWebchatService {
     this.bucket = this.storage.bucket(firebaseConfig.BUCKET);
   }
 
-  async generateUploadUrl(fileName: string, contentType: string): Promise<Result<string>> {
-    let dir: string = 'image';
+  async generateUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<Result<UploadUrls>> {
+    let dir: string = 'images';
 
     if (contentType.includes('image')) {
       dir = 'images';
@@ -33,20 +38,25 @@ class WebchatService implements IWebchatService {
       dir = 'videos';
     } else if (contentType.includes('audio')) {
       dir = 'audios';
-    } else {
-      dir = 'images';
     }
 
-    const uploadFileName = `${dir}/${Date.now()}-${fileName}`;
+    const uploadFileName = `${dir}/${mobileNo}/${Date.now()}-${fileName}`;
     const file = this.bucket.file(uploadFileName);
 
     try {
-      const [url] = await file.getSignedUrl({
+      const [uploadUrl] = await file.getSignedUrl({
         version: 'v4',
         action: 'write',
         expires: Date.now() + 5 * 60 * 1000, // 5 min
       });
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, url, "Upload url created");
+
+      const [downloadUrl] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl }, "Upload url created");
     } catch (error) {
       console.error('Fetch Error:', error);
       throw error;
