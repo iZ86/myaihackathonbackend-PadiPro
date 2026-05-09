@@ -443,11 +443,9 @@ class ChatService implements IChatService {
       const mediaOption =
         mediaType === "image"
           ? {
-              filename: "image.png",
-              mimeType: "image/png",
+              mimeType: "image/jpeg",
             }
           : {
-              filename: "video.mp4",
               mimeType: "video/mp4",
             };
       const mediaId = await whatsappService.uploadMedia(buffer,mediaOption);
