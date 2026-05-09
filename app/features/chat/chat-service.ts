@@ -286,10 +286,10 @@ class ChatService implements IChatService {
 
     const geminiMediaResult: Result<MediaOutput> = await geminiService.media(media.download_url);
     if (geminiMediaResult.isFailure()) {
-      const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteMediaResult.isFailure()) {
-        throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
-      }
+      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteMediaResult.isFailure()) {
+      //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
+      // }
 
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
