@@ -1,4 +1,5 @@
 import { Router, Request, Response, json } from 'express';
+import chatService from '../chat/chat-service';
 
 const router = Router();
 router.use(json()); 
@@ -11,12 +12,7 @@ router.post('/send-media', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Missing required fields: mobile_no, type, base64URL, mediaType' });
       return;
     }
-
-    // Dynamically import your service — adjust path as needed
-    const { WhatsappService } = await import('../whatsapp/whatsapp-service');
-    const service = new (WhatsappService as any)();
-
-    await service.sendMedia(mobile_no, type, message ?? '', base64URL, mediaType);
+    await chatService.sendMedia(mobile_no, type, message ?? '', base64URL, mediaType);
 
     res.status(200).json({ message: 'sendMedia completed successfully' });
   } catch (err) {
