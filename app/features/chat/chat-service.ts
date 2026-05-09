@@ -264,10 +264,10 @@ class ChatService implements IChatService {
 
     const geminiMediaResult: Result<MediaOutput> = await geminiService.media(media.download_url);
     if (geminiMediaResult.isFailure()) {
-      const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteMediaResult.isFailure()) {
-        throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
-      }
+      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteMediaResult.isFailure()) {
+      //   throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
+      // }
 
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
@@ -294,10 +294,10 @@ class ChatService implements IChatService {
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      if (deleteMediaResult.isFailure()) {
-        throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
-      }
+      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
+      // if (deleteMediaResult.isFailure()) {
+      //   throw new Error(`handleMedia delete media failed: ${deleteMediaResult.getMessage()}`);
+      // }
       await this.sendText(
         mobile_no,
         type,
