@@ -370,7 +370,7 @@ export class WhatsappService {
       console.log(`[Whatsapp] Detected message as: Video`);
 
       const buffer = await this.fetch(msg.mediaId, msg.url);
-      console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
+      console.log(`[Whatsapp] Fetched video buffer from Whatsapp`);
 
       const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(
         msg.mediaId,
@@ -380,23 +380,23 @@ export class WhatsappService {
         undefined,
         msg.sha256,
       );
-      console.log(`[Whatsapp] Saved video to Firestore and Storage`);
 
       if (saveVideoResult.isFailure()) {
         throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
       }
+      console.log(`[Whatsapp] Saved video to Firestore and Storage`);
 
       const savedVideo: MediaData = saveVideoResult.getData();
-      const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
-      if (imageResult.isFailure()) {
+      const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
+      if (videoResult.isFailure()) {
         throw new Error("handleVideo failed to retrieve video.");
       }
 
-      const image: MediaData = imageResult.getData();
+      const video: MediaData = videoResult.getData();
       return {
         mobile_no: user.mobile_no,
         created_by: "WHATSAPP",
-        media_url: image.download_url,
+        media_url: video.download_url,
         media_name: savedVideo.mediaName,
       };
     }
