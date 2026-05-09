@@ -481,7 +481,7 @@ class MediaService implements IMediaService {
     const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
     const mediaFileData: MediaFileData = {
-      mediaName: sha256AudioName,
+      mediaName: sha256AudioName + ext,
       storage_path: storagePath,
       download_url: download_url,
     };
