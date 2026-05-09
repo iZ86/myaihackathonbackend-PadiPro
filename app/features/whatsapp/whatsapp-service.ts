@@ -16,19 +16,17 @@ import {
   SendVideoPayload,
   SendDocPayload,
   SendReplyResponse,
+  OTPData,
+  OTPExpiresAtData,
 } from "./whatsapp-model";
 import whatsappConverter from "./whatsapp-converter";
 import { LocationTutorialImages, MediaData } from "../media/media-model";
 import mediaService from "../media/media-service";
 import { ChatInput } from "../chat/chat-model";
 import chatService from "../chat/chat-service";
-import mainService from "../main/main-service";
-
-interface Timeline {
-  day: string;
-  solution: string;
-  description: string;
-}
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
+import whatsappRepository from "./whatsapp-repository";
+import userService from "../user/user-service";
 
 export class WhatsappService {
   private readonly baseUrl = "https://graph.facebook.com";
@@ -224,15 +222,15 @@ export class WhatsappService {
     const document =
       "mediaId" in source && source.mediaId
         ? {
-            id: source.mediaId,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          }
+          id: source.mediaId,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        }
         : {
-            link: source.link!,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          };
+          link: source.link!,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        };
     const payload: SendDocPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -262,15 +260,15 @@ export class WhatsappService {
     try {
       switch (message.type) {
         case "text":
-          return this.handleText(message, user);
+          return await this.handleText(message, user);
         case "image":
-          return this.handleImage(message, user);
+          return await this.handleImage(message, user);
         case "audio":
-          return this.handleAudio(message, user);
+          return await this.handleAudio(message, user);
         case "video":
-          return this.handleVideo(message, user);
+          return await this.handleVideo(message, user);
         case "location":
-          return this.handleLocation(message, user);
+          return await this.handleLocation(message, user);
       }
     } catch (error) {
       await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
@@ -426,8 +424,85 @@ export class WhatsappService {
     await this.sendImage(to, { link: locationTutorialImages.step_3 }, "Step 3");
   }
 
-  public async sendOTP(to: string, otp: string): Promise<void> {
-    await this.sendText(to, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
+  public async generateOTP(mobile_no: string): Promise<Result<OTPExpiresAtData>> {
+
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otp: string = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+
+    const saveOTPResult: boolean = await whatsappRepository.saveOTP(mobile_no, otp, expiresAt);
+    if (!saveOTPResult) {
+      throw new Error("OTP failed to be saved.");
+    }
+
+    const generatedOTPResult: Result<OTPData> = await this.getOTPByMobileNo(mobile_no);
+    if (generatedOTPResult.isFailure()) {
+      throw new Error("generateOTP failed to get generated OTP.");
+    }
+
+    const generatedOTP: OTPData = generatedOTPResult.getData();
+
+    await this.sendText(mobile_no, `Your One-Time Password (OTP) is ${otp}. Valid for 5 minutes.`);
+
+    const otpExpiresAt: OTPExpiresAtData = {
+      expires_at: generatedOTP.expires_at
+    }
+
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otpExpiresAt, `OTP has been sent to ${mobile_no}.`);
+  }
+
+  private async getOTPByMobileNo(mobile_no: string): Promise<Result<OTPData>> {
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otp: OTPData | undefined = await whatsappRepository.getOTPByMobileNo(mobile_no);
+    if (!otp) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "OTP not found.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, otp, "OTP retrieved.");
+  }
+
+  public async verifyOTP(mobile_no: string, otp: string): Promise<Result<null>> {
+
+    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const otpResult: Result<OTPData> = await this.getOTPByMobileNo(mobile_no);
+
+    if (otpResult.isFailure()) {
+      return otpResult;
+    }
+
+    const otpData: OTPData = otpResult.getData();
+
+    if (new Date(otpData.expires_at) < new Date()) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
+    }
+
+    if (otpData.otp !== otp) {
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Invalid OTP.");
+    }
+
+    const deleteOTPResult: boolean = await whatsappRepository.deleteOTPByMobileNo(mobile_no);
+    if (!deleteOTPResult) {
+      throw new Error("verifyOTP failed to delete OTP.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, null, "OTP verified successfully.");
   }
 }
 

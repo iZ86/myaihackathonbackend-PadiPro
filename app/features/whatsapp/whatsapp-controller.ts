@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import { Result } from "../../../libs/Result";
-import whatsappService from "./whatsapp-service";
-import { RawWebhookBody } from "./whatsapp-model";
-import userService from "../user/user-service";
-import { UserData } from "../user/user-model";
-import whatsappRepository from "./whatsapp-repository";
+import whatsappService from './whatsapp-service';
+import { OTPExpiresAtData, RawWebhookBody } from './whatsapp-model';
+import userService from '../user/user-service';
+import { UserData } from '../user/user-model';
 
 export class WhatsappController {
   async handleWebhook(req: Request<{}, {}, RawWebhookBody>, res: Response): Promise<void> {
@@ -44,39 +43,28 @@ export class WhatsappController {
   }
 
   async generateOTP(req: Request, res: Response): Promise<void> {
-    try {
-      const { mobile_no } = req.body;
 
-      if (!mobile_no) {
-        res.status(400).json({ message: "mobile_no is required" });
-        return;
-      }
+    const { mobile_no } = req.body;
 
-      const otp = await whatsappRepository.generateAndStoreOTP(mobile_no);
+    const result: Result<OTPExpiresAtData> = await whatsappService.generateOTP(mobile_no);
 
-      await whatsappService.sendOTP(mobile_no, otp);
-
-      res.status(200).json({ message: "OTP generated" });
-      return;
-    } catch (error: any) {
-      console.error("GENERATE OTP ERROR:", error);
-      res.status(500).json({
-        message: error.message || "Failed to generate OTP",
-      });
-      return;
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
   }
 
   async verifyOTP(req: Request, res: Response): Promise<void> {
-    const { mobile_no, otp } = req.body;
-    if (!mobile_no || !otp) {
-      res.status(400).json({ message: "mobile_no and otp are required" });
-      return;
-    }
 
-    const valid = await whatsappRepository.verifyOTP(mobile_no, otp);
-    valid
-      ? res.status(200).json({ message: "OTP verified" })
-      : res.status(400).json({ message: "Invalid or expired OTP" });
+    const { mobile_no, otp } = req.body;
+
+    const result: Result<null> = await whatsappService.verifyOTP(mobile_no, otp);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
   }
 }
