@@ -238,7 +238,7 @@ class MediaService implements IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>> {
     const ext = this.extFromMime(mimeType);
-    if (ext.length === 0 || (ext !== ".jpg" && ext !== ".png" && ext !== ".webp")) {
+    if (ext.length === 0 || !(ext === ".jpg" || ext === ".png" || ext === ".webp")) {
       return Result.fail(
         ENUM_STATUS_CODES_FAILURE.UNSUPPORTED_MEDIA_TYPE,
         `File type ${mimeType} not supported for image uploads.`,
