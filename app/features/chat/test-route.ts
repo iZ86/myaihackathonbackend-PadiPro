@@ -2,7 +2,7 @@ import { Router, Request, Response, json } from 'express';
 import chatService from '../chat/chat-service';
 
 const router = Router();
-router.use(json()); 
+router.use(json({ limit: '10mb' }));
 
 router.post('/send-media', async (req: Request, res: Response) => {
   try {
