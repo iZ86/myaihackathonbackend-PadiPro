@@ -184,6 +184,9 @@ class ChatService implements IChatService {
       const transcribeAudioResult = await this.transcribeAudio(mobile_no, mediaName, created_by);
       if (transcribeAudioResult.isSuccess()) {
         message = transcribeAudioResult.getData();
+      } else if (transcribeAudioResult.isFailure()) {
+        this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+        return transcribeAudioResult;
       }
     }
 
