@@ -411,7 +411,7 @@ class ChatService implements IChatService {
         .trim();
 
       if (!transcript) {
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "No speech detected.");
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Sorry, we could not detect any speech in your audio, please try again.");
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, transcript, "transcribeAudio success.");
