@@ -219,11 +219,7 @@ class ChatService implements IChatService {
 
     // Send text directly into Gemini 3.1 for chat response generation
     if (message) {
-      const output = await this.chatFlow(chatInput);
-      if (!output?.reply) {
-        throw Error(`AI failed to generate a reply.`);
-      }
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
+      const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
         return Result.fail(textResult.getStatusCode(), textResult.getMessage());
@@ -233,8 +229,14 @@ class ChatService implements IChatService {
   }
 
   // Handling text and audio messages post transcription
-  private async handleText(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
-    const { vertexOutput, prompt, reply } = flowOutput;
+  private async handleText(mobile_no: string, type: string, chatInput: ChatInput): Promise<Result<string>> {
+    const output = await this.chatFlow(chatInput);
+
+    if (!output?.reply) {
+      throw Error(`AI failed to generate a reply.`);
+    }
+
+    const { vertexOutput, prompt, reply } = output;
 
     // Send the base message generated from Gemini 3.1 first
     await this.sendText(mobile_no, type, reply);
