@@ -128,6 +128,8 @@ class ChatService implements IChatService {
   );
 
   public async chat(input: WhatsappRawValue | ChatInput): Promise<Result<ChatOutput>> {
+    this.messages = [];
+
     let chatInput: ChatInput = {
       mobile_no: "",
       created_by: "BASE",
