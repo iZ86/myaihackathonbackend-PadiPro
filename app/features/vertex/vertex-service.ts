@@ -51,8 +51,8 @@ class VertexService implements IVertexService {
 
   public async sendQueryVertex(text: string, session: string): Promise<Result<VertexAnswerQueryData>> {
 
-    const preamble: string | null = process.env.VERTEX_PROMPT_SEC ? process.env.VERTEX_PROMPT_SEC : null;
-    const modelSpec: string | null = process.env.VERTEX_MODEL_VERSION ? process.env.VERTEX_MODEL_VERSION : null;
+    const preamble: string | null = vertexServiceConfig.VERTEX_PROMPT_SEC;
+    const modelSpec: string | null = vertexServiceConfig.VERTEX_MODEL_VERSION;
     try {
 
       const [response] = await this.conversationalSearchClient.answerQuery({

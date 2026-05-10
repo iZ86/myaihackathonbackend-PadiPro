@@ -4,8 +4,8 @@ import { firebaseConfig, firestoreConfig, speechConfig } from "../../config/conf
 import { Storage } from '@google-cloud/storage';
 import { ChatHistory } from "../chat/chat-model";
 import chatHistory from "../chat/chat-repository";
-import mainService from "../main/main-service";
 import { UserData } from "../user/user-model";
+import chatService from "../chat/chat-service";
 
 interface UploadUrls {
   uploadUrl: string;
@@ -71,7 +71,7 @@ class WebchatService implements IWebchatService {
   }
 
   async updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>> {
-    const response: Result<UserData> = await mainService.handleLocation(mobile_no, lat, long);
+    const response: Result<UserData> = await chatService.handleLocation(mobile_no, lat, long);
 
     if (response.isFailure()) {
       throw new Error(`handleLocation failed to updateUserCoords ${response.getMessage()}`);

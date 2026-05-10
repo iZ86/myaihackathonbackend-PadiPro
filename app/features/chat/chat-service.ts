@@ -186,6 +186,9 @@ class ChatService implements IChatService {
       const transcribeAudioResult = await this.transcribeAudio(mobile_no, mediaName, created_by);
       if (transcribeAudioResult.isSuccess()) {
         message = transcribeAudioResult.getData();
+      } else if (transcribeAudioResult.isFailure()) {
+        this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+        return transcribeAudioResult;
       }
     }
 
@@ -213,30 +216,34 @@ class ChatService implements IChatService {
         created_by,
         message ?? "",
       );
-      if (mediaResult.isFailure()) {
+      if (mediaResult.isSuccess()) {
+        this.sendText(mobile_no, created_by, mediaResult.getData());
+      } else if (mediaResult.isFailure()) {
         this.sendText(mobile_no, created_by, mediaResult.getMessage());
-        return Result.fail(mediaResult.getStatusCode(), mediaResult.getMessage());
+        return mediaResult;
       }
     }
 
     // Send text directly into Gemini 3.1 for chat response generation
     if (message) {
-      const output = await this.chatFlow(chatInput);
-      if (!output?.reply) {
-        throw Error(`AI failed to generate a reply.`);
-      }
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, output);
+      const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
-        return Result.fail(textResult.getStatusCode(), textResult.getMessage());
+        return textResult;
       }
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
   }
 
   // Handling text and audio messages post transcription
-  private async handleText(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
-    const { vertexOutput, prompt, reply } = flowOutput;
+  private async handleText(mobile_no: string, type: string, chatInput: ChatInput): Promise<Result<string>> {
+    const output = await this.chatFlow(chatInput);
+
+    if (!output?.reply) {
+      throw Error(`AI failed to generate a reply.`);
+    }
+
+    const { vertexOutput, prompt, reply } = output;
 
     // Send the base message generated from Gemini 3.1 first
     await this.sendText(mobile_no, type, reply);
@@ -326,12 +333,13 @@ class ChatService implements IChatService {
       // if (deleteMediaResult.isFailure()) {
       //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
       // }
-      await this.sendText(
-        mobile_no,
-        type,
+
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
         "We could not detect any paddy plants in the image or video you sent, please try again.",
+        "handleImage success.",
       );
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "", "updateMediaDiagnosis success.");
+
     } else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
@@ -340,10 +348,10 @@ class ChatService implements IChatService {
       if (media.isFailure()) {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
-      await this.sendText(
-        mobile_no,
-        type,
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
         "No visible signs of disease detected. The rice plants appear healthy based on this image.",
+        "handleImage success.",
       );
     } else {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
@@ -353,23 +361,22 @@ class ChatService implements IChatService {
       if (media.isFailure() || !mediaOutput.detections[0]) {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
-      const diseaseName = mediaOutput.detections[0].disease;
-      await this.sendText(
-        mobile_no,
-        type,
-        `The image you sent has been analyzed and shows signs of ${diseaseName}. ${caption ?? ""}`,
-      );
 
-      // Provide default message if diagnosis is not provided
-      if (!caption || caption === "") {
-        await this.sendText(mobile_no, type, "Would you like to know more about the diagnosis?");
+      let diseaseNames: string = ""
+      const detections = mediaOutput.detections;
+
+      if (detections.length <= 1) {
+        diseaseNames = detections[0] ? detections[0].disease : "";
+      } else {
+        diseaseNames = detections.slice(0, -1).map(d => d.disease).join(", ") + ", and " + detections.at(-1)!.disease;
       }
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
+        `The image you sent has been analyzed and shows signs of ${diseaseNames}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
+        "updateMediaDiagnosis success.",
+      );
     }
-    return Result.succeed(
-      ENUM_STATUS_CODES_SUCCESS.OK,
-      "Media successfully analyzed.",
-      "updateMediaDiagnosis success.",
-    );
+
   }
 
   // Transcribe audio files
@@ -405,7 +412,7 @@ class ChatService implements IChatService {
         .trim();
 
       if (!transcript) {
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "No speech detected.");
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Sorry, we could not detect any speech in your audio, please try again.");
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, transcript, "transcribeAudio success.");
