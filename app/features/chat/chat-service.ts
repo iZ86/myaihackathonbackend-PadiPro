@@ -276,7 +276,7 @@ class ChatService implements IChatService {
         await this.sendText(
           mobile_no,
           type,
-          "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?",
+          "Unfortunately, I couldn't find any information related to your question, can you provide more details or change your question so I may better assist you?",
         );
       } else {
         await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
