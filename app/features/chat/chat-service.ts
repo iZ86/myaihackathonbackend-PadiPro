@@ -360,13 +360,22 @@ class ChatService implements IChatService {
       if (media.isFailure() || !mediaOutput.detections[0]) {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
-      const diseaseName = mediaOutput.detections[0].disease;
+
+      let diseaseNames: string = ""
+      const detections = mediaOutput.detections;
+
+      if (detections.length <= 1) {
+        diseaseNames = detections[0] ? detections[0].disease : "";
+      } else {
+        diseaseNames = detections.slice(0, -1).map(d => d.disease).join(", ") + ", and " + detections.at(-1)!.disease;
+      }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
-        `The image you sent has been analyzed and shows signs of ${diseaseName}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
+        `The image you sent has been analyzed and shows signs of ${diseaseNames}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
         "updateMediaDiagnosis success.",
       );
     }
+
   }
 
   // Transcribe audio files
