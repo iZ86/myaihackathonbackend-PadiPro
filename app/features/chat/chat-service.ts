@@ -185,7 +185,7 @@ class ChatService implements IChatService {
       if (transcribeAudioResult.isSuccess()) {
         message = transcribeAudioResult.getData();
       } else if (transcribeAudioResult.isFailure()) {
-        this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+        await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
         return transcribeAudioResult;
       }
     }
@@ -215,9 +215,9 @@ class ChatService implements IChatService {
         message ?? "",
       );
       if (mediaResult.isSuccess()) {
-        this.sendText(mobile_no, created_by, mediaResult.getData());
+        await this.sendText(mobile_no, created_by, mediaResult.getData());
       } else if (mediaResult.isFailure()) {
-        this.sendText(mobile_no, created_by, mediaResult.getMessage());
+        await this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return mediaResult;
       }
     }
@@ -226,7 +226,7 @@ class ChatService implements IChatService {
     if (message) {
       const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
       if (textResult.isFailure()) {
-        this.sendText(mobile_no, created_by, textResult.getMessage());
+        await this.sendText(mobile_no, created_by, textResult.getMessage());
         return textResult;
       }
     }
