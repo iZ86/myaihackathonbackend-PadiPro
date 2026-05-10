@@ -214,6 +214,9 @@ class ChatService implements IChatService {
         created_by,
         message ?? "",
       );
+      if (mediaResult.isSuccess()) {
+        this.sendText(mobile_no, created_by, mediaResult.getData());
+      }
       if (mediaResult.isFailure()) {
         this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return mediaResult;
@@ -329,12 +332,13 @@ class ChatService implements IChatService {
       // if (deleteMediaResult.isFailure()) {
       //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
       // }
-      await this.sendText(
-        mobile_no,
-        type,
+
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
         "We could not detect any paddy plants in the image or video you sent, please try again.",
+        "handleImage success.",
       );
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, "", "updateMediaDiagnosis success.");
+
     } else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
@@ -343,10 +347,10 @@ class ChatService implements IChatService {
       if (media.isFailure()) {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
-      await this.sendText(
-        mobile_no,
-        type,
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
         "No visible signs of disease detected. The rice plants appear healthy based on this image.",
+        "handleImage success.",
       );
     } else {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
@@ -357,17 +361,12 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
       const diseaseName = mediaOutput.detections[0].disease;
-      await this.sendText(
-        mobile_no,
-        type,
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
         `The image you sent has been analyzed and shows signs of ${diseaseName}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
+        "updateMediaDiagnosis success.",
       );
     }
-    return Result.succeed(
-      ENUM_STATUS_CODES_SUCCESS.OK,
-      "Media successfully analyzed.",
-      "updateMediaDiagnosis success.",
-    );
   }
 
   // Transcribe audio files
