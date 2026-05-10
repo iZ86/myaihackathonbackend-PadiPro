@@ -216,8 +216,7 @@ class ChatService implements IChatService {
       );
       if (mediaResult.isSuccess()) {
         this.sendText(mobile_no, created_by, mediaResult.getData());
-      }
-      if (mediaResult.isFailure()) {
+      } else if (mediaResult.isFailure()) {
         this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return mediaResult;
       }
