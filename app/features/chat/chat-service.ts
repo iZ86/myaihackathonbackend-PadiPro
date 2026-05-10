@@ -360,13 +360,8 @@ class ChatService implements IChatService {
       await this.sendText(
         mobile_no,
         type,
-        `The image you sent has been analyzed and shows signs of ${diseaseName}. ${caption ?? ""}`,
+        `The image you sent has been analyzed and shows signs of ${diseaseName}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
       );
-
-      // Provide default message if diagnosis is not provided
-      if (!caption || caption === "") {
-        await this.sendText(mobile_no, type, "Would you like to know more about the diagnosis?");
-      }
     }
     return Result.succeed(
       ENUM_STATUS_CODES_SUCCESS.OK,
