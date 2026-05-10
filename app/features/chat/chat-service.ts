@@ -225,7 +225,7 @@ class ChatService implements IChatService {
       const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
       if (textResult.isFailure()) {
         this.sendText(mobile_no, created_by, textResult.getMessage());
-        return Result.fail(textResult.getStatusCode(), textResult.getMessage());
+        return textResult;
       }
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
