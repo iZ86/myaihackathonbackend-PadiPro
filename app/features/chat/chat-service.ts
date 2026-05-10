@@ -47,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string; } = {};
+  private userVertexSession: { [mobile_no: string]: string } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -121,6 +121,11 @@ class ChatService implements IChatService {
         },
       });
       if (!output) {
+        await this.sendText(
+          mobile_no,
+          created_by,
+          "Sorry, I'm having trouble providing a response due to high demand, please try again later. Thank you for understanding!",
+        );
         throw new Error("AI failed to generate a response");
       }
       return output;
@@ -307,7 +312,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         return Result.fail(
           ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
@@ -339,7 +344,6 @@ class ChatService implements IChatService {
         "We could not detect any paddy plants in the image or video you sent, please try again.",
         "handleImage success.",
       );
-
     } else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
@@ -362,13 +366,19 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
 
-      let diseaseNames: string = ""
+      let diseaseNames: string = "";
       const detections = mediaOutput.detections;
 
       if (detections.length <= 1) {
         diseaseNames = detections[0] ? detections[0].disease : "";
       } else {
-        diseaseNames = detections.slice(0, -1).map(d => d.disease).join(", ") + ", and " + detections.at(-1)!.disease;
+        diseaseNames =
+          detections
+            .slice(0, -1)
+            .map((d) => d.disease)
+            .join(", ") +
+          ", and " +
+          detections.at(-1)!.disease;
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
@@ -376,7 +386,6 @@ class ChatService implements IChatService {
         "updateMediaDiagnosis success.",
       );
     }
-
   }
 
   // Transcribe audio files
@@ -412,7 +421,10 @@ class ChatService implements IChatService {
         .trim();
 
       if (!transcript) {
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Sorry, we could not detect any speech in your audio, please try again.");
+        return Result.fail(
+          ENUM_STATUS_CODES_FAILURE.NOT_FOUND,
+          "Sorry, we could not detect any speech in your audio, please try again.",
+        );
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, transcript, "transcribeAudio success.");
@@ -729,19 +741,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-          new Paragraph({
-            children: [
-              new ImageRun({
-                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                transformation: {
-                  width: 200,
-                  height: 100,
-                },
-                type: "jpg",
-              }),
-            ],
-          }),
-        ]
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                  transformation: {
+                    width: 200,
+                    height: 100,
+                  },
+                  type: "jpg",
+                }),
+              ],
+            }),
+          ]
         : []),
     );
 
