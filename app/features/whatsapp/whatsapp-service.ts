@@ -243,7 +243,7 @@ export class WhatsappService {
 
   async handle(
     message: WhatsappMessage
-  ): Promise<ChatInput | void> {
+  ): Promise<ChatInput> {
 
     switch (message.type) {
       case "text":
