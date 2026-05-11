@@ -282,7 +282,7 @@ export class WhatsappService {
     }
 
     return {
-      mobile_no: user.mobile_no,
+      mobile_no: msg.waId,
       created_by: "WHATSAPP",
       message: msg.body,
       media_type: "text"
