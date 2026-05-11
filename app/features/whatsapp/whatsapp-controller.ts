@@ -17,10 +17,11 @@ export class WhatsappController {
     const contact = value.contacts?.[0];
     const meta = value.metadata;
 
-    const message = whatsappService.parse(rawMsg!, contact, meta);
+
 
     //check if user exist
     if (contact && contact.wa_id) {
+      const message = whatsappService.parse(rawMsg!, contact, meta);
       const mobile_no: string = contact.wa_id;
 
       let newUser: boolean = false;
