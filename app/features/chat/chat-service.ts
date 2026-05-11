@@ -245,6 +245,17 @@ class ChatService implements IChatService {
       throw Error(`Failed to save chat history.`);
     }
 
+    // Send thinking message to Whatsapp
+    if (created_by === "WHATSAPP") {
+      let thinkingMessage = "";
+      if (lang === "BM") {
+        thinkingMessage = "Beri saya seketika untuk memproses mesej anda";
+      } else {
+        thinkingMessage = "Give me a moment to process your message...";
+      }
+      await this.sendText(mobile_no, created_by, thinkingMessage, false);
+    }
+
     // Send media Gemini 3.0 for image diagnosis first if media_url exists
     if (media_type === "image" || media_type === "video") {
       const mediaResult: Result<string> = await this.updateMediaDiagnosis(mediaName, lang);
@@ -278,9 +289,6 @@ class ChatService implements IChatService {
     // Get response from Gemini chatbot
     const { vertexOutput, prompt, reply, language } = output;
 
-    // Send the base message generated from Gemini 3.1 first
-    await this.sendText(mobile_no, type, reply);
-
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
       console.log("[Chat-Serivce] prompt: " + prompt);
@@ -313,13 +321,15 @@ class ChatService implements IChatService {
         }
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
-        if(needSolution){
-          console.log("[Chat Service] respond from vertex: " +sendQueryVertex.answer.answerText);
+        if (needSolution) {
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
-        }else{
+        } else {
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
         }
       }
+    } else {
+      // Send base message if no Vertex required
+      await this.sendText(mobile_no, type, reply);
     }
     return Result.succeed(
       ENUM_STATUS_CODES_SUCCESS.OK,
@@ -575,24 +585,31 @@ class ChatService implements IChatService {
     return input && typeof input === "object" && "messaging_product" in input;
   }
 
-  private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "model",
-      timestamp: "",
-      message: message ?? "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`sendText failed to save chat history.`);
+  private async sendText(
+    mobile_no: string,
+    type: string,
+    message: string,
+    saveToHistory: boolean = true,
+  ): Promise<void> {
+    if (saveToHistory) {
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+        role: "model",
+        timestamp: "",
+        message: message ?? "",
+      });
+      if (!saveChatHistoryResult) {
+        throw Error(`sendText failed to save chat history.`);
+      }
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
       whatsappService.sendText(mobile_no, message);
+    } else {
+      this.messages.push({
+        message: message,
+        type: "text",
+      });
     }
-
-    this.messages.push({
-      message: message,
-      type: "text",
-    });
   }
 
   private async sendMedia(
