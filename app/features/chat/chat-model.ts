@@ -45,7 +45,10 @@ export const ChatFlowInputSchema = z.object({
 export const ChatFlowOutputSchema = z.object({
   reply: z.string().describe("The reply you will send back to users"),
   prompt: z.string().describe("The customized prompt to send into Vertex based off the user's message").optional(),
-  vertexOutput: z.enum(["JSON", "TEXT"]).describe("Status code to determine next course of action").optional(),
+  vertexOutput: z
+    .boolean()
+    .describe("Whether Vertex is required to search up relevant information to answer the user's query")
+    .optional(),
 });
 
 //timeline json format from vertex response

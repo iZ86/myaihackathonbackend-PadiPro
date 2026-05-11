@@ -47,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string; } = {};
+  private userVertexSession: { [mobile_no: string]: string } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -90,26 +90,33 @@ class ChatService implements IChatService {
 
       // System Prompt
       const systemPrompt = `
-          Based on the chat history and newest message from the user, return the following in a contextual manner.
+          You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases. 
+          Based on the chat history, you are to return the following based on what the user is currently asking for:
 
-          {
-              vertexOutput:
-                  - You may leave this unset if the question or request from the user does not require information regarding paddy plant diseases, otherwise set to one of the following:
-                      1. JSON: The user requests for a solution or timeline-based plan
-                      2. TEXT: The user simply wants feedback on something
+          1. vertexOutput: Whether the user's current query requires you to look up information from Vertex.
+            - This field may be set to false if the user's query is simple or does not relate to paddy plant diseases, else true
 
-              prompt:
-                  - You may again leave this empty if vertexOutput was left empty, as this query will be sent to Vertex Search to look up information regarding user queries.
-                  - You are to generate the contextualized query for Vertex based on users previous messages.
+          2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query. 
+            - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history. 
+          
+          3. message: The reply you will give back to the user. 
+            - This can be a simple acknowledgement that you are retrieving information.
 
-              message:
-                  - The reply you will give back to the user, mandatory field.
+          Here are a few examples
+          1. User: What causes leaf blast?
+              - vertexOutput: true
+              - prompt: What causes leaf blast in rice paddies?
+              - message: Let me look that up for you.
 
-              For example, if users asked a question regarding stem rot previously, and the latest message is asking for solutions, you may set it so:
-                  vertexOutput: "JSON",
-                  prompt: "Provide a 7-day solution plan to solve stem rot in a paddy field." (this will be sent directly to Vertex Search)
-                  message: "Please wait a moment as I generate a timeline solution for you..."
-          }
+          2. User: Do you like ice cream?
+              - vertexOutput: false
+              - prompt: (not generated since vertexOutput is false)
+              - message: Yes, but let's stick to paddy plant diseases, I appreciate your enthusiasm though!
+
+          3. User: How do I treat leaft blast?
+              - vertexOutput: true
+              - prompt: Provide a timelined treatment plan for leaf blast in rice paddies, return the answer explicity in JSON format.
+              - message: Let me find that information for you, stay tuned!
       `;
 
       // Parse data into Gemini 3.1
@@ -121,6 +128,11 @@ class ChatService implements IChatService {
         },
       });
       if (!output) {
+        await this.sendText(
+          mobile_no,
+          created_by,
+          "Sorry, I'm having trouble providing a response due to high demand, please try again later. Thank you for understanding!",
+        );
         throw new Error("AI failed to generate a response");
       }
       return output;
@@ -187,7 +199,7 @@ class ChatService implements IChatService {
       if (transcribeAudioResult.isSuccess()) {
         message = transcribeAudioResult.getData();
       } else if (transcribeAudioResult.isFailure()) {
-        this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+        await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
         return transcribeAudioResult;
       }
     }
@@ -217,9 +229,9 @@ class ChatService implements IChatService {
         message ?? "",
       );
       if (mediaResult.isSuccess()) {
-        this.sendText(mobile_no, created_by, mediaResult.getData());
+        await this.sendText(mobile_no, created_by, mediaResult.getData());
       } else if (mediaResult.isFailure()) {
-        this.sendText(mobile_no, created_by, mediaResult.getMessage());
+        await this.sendText(mobile_no, created_by, mediaResult.getMessage());
         return mediaResult;
       }
     }
@@ -228,7 +240,7 @@ class ChatService implements IChatService {
     if (message) {
       const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
       if (textResult.isFailure()) {
-        this.sendText(mobile_no, created_by, textResult.getMessage());
+        await this.sendText(mobile_no, created_by, textResult.getMessage());
         return textResult;
       }
     }
@@ -271,7 +283,7 @@ class ChatService implements IChatService {
         await this.sendText(
           mobile_no,
           type,
-          "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?",
+          "Unfortunately, I couldn't find any information related to your question, can you provide more details or change your question so I may better assist you?",
         );
       } else {
         await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
@@ -307,7 +319,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         return Result.fail(
           ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
@@ -339,7 +351,6 @@ class ChatService implements IChatService {
         "We could not detect any paddy plants in the image or video you sent, please try again.",
         "handleImage success.",
       );
-
     } else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
@@ -368,7 +379,13 @@ class ChatService implements IChatService {
       if (detections.length <= 1) {
         diseaseNames = detections[0] ? detections[0].disease : "";
       } else {
-        diseaseNames = detections.slice(0, -1).map(d => d.disease).join(", ") + ", and " + detections.at(-1)!.disease;
+        diseaseNames =
+          detections
+            .slice(0, -1)
+            .map((d) => d.disease)
+            .join(", ") +
+          ", and " +
+          detections.at(-1)!.disease;
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
@@ -376,7 +393,6 @@ class ChatService implements IChatService {
         "updateMediaDiagnosis success.",
       );
     }
-
   }
 
   // Transcribe audio files
@@ -412,7 +428,10 @@ class ChatService implements IChatService {
         .trim();
 
       if (!transcript) {
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Sorry, we could not detect any speech in your audio, please try again.");
+        return Result.fail(
+          ENUM_STATUS_CODES_FAILURE.NOT_FOUND,
+          "Sorry, we could not detect any speech in your audio, please try again.",
+        );
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, transcript, "transcribeAudio success.");
@@ -731,19 +750,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-          new Paragraph({
-            children: [
-              new ImageRun({
-                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                transformation: {
-                  width: 200,
-                  height: 100,
-                },
-                type: "jpg",
-              }),
-            ],
-          }),
-        ]
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                  transformation: {
+                    width: 200,
+                    height: 100,
+                  },
+                  type: "jpg",
+                }),
+              ],
+            }),
+          ]
         : []),
     );
 
