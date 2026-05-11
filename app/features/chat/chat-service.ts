@@ -163,6 +163,8 @@ class ChatService implements IChatService {
         chatInput = whatsappMessageFormatted;
         profileName = contact.profile.name;
 
+      } else {
+        throw new Error("Whatsapp contact not found.");
       }
     } else if (this.isWebchatInput(input)) {
       chatInput = {
