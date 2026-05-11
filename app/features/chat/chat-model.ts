@@ -1,18 +1,36 @@
 import { z } from "genkit";
 import { MessageSchema } from "genkit/model";
 
-export const ChatInputSchema = z.object({
+const BaseSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
   message: z.string().describe("User message").optional(),
-  media_type: z.enum(["image", "video", "audio", "document"]).describe("Type of the media uploaded, if any").optional(),
+});
+
+const MediaSchema = BaseSchema.extend({
+  media_type: z.enum(["image", "video", "audio", "document"]),
   media_url: z
     .string()
     .describe("Download URL for the uploaded media")
-    .refine((val) => val.startsWith("http"), "Must be a valid Data URL or media link")
-    .optional(),
-  media_name: z.string().describe("Name for the uploaded media").optional(),
+    .refine((val) => val.startsWith("http"), "Must be a valid Data URL or media link"),
+  media_name: z.string().describe("Name for the uploaded media"),
 });
+
+const TextSchema = BaseSchema.extend({
+  media_type: z.literal("text"),
+});
+
+const LocationSchema = BaseSchema.extend({
+  media_type: z.literal("location"),
+  latitude: z.number().describe("Latitude of the location"),
+  longitutde: z.number().describe("Longitude of the location"),
+});
+
+export const ChatInputSchema = z.discriminatedUnion("media_type", [
+  MediaSchema,
+  TextSchema,
+  LocationSchema,
+]);
 
 export const ChatOutputMessageSchema = z.object({
   message: z.string().describe("The reply sent back to users"),

@@ -285,6 +285,7 @@ export class WhatsappService {
       mobile_no: user.mobile_no,
       created_by: "WHATSAPP",
       message: msg.body,
+      media_type: "text"
     };
   }
 

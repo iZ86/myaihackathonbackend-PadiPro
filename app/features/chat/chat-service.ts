@@ -145,6 +145,7 @@ class ChatService implements IChatService {
     let chatInput: ChatInput = {
       mobile_no: "",
       created_by: "BASE",
+      media_type: "text"
     };
 
     // Extract data according to source
@@ -191,12 +192,12 @@ class ChatService implements IChatService {
     }
 
     // Deconstruct variables for easier access
-    let { mobile_no, created_by, message, media_type, media_url, media_name } = chatInput;
-    const mediaName = media_name ?? "";
+    let { mobile_no, created_by, message, media_type } = chatInput;
+
 
     // Transcribe audio to text before saving into chat history for easier tracking
-    if (media_type === "audio" && media_url) {
-      const transcribeAudioResult = await this.transcribeAudio(mobile_no, mediaName, created_by);
+    if (chatInput.media_type === "audio" && chatInput.media_url) {
+      const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by);
       if (transcribeAudioResult.isSuccess()) {
         message = transcribeAudioResult.getData();
       } else if (transcribeAudioResult.isFailure()) {
@@ -211,10 +212,10 @@ class ChatService implements IChatService {
       timestamp: "",
       message: message ?? "",
     };
-    if (media_type) {
-      chatData.media_type = media_type;
-      chatData.media_url = media_url;
-      chatData.media_name = media_name;
+    if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
+      chatData.media_type = chatInput.media_type;
+      chatData.media_url = chatInput.media_url;
+      chatData.media_name = chatInput.media_name;
     }
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
     if (!saveChatHistoryResult) {
@@ -222,10 +223,10 @@ class ChatService implements IChatService {
     }
 
     // Send media Gemini 3.0 for image diagnosis first if media_url exists
-    if (media_type === "image" || media_type === "video") {
+    if (chatInput.media_type === "image" || chatInput.media_type === "video") {
       const mediaResult: Result<string> = await this.updateMediaDiagnosis(
         mobile_no,
-        mediaName,
+        chatInput.media_name,
         created_by,
         message ?? "",
       );
