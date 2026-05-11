@@ -301,9 +301,7 @@ class ChatService implements IChatService {
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
-      console.log("[Chat-Serivce] prompt: " + prompt);
       const needSolution: boolean = prompt.toUpperCase().includes("JSON");
-      console.log("[Chat Service] prompt wants solution: " + needSolution);
 
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
@@ -332,7 +330,6 @@ class ChatService implements IChatService {
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
         if (needSolution) {
-          console.log(sendQueryVertex.answer.answerText);
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         } else {
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
@@ -660,9 +657,7 @@ class ChatService implements IChatService {
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
-    console.log(cleaned);
     const json = JSON.parse(cleaned);
-    console.log(json);
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
       timestamp: "",
