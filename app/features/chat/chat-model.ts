@@ -49,6 +49,7 @@ export const ChatFlowOutputSchema = z.object({
     .boolean()
     .describe("Whether Vertex is required to search up relevant information to answer the user's query")
     .optional(),
+  language: z.string().describe("The language in which the reply should be generated based on the query"),
 });
 
 //timeline json format from vertex response
