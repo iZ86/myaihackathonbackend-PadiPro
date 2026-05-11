@@ -6,9 +6,9 @@ export interface WhatsappBaseMessage {
   from: string;
   messageId: string;
   timestamp: string;
-  name: string | undefined;
-  waId: string | undefined;
-  phoneNumberId: string | undefined;
+  name: string;
+  waId: string;
+  phoneNumberId: string;
 }
 
 export interface ITextMessage extends WhatsappBaseMessage {
