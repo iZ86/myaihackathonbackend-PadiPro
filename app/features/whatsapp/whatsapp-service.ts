@@ -272,7 +272,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleImage(msg: IImageMessage): Promise<ChatInput | void> {
+  private async handleImage(msg: IImageMessage): Promise<ChatInput> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleImage URL invalid.");
     }
