@@ -36,7 +36,7 @@ class UserService implements IUserService {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.CONFLICT, "User already exist with mobile_no.");
     }
 
-    const createUserResult: boolean = await userRepository.createUser(mobile_no, name);
+    const createUserResult: boolean = await userRepository.createUser(mobile_no, name, "EN", "EN");
     if (!createUserResult) {
       throw new Error("createUser failed to create user.");
     }
