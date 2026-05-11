@@ -190,6 +190,9 @@ class ChatService implements IChatService {
         newUser = true;
       }
 
+      // Default lang value.
+      let lang: string = "EN";
+
 
       if (userResult.isSuccess()) {
         const user: UserData = userResult.getData();
@@ -201,22 +204,8 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-      }
-
-      const user: UserData = userResult.getData();
-      // Update language to EN if initially unset
-      let lang: string | undefined = created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat;
-      if (!lang) {
-        const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
-          "EN",
-          mobile_no,
-          created_by,
-        );
-        if (updateUserLangResult.isFailure()) {
-          throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
-        }
-        const updatedUser: UserData = updateUserLangResult.getData();
-        lang = (created_by === "WHATSAPP" ? updatedUser.lang_whatsapp : updatedUser.lang_webchat) || "EN";
+        
+        lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
       }
 
       if (this.isWhatsappInput(input)) {
