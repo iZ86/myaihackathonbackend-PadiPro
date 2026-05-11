@@ -175,95 +175,100 @@ class ChatService implements IChatService {
       chatInput = input;
     }
 
-    // Deconstruct variables for easier access
-    let { mobile_no, created_by, message } = chatInput;
+    try {
+      // Deconstruct variables for easier access
+      let { mobile_no, created_by, message } = chatInput;
 
-    let newUser: boolean = false;
-    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+      let newUser: boolean = false;
+      let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-    if (userResult.isFailure()) {
-      userResult = await userService.createUser(mobile_no, profileName);
-      newUser = true;
-    }
-
-    if (userResult.isSuccess()) {
-      const user: UserData = userResult.getData();
-      const locationExist: boolean = !!user.coords;
-      if (newUser) {
-        await whatsappService.sendIntroductionMessage(mobile_no);
+      if (userResult.isFailure()) {
+        userResult = await userService.createUser(mobile_no, profileName);
+        newUser = true;
       }
-      if (chatInput.media_type !== "location" && !locationExist) {
-        await whatsappService.sendLocationInstructionMessage(user.mobile_no);
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
-      }
-    }
 
-    if (this.isWhatsappInput(input)) {
-      if (chatInput.media_type === "location") {
-        const userResult: Result<UserData> = await this.handleLocation(mobile_no, chatInput.latitude, chatInput.longitutde);
-        if (userResult.isFailure()) {
-          throw new Error("chat failed to set user's location.");
-        } else {
-          await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage());
-          return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, userResult.getMessage());
+      if (userResult.isSuccess()) {
+        const user: UserData = userResult.getData();
+        const locationExist: boolean = !!user.coords;
+        if (newUser) {
+          await whatsappService.sendIntroductionMessage(mobile_no);
+        }
+        if (chatInput.media_type !== "location" && !locationExist) {
+          await whatsappService.sendLocationInstructionMessage(user.mobile_no);
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
       }
-    }
 
-
-
-    // Transcribe audio to text before saving into chat history for easier tracking
-    if (chatInput.media_type === "audio" && chatInput.media_url) {
-      const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by);
-      if (transcribeAudioResult.isSuccess()) {
-        message = transcribeAudioResult.getData();
-      } else if (transcribeAudioResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
-        return transcribeAudioResult;
+      if (this.isWhatsappInput(input)) {
+        if (chatInput.media_type === "location") {
+          const userResult: Result<UserData> = await this.handleLocation(mobile_no, chatInput.latitude, chatInput.longitutde);
+          if (userResult.isFailure()) {
+            throw new Error("chat failed to set user's location.");
+          } else {
+            await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage());
+            return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, userResult.getMessage());
+          }
+        }
       }
-    }
 
-    // Save user message into chat history
-    const chatData: ChatHistory = {
-      role: "user",
-      timestamp: "",
-      message: message ?? "",
-    };
-    if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
-      chatData.media_type = chatInput.media_type;
-      chatData.media_url = chatInput.media_url;
-      chatData.media_name = chatInput.media_name;
-    }
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
-    if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
-    }
 
-    // Send media Gemini 3.0 for image diagnosis first if media_url exists
-    if (chatInput.media_type === "image" || chatInput.media_type === "video") {
-      const mediaResult: Result<string> = await this.updateMediaDiagnosis(
-        mobile_no,
-        chatInput.media_name,
-        created_by,
-        message ?? "",
-      );
-      if (mediaResult.isSuccess()) {
-        await this.sendText(mobile_no, created_by, mediaResult.getData());
-      } else if (mediaResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, mediaResult.getMessage());
-        return mediaResult;
+
+      // Transcribe audio to text before saving into chat history for easier tracking
+      if (chatInput.media_type === "audio" && chatInput.media_url) {
+        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by);
+        if (transcribeAudioResult.isSuccess()) {
+          message = transcribeAudioResult.getData();
+        } else if (transcribeAudioResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+          return transcribeAudioResult;
+        }
       }
-    }
 
-    // Send text directly into Gemini 3.1 for chat response generation
-    if (message) {
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
-      if (textResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, textResult.getMessage());
-        return textResult;
+      // Save user message into chat history
+      const chatData: ChatHistory = {
+        role: "user",
+        timestamp: "",
+        message: message ?? "",
+      };
+      if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
+        chatData.media_type = chatInput.media_type;
+        chatData.media_url = chatInput.media_url;
+        chatData.media_name = chatInput.media_name;
       }
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
+      if (!saveChatHistoryResult) {
+        throw Error(`Failed to save chat history.`);
+      }
+
+      // Send media Gemini 3.0 for image diagnosis first if media_url exists
+      if (chatInput.media_type === "image" || chatInput.media_type === "video") {
+        const mediaResult: Result<string> = await this.updateMediaDiagnosis(
+          mobile_no,
+          chatInput.media_name,
+          created_by,
+          message ?? "",
+        );
+        if (mediaResult.isSuccess()) {
+          await this.sendText(mobile_no, created_by, mediaResult.getData());
+        } else if (mediaResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, mediaResult.getMessage());
+          return mediaResult;
+        }
+      }
+
+      // Send text directly into Gemini 3.1 for chat response generation
+      if (message) {
+        const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
+        if (textResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, textResult.getMessage());
+          return textResult;
+        }
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
+    } catch (error) {
+      this.sendText(chatInput.mobile_no, chatInput.created_by, "We seem to be having some issues, please try again in an hour or so.");
+      throw error;
     }
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
   }
 
   // Handling text and audio messages post transcription
