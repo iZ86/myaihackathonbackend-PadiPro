@@ -259,7 +259,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleText(msg: ITextMessage): Promise<ChatInput | void> {
+  private async handleText(msg: ITextMessage): Promise<ChatInput> {
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
