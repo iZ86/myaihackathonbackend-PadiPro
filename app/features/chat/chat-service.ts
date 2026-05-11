@@ -292,70 +292,72 @@ class ChatService implements IChatService {
 
   // Handling text and audio messages post transcription
   private async handleText(mobile_no: string, type: string, chatInput: ChatInput): Promise<Result<string>> {
-    // Send the text into the Gemini chatbot
-    const output = await this.chatFlow(chatInput);
-    if (!output?.reply) {
-      throw Error(`AI failed to generate a reply.`);
-    }
 
-    // Get response from Gemini chatbot
-    const { vertexOutput, prompt, reply, language } = output;
+    return Result.fail(ENUM_STATUS_CODES_FAILURE.BAD_REQUEST, "I'm just going to fail.");
+    // // Send the text into the Gemini chatbot
+    // const output = await this.chatFlow(chatInput);
+    // if (!output?.reply) {
+    //   throw Error(`AI failed to generate a reply.`);
+    // }
 
-    // Update user language after processing
-    const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
-      language,
-      mobile_no,
-      type,
-    );
-    if (updateUserLangResult.isFailure()) {
-      throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
-    }
+    // // Get response from Gemini chatbot
+    // const { vertexOutput, prompt, reply, language } = output;
 
-    // Run Vertex Search if Gemini 3.1 thinks we need it
-    if (vertexOutput && prompt && prompt !== "") {
-      const needSolution: boolean = prompt.toUpperCase().includes("JSON");
+    // // Update user language after processing
+    // const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
+    //   language,
+    //   mobile_no,
+    //   type,
+    // );
+    // if (updateUserLangResult.isFailure()) {
+    //   throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
+    // }
 
-      // Get weather query via Google Weather API
-      await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
+    // // Run Vertex Search if Gemini 3.1 thinks we need it
+    // if (vertexOutput && prompt && prompt !== "") {
+    //   const needSolution: boolean = prompt.toUpperCase().includes("JSON");
 
-      // Start Vertex
-      const session: string = await this.getOrCreateVertexSession(mobile_no);
-      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
-        prompt + weatherQuery,
-        session,
-      );
-      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+    //   // Get weather query via Google Weather API
+    //   await this.syncUserWeather(mobile_no);
+    //   const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
 
-      if (
-        sendQueryVertex.answer.answerText ===
-        "A summary could not be generated for your search query. Here are some search results."
-      ) {
-        let noResultsErrorMessage = "";
-        if (language === "BM") {
-          noResultsErrorMessage =
-            "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
-        } else {
-          noResultsErrorMessage =
-            "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
-        }
-        await this.sendText(mobile_no, type, noResultsErrorMessage);
-      } else {
-        if (needSolution) {
-          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
-        } else {
-          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
-        }
-      }
-    } else {
-      // Send base message if no Vertex required
-      await this.sendText(mobile_no, type, reply);
-    }
-    return Result.succeed(
-      ENUM_STATUS_CODES_SUCCESS.OK,
-      "Vertex successfully analyzed text and provided solution",
-      "handleText success.",
-    );
+    //   // Start Vertex
+    //   const session: string = await this.getOrCreateVertexSession(mobile_no);
+    //   const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
+    //     prompt + weatherQuery,
+    //     session,
+    //   );
+    //   const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+
+    //   if (
+    //     sendQueryVertex.answer.answerText ===
+    //     "A summary could not be generated for your search query. Here are some search results."
+    //   ) {
+    //     let noResultsErrorMessage = "";
+    //     if (language === "BM") {
+    //       noResultsErrorMessage =
+    //         "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
+    //     } else {
+    //       noResultsErrorMessage =
+    //         "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
+    //     }
+    //     await this.sendText(mobile_no, type, noResultsErrorMessage);
+    //   } else {
+    //     if (needSolution) {
+    //       await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
+    //     } else {
+    //       await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+    //     }
+    //   }
+    // } else {
+    //   // Send base message if no Vertex required
+    //   await this.sendText(mobile_no, type, reply);
+    // }
+    // return Result.succeed(
+    //   ENUM_STATUS_CODES_SUCCESS.OK,
+    //   "Vertex successfully analyzed text and provided solution",
+    //   "handleText success.",
+    // );
   }
 
   // Diagnose diseases from images or videos uploaded
