@@ -332,6 +332,7 @@ class ChatService implements IChatService {
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
         if (needSolution) {
+          console.log(sendQueryVertex.answer.answerText);
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         } else {
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
