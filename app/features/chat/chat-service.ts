@@ -262,7 +262,9 @@ class ChatService implements IChatService {
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
+      console.log("[Chat-Serivce] prompt: " + prompt);
       const needSolution: boolean = prompt.toUpperCase().includes("JSON");
+      console.log("[Chat Service] prompt wants solution: " + needSolution);
 
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
