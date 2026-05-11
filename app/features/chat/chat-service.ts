@@ -262,6 +262,8 @@ class ChatService implements IChatService {
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
+      const needSolution: boolean = prompt.toUpperCase().includes("JSON");
+
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
       const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
@@ -286,7 +288,11 @@ class ChatService implements IChatService {
           "Unfortunately, I couldn't find any information related to your question, can you provide more details or change your question so I may better assist you?",
         );
       } else {
-        await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+        if(needSolution){
+          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
+        }else{
+          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+        }
       }
     }
     return Result.succeed(
@@ -598,7 +604,7 @@ class ChatService implements IChatService {
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
 
-      const saveImageResult: Result<MediaData> = await mediaService.saveDocument(
+      const saveDocumentResult: Result<MediaData> = await mediaService.saveDocument(
         mediaId,
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         doc,
@@ -606,8 +612,8 @@ class ChatService implements IChatService {
       );
       console.log(`[Whatsapp] Saved document to Firestore and Storage`);
 
-      if (saveImageResult.isFailure()) {
-        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+      if (saveDocumentResult.isFailure()) {
+        throw new Error(`handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
       }
 
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
