@@ -497,12 +497,12 @@ class MediaService implements IMediaService {
     caption?: string,
     sha256?: string,
   ): Promise<Result<MediaData>> {
-    const audioFileResult: Result<MediaFileData> = await this.saveDocumentFile(docName, mimeType, buffer, mobile_no);
-    if (audioFileResult.isFailure()) {
-      return audioFileResult;
+    const documentFileResult: Result<MediaFileData> = await this.saveDocumentFile(docName, mimeType, buffer, mobile_no);
+    if (documentFileResult.isFailure()) {
+      return documentFileResult;
     }
 
-    const audioFile: MediaFileData = audioFileResult.getData();
+    const audioFile: MediaFileData = documentFileResult.getData();
 
     try {
       this.saveAudioMetaData(
