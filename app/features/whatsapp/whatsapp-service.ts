@@ -266,7 +266,7 @@ export class WhatsappService {
         case "audio":
           return await this.handleAudio(message);
         case "video":
-          return await this.handleVideo(message, user);
+          return await this.handleVideo(message);
         case "location":
           return await this.handleLocation(message, user);
       }
@@ -366,7 +366,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleVideo(msg: IVideoMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleVideo(msg: IVideoMessage): Promise<ChatInput | void> {
     if (msg.mediaId && msg.url) {
       console.log(`[Whatsapp] Detected message as: Video`);
 
