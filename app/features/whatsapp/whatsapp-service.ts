@@ -268,7 +268,7 @@ export class WhatsappService {
         case "video":
           return await this.handleVideo(message);
         case "location":
-          return await this.handleLocation(message, user);
+          return await this.handleLocation(message);
       }
     } catch (error) {
       await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
@@ -404,7 +404,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<ChatInput> {
+  private async handleLocation(msg: ILocationMessage): Promise<ChatInput> {
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
