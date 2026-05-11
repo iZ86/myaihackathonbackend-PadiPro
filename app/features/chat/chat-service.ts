@@ -90,33 +90,41 @@ class ChatService implements IChatService {
 
       // System Prompt
       const systemPrompt = `
-          You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases. 
+          You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases.
           Based on the chat history, you are to return the following based on what the user is currently asking for:
 
           1. vertexOutput: Whether the user's current query requires you to look up information from Vertex.
             - This field may be set to false if the user's query is simple or does not relate to paddy plant diseases, else true
 
-          2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query. 
-            - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history. 
-          
-          3. message: The reply you will give back to the user. 
+          2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query.
+            - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history.
+
+          3. message: The reply you will give back to the user.
             - This can be a simple acknowledgement that you are retrieving information.
+            - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
+            - Reply explicity in the language the user is using, do not reply in English if the user is using BM and vice versa.
+          
+          4. language: The language in which the reply should be generated based on the query.
+            - This field will be used to ensure the reply is generated in the correct language.
 
           Here are a few examples
           1. User: What causes leaf blast?
               - vertexOutput: true
               - prompt: What causes leaf blast in rice paddies?
               - message: Let me look that up for you.
+              - language: en
 
           2. User: Do you like ice cream?
               - vertexOutput: false
               - prompt: (not generated since vertexOutput is false)
               - message: Yes, but let's stick to paddy plant diseases, I appreciate your enthusiasm though!
+              - language: en
 
           3. User: How do I treat leaft blast?
               - vertexOutput: true
               - prompt: Provide a timelined treatment plan for leaf blast in rice paddies, return the answer explicity in JSON format.
               - message: Let me find that information for you, stay tuned!
+              - language: en
       `;
 
       // Parse data into Gemini 3.1
@@ -128,11 +136,6 @@ class ChatService implements IChatService {
         },
       });
       if (!output) {
-        await this.sendText(
-          mobile_no,
-          created_by,
-          "Sorry, I'm having trouble providing a response due to high demand, please try again later. Thank you for understanding!",
-        );
         throw new Error("AI failed to generate a response");
       }
       return output;
@@ -187,6 +190,7 @@ class ChatService implements IChatService {
         newUser = true;
       }
 
+
       if (userResult.isSuccess()) {
         const user: UserData = userResult.getData();
         const locationExist: boolean = !!user.coords;
@@ -197,6 +201,22 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
+      }
+
+      const user: UserData = userResult.getData();
+      // Update language to EN if initially unset
+      let lang: string | undefined = created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat;
+      if (!lang) {
+        const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
+          "EN",
+          mobile_no,
+          created_by,
+        );
+        if (updateUserLangResult.isFailure()) {
+          throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
+        }
+        const updatedUser: UserData = updateUserLangResult.getData();
+        lang = (created_by === "WHATSAPP" ? updatedUser.lang_whatsapp : updatedUser.lang_webchat) || "EN";
       }
 
       if (this.isWhatsappInput(input)) {
@@ -213,9 +233,12 @@ class ChatService implements IChatService {
 
 
 
+
+
+
       // Transcribe audio to text before saving into chat history for easier tracking
       if (chatInput.media_type === "audio" && chatInput.media_url) {
-        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by);
+        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, lang);
         if (transcribeAudioResult.isSuccess()) {
           message = transcribeAudioResult.getData();
         } else if (transcribeAudioResult.isFailure()) {
@@ -240,14 +263,20 @@ class ChatService implements IChatService {
         throw Error(`Failed to save chat history.`);
       }
 
+      // Send thinking message to Whatsapp
+      if (created_by === "WHATSAPP") {
+        let thinkingMessage = "";
+        if (lang === "BM") {
+          thinkingMessage = "Beri saya seketika untuk memproses mesej anda";
+        } else {
+          thinkingMessage = "Give me a moment to process your message...";
+        }
+        await this.sendText(mobile_no, created_by, thinkingMessage, false);
+      }
+
       // Send media Gemini 3.0 for image diagnosis first if media_url exists
       if (chatInput.media_type === "image" || chatInput.media_type === "video") {
-        const mediaResult: Result<string> = await this.updateMediaDiagnosis(
-          mobile_no,
-          chatInput.media_name,
-          created_by,
-          message ?? "",
-        );
+        const mediaResult: Result<string> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
         if (mediaResult.isSuccess()) {
           await this.sendText(mobile_no, created_by, mediaResult.getData());
         } else if (mediaResult.isFailure()) {
@@ -255,6 +284,7 @@ class ChatService implements IChatService {
           return mediaResult;
         }
       }
+
 
       // Send text directly into Gemini 3.1 for chat response generation
       if (message) {
@@ -273,27 +303,35 @@ class ChatService implements IChatService {
 
   // Handling text and audio messages post transcription
   private async handleText(mobile_no: string, type: string, chatInput: ChatInput): Promise<Result<string>> {
+    // Send the text into the Gemini chatbot
     const output = await this.chatFlow(chatInput);
-
     if (!output?.reply) {
       throw Error(`AI failed to generate a reply.`);
     }
 
-    const { vertexOutput, prompt, reply } = output;
+    // Get response from Gemini chatbot
+    const { vertexOutput, prompt, reply, language } = output;
 
-    // Send the base message generated from Gemini 3.1 first
-    await this.sendText(mobile_no, type, reply);
+    // Update user language after processing
+    const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
+      language,
+      mobile_no,
+      type,
+    );
+    if (updateUserLangResult.isFailure()) {
+      throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
+    }
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
+      const needSolution: boolean = prompt.toUpperCase().includes("JSON");
+
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
 
-      // Start Vertex, can consider dropping the session
+      // Start Vertex
       const session: string = await this.getOrCreateVertexSession(mobile_no);
-
-      // Parse custom query and weather query appended into Vertex
       const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
         prompt + weatherQuery,
         session,
@@ -304,14 +342,25 @@ class ChatService implements IChatService {
         sendQueryVertex.answer.answerText ===
         "A summary could not be generated for your search query. Here are some search results."
       ) {
-        await this.sendText(
-          mobile_no,
-          type,
-          "Unfortunately, I couldn't find any information related to your question, can you provide more details or change your question so I may better assist you?",
-        );
+        let noResultsErrorMessage = "";
+        if (language === "BM") {
+          noResultsErrorMessage =
+            "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
+        } else {
+          noResultsErrorMessage =
+            "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
+        }
+        await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
-        await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+        if (needSolution) {
+          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
+        } else {
+          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+        }
       }
+    } else {
+      // Send base message if no Vertex required
+      await this.sendText(mobile_no, type, reply);
     }
     return Result.succeed(
       ENUM_STATUS_CODES_SUCCESS.OK,
@@ -321,12 +370,7 @@ class ChatService implements IChatService {
   }
 
   // Diagnose diseases from images or videos uploaded
-  private async updateMediaDiagnosis(
-    mobile_no: string,
-    mediaName: string,
-    type: string,
-    caption: string,
-  ): Promise<Result<string>> {
+  private async updateMediaDiagnosis(mediaName: string, lang: string): Promise<Result<string>> {
     const mediaResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (mediaResult.isFailure()) {
       throw new Error(`updateMediaDiagnosis failed to retrieve media: ${mediaResult.getMessage()}`);
@@ -335,28 +379,33 @@ class ChatService implements IChatService {
 
     const geminiMediaResult: Result<MediaOutput> = await geminiService.media(media.download_url);
     if (geminiMediaResult.isFailure()) {
-      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      // if (deleteMediaResult.isFailure()) {
-      //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
-      // }
-
+      // High demand usage of Gemini for image diagnosis
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
         "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
-        return Result.fail(
-          ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
-          "We are currently experiencing high demand, please try again later.",
-        );
-      } else if (
+        let highDemandErrorMessage = "";
+        if (lang === "BM") {
+          highDemandErrorMessage = "Kami sedang menghadapi permintaan tinggi, sila cuba lagi kemudian.";
+        } else {
+          highDemandErrorMessage = "We are currently experiencing high demand, please try again later.";
+        }
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, highDemandErrorMessage);
+      }
+
+      // Users spamming too many images
+      else if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS &&
         geminiMediaResult.getMessage() === "Resource has been exhausted (e.g. check quota)."
       ) {
-        return Result.fail(
-          ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS,
-          "You are sending messages too frequently, please send again in 1 minute.",
-        );
+        let tooManyRequestsErrorMessage = "";
+        if (lang === "BM") {
+          tooManyRequestsErrorMessage = "Anda menghantar mesej terlalu kerap, sila hantar semula dalam 1 minit.";
+        } else {
+          tooManyRequestsErrorMessage = "You are sending messages too frequently, please send again in 1 minute.";
+        }
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, tooManyRequestsErrorMessage);
       }
       throw Error(
         `updateMediaDiagnosis error, gemini error code ${geminiMediaResult.getStatusCode()}: ${geminiMediaResult.getMessage()}`,
@@ -364,18 +413,22 @@ class ChatService implements IChatService {
     }
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
-    if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-      // if (deleteMediaResult.isFailure()) {
-      //   throw new Error(`updateMediaDiagnosis delete media failed: ${deleteMediaResult.getMessage()}`);
-      // }
 
-      return Result.succeed(
-        ENUM_STATUS_CODES_SUCCESS.OK,
-        "We could not detect any paddy plants in the image or video you sent, please try again.",
-        "handleImage success.",
-      );
-    } else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
+    // No detections
+    if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
+      let noDetectionMessage = "";
+      if (lang === "BM") {
+        noDetectionMessage =
+          "Maaf, kami tidak dapat mengesan sebarang tanaman padi dalam imej atau video yang anda hantar, sila cuba lagi.";
+      } else {
+        noDetectionMessage =
+          "Sorry, we could not detect any paddy plants in the image or video you sent, please try again.";
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, noDetectionMessage, "handleImage success.");
+    }
+
+    // Healthy paddy plant detected
+    else if (mediaOutput.detections[0]?.disease === "HEALTHY") {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
         mediaOutput.detections,
@@ -383,12 +436,20 @@ class ChatService implements IChatService {
       if (media.isFailure()) {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
-      return Result.succeed(
-        ENUM_STATUS_CODES_SUCCESS.OK,
-        "No visible signs of disease detected. The rice plants appear healthy based on this image.",
-        "handleImage success.",
-      );
-    } else {
+
+      let healthyMessage = "";
+      if (lang === "BM") {
+        healthyMessage =
+          "Imej atau video yang anda hantar menunjukkan tanaman padi yang sihat tanpa tanda-tanda penyakit. Teruskan usaha menjaga tanaman padi anda!";
+      } else {
+        healthyMessage =
+          "The image you sent shows healthy paddy plants without any signs of disease. Keep up the good work in caring for your paddy plants!";
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, healthyMessage, "handleImage success.");
+    }
+
+    // Disease(s) detected
+    else {
       const media: Result<MediaData> = await mediaService.updateImageOrVideoDiagnosis(
         mediaName,
         mediaOutput.detections,
@@ -411,16 +472,24 @@ class ChatService implements IChatService {
           ", and " +
           detections.at(-1)!.disease;
       }
-      return Result.succeed(
-        ENUM_STATUS_CODES_SUCCESS.OK,
-        `The image you sent has been analyzed and shows signs of ${diseaseNames}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
-        "updateMediaDiagnosis success.",
-      );
+
+      let diseaseMessage = "";
+      if (lang === "BM") {
+        diseaseMessage = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.`;
+      } else {
+        diseaseMessage = `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`;
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, diseaseMessage, "updateMediaDiagnosis success.");
     }
   }
 
   // Transcribe audio files
-  public async transcribeAudio(mobile_no: string, mediaName: string, type: string): Promise<Result<string>> {
+  public async transcribeAudio(
+    mobile_no: string,
+    mediaName: string,
+    type: string,
+    lang: string,
+  ): Promise<Result<string>> {
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
     if (userResult.isFailure()) {
       throw new Error("transcribeAudio couldn't find user.");
@@ -452,26 +521,27 @@ class ChatService implements IChatService {
         .trim();
 
       if (!transcript) {
-        return Result.fail(
-          ENUM_STATUS_CODES_FAILURE.NOT_FOUND,
-          "Sorry, we could not detect any speech in your audio, please try again.",
-        );
+        let noAudioErrorMessage = "";
+        if (lang === "BM") {
+          noAudioErrorMessage = "Maaf, kami tidak dapat mendeteksi ucapan apa pun dalam audio Anda, silakan coba lagi.";
+        } else {
+          noAudioErrorMessage = "Sorry, we could not detect any speech in your audio, please try again.";
+        }
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, noAudioErrorMessage);
       }
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, transcript, "transcribeAudio success.");
     } catch (error) {
       if (error instanceof GoogleError) {
         if (error.code === 3) {
-          await this.sendText(
-            mobile_no,
-            type,
-            "Your audio is too long (max 60 seconds). Please send a shorter voice message.",
-          );
-          // delete the audio file
-          // const deleteMediaResult: Result<null> = await mediaService.deleteMediaByMediaName(mediaName);
-          // if (deleteMediaResult.isFailure()) {
-          //   throw new Error(`transcribeAudio delete media failed: ${deleteMediaResult.getMessage()}`);
-          // }
+          let message = "";
+          if (lang === "BM") {
+            message =
+              "Maaf, audio Anda terlalu panjang (maksimal 60 detik). Silakan kirim pesan suara yang lebih pendek.";
+          } else {
+            message = "Your audio is too long (max 60 seconds). Please send a shorter voice message.";
+          }
+          await this.sendText(mobile_no, type, message);
         }
       }
       throw Error("transcribeAudio failed to transcribe.", { cause: error });
@@ -495,7 +565,7 @@ class ChatService implements IChatService {
 
   // Handling document
   private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
-    const { vertexOutput, prompt, reply } = flowOutput;
+    const { vertexOutput, prompt, reply, language } = flowOutput;
 
     // Send the base message generated from Gemini 3.1 first
     await this.sendText(mobile_no, type, reply);
@@ -504,7 +574,7 @@ class ChatService implements IChatService {
     if (vertexOutput && prompt && prompt !== "") {
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
 
       // Start Vertex, can consider dropping the session
       const session: string = await this.getOrCreateVertexSession(mobile_no);
@@ -546,24 +616,31 @@ class ChatService implements IChatService {
     return input && typeof input === "object" && "messaging_product" in input;
   }
 
-  private async sendText(mobile_no: string, type: string, message: string): Promise<void> {
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "model",
-      timestamp: "",
-      message: message ?? "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`sendText failed to save chat history.`);
+  private async sendText(
+    mobile_no: string,
+    type: string,
+    message: string,
+    saveToHistory: boolean = true,
+  ): Promise<void> {
+    if (saveToHistory) {
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+        role: "model",
+        timestamp: "",
+        message: message ?? "",
+      });
+      if (!saveChatHistoryResult) {
+        throw Error(`sendText failed to save chat history.`);
+      }
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
       whatsappService.sendText(mobile_no, message);
+    } else {
+      this.messages.push({
+        message: message,
+        type: "text",
+      });
     }
-
-    this.messages.push({
-      message: message,
-      type: "text",
-    });
   }
 
   private async sendMedia(
@@ -602,6 +679,8 @@ class ChatService implements IChatService {
   }
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
+    const cleaned = this.cleanPrefix(message);
+    const json = JSON.parse(cleaned);
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
       timestamp: "",
@@ -612,8 +691,6 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const cleaned = this.cleanPrefix(message);
-      const json = JSON.parse(cleaned);
       const doc = await this.generateDocuments(json);
 
       //im keeping this at whatsappService cause it's exclusive to whatsapp
@@ -622,7 +699,7 @@ class ChatService implements IChatService {
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
 
-      const saveImageResult: Result<MediaData> = await mediaService.saveDocument(
+      const saveDocumentResult: Result<MediaData> = await mediaService.saveDocument(
         mediaId,
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         doc,
@@ -630,15 +707,15 @@ class ChatService implements IChatService {
       );
       console.log(`[Whatsapp] Saved document to Firestore and Storage`);
 
-      if (saveImageResult.isFailure()) {
-        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+      if (saveDocumentResult.isFailure()) {
+        throw new Error(`handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
       }
 
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
     }
 
     this.messages.push({
-      message: message,
+      message: json,
       type: "text",
     });
   }
@@ -668,7 +745,7 @@ class ChatService implements IChatService {
     }
   }
 
-  private async generateWeatherQuery(mobile_no: string): Promise<string> {
+  private async generateWeatherQuery(mobile_no: string, lang: string): Promise<string> {
     const weatherResult: Result<WeatherData> = await weatherService.getWeatherByMobileNo(mobile_no);
 
     let weatherQuery: string = "";
@@ -690,17 +767,26 @@ class ChatService implements IChatService {
         ? `, expected rainfall ${weather.precipitation?.qpf.quantity} ${weather.precipitation?.qpf.unit.toLowerCase()}`
         : "";
 
-      weatherQuery =
-        "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
-        `\nCurrent weather conditions:` +
-        `\n- Condition: ${condition}` +
-        `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
-        `\n- Wind: ${wind}${gusts}` +
-        `\n- Sky: ${cloud}` +
-        `\n- Precipitation: ${rainChance}${thunderChance}${qpf}`;
+      if (lang === "BM") {
+        weatherQuery =
+          "\nSelain itu, berikut adalah kondisi cuaca saat ini yang dapat Anda referensikan saat menyesuaikan rencana solusi yang dipersonalisasi: " +
+          `\nKondisi cuaca saat ini:` +
+          `\n- Kondisi: ${condition}` +
+          `\n- Suhu: ${temp}, ${feelsLike}, ${humidity}` +
+          `\n- Angin: ${wind}${gusts}` +
+          `\n- Langit: ${cloud}` +
+          `\n- Presipitasi: ${rainChance}${thunderChance}${qpf}`;
+      } else {
+        weatherQuery =
+          "\nAdditionally, here are the current weather conditions that you may reference when tailoring the personalized solution plan: " +
+          `\nCurrent weather conditions:` +
+          `\n- Condition: ${condition}` +
+          `\n- Temperature: ${temp}, ${feelsLike}, ${humidity}` +
+          `\n- Wind: ${wind}${gusts}` +
+          `\n- Sky: ${cloud}` +
+          `\n- Precipitation: ${rainChance}${thunderChance}${qpf}`;
+      }
     } else if (weatherResult.isFailure() && weatherResult.getMessage() !== "User weather not found.") {
-      // If the weather is still not set by here. Means that the user has no location set.
-      // Hence, don't throw error unless its something else other than no user location set.
       throw new Error(`handleText could not getWeather due to other reasons: ${weatherResult.getMessage()}`);
     }
 

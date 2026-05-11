@@ -1,31 +1,30 @@
-
 import { db } from "../../database/db-connection";
 import { UserData } from "./user-model";
 import { GeoPoint } from "firebase-admin/firestore";
 
 interface IUserRepository {
-  getUsers(): Promise<UserData[]>
+  getUsers(): Promise<UserData[]>;
   getUserByMobileNo(mobile_no: string): Promise<UserData | undefined>;
 }
 
 class UserRepository implements IUserRepository {
   public async getUsers(): Promise<UserData[]> {
-    const snapshot = await db.collection('users').get();
+    const snapshot = await db.collection("users").get();
     if (snapshot.empty) {
       return [];
     }
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as UserData));
+    return snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        }) as UserData,
+    );
   }
 
   public async getUserByMobileNo(mobile_no: string): Promise<UserData | undefined> {
-    const snapshot = await db.collection('users')
-      .where("mobile_no", "==", mobile_no)
-      .limit(1)
-      .get();
+    const snapshot = await db.collection("users").where("mobile_no", "==", mobile_no).limit(1).get();
 
     const doc = snapshot.docs[0];
     if (!doc) {
@@ -34,7 +33,7 @@ class UserRepository implements IUserRepository {
 
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     } as UserData;
   }
 
@@ -42,7 +41,7 @@ class UserRepository implements IUserRepository {
     try {
       await db.collection("users").doc(mobile_no).set({
         mobile_no,
-        name
+        name,
       });
 
       return true;
@@ -54,15 +53,35 @@ class UserRepository implements IUserRepository {
 
   public async updateUserCoordsByMobileNo(coords: GeoPoint, mobile_no: string): Promise<boolean> {
     try {
-      const docRef = db.collection('users').doc(mobile_no);
+      const docRef = db.collection("users").doc(mobile_no);
 
       await docRef.update({
-        coords: coords
+        coords: coords,
       });
 
       return true;
     } catch (error) {
-      console.error("Create user error:", error);
+      console.error("Update user error:", error);
+      return false;
+    }
+  }
+
+  public async updateUserLangByMobileNo(lang: string, mobile_no: string, type: string): Promise<boolean> {
+    try {
+      const docRef = db.collection("users").doc(mobile_no);
+
+      if (type === "WHATSAPP") {
+        await docRef.update({
+          lang_whatsapp: lang,
+        });
+      } else {
+        await docRef.update({
+          lang_webchat: lang,
+        });
+      }
+      return true;
+    } catch (error) {
+      console.error("Update user error:", error);
       return false;
     }
   }
