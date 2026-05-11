@@ -260,7 +260,7 @@ export class WhatsappService {
     try {
       switch (message.type) {
         case "text":
-          return await this.handleText(message, user);
+          return await this.handleText(message);
         case "image":
           return await this.handleImage(message, user);
         case "audio":
@@ -276,7 +276,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleText(msg: ITextMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleText(msg: ITextMessage): Promise<ChatInput | void> {
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
