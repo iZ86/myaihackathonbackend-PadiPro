@@ -160,10 +160,8 @@ class ChatService implements IChatService {
       if (contact && contact.wa_id) {
         const message = whatsappService.parse(rawMsg!, contact, meta);
         const whatsappMessageFormatted = await whatsappService.handle(message);
-        if (whatsappMessageFormatted != null) {
-          chatInput = whatsappMessageFormatted;
-          profileName = contact.profile.name;
-        }
+        chatInput = whatsappMessageFormatted;
+        profileName = contact.profile.name;
 
       }
     } else if (this.isWebchatInput(input)) {
