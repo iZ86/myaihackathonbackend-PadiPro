@@ -47,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -90,16 +90,16 @@ class ChatService implements IChatService {
 
       // System Prompt
       const systemPrompt = `
-          You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases. 
+          You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases.
           Based on the chat history, you are to return the following based on what the user is currently asking for:
 
           1. vertexOutput: Whether the user's current query requires you to look up information from Vertex.
             - This field may be set to false if the user's query is simple or does not relate to paddy plant diseases, else true
 
-          2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query. 
-            - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history. 
-          
-          3. message: The reply you will give back to the user. 
+          2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query.
+            - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history.
+
+          3. message: The reply you will give back to the user.
             - This can be a simple acknowledgement that you are retrieving information.
 
           Here are a few examples
@@ -319,7 +319,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         return Result.fail(
           ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
@@ -578,6 +578,8 @@ class ChatService implements IChatService {
   }
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
+    const cleaned = this.cleanPrefix(message);
+    const json = JSON.parse(cleaned);
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
       timestamp: "",
@@ -588,8 +590,6 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const cleaned = this.cleanPrefix(message);
-      const json = JSON.parse(cleaned);
       const doc = await this.generateDocuments(json);
 
       //im keeping this at whatsappService cause it's exclusive to whatsapp
@@ -613,10 +613,8 @@ class ChatService implements IChatService {
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
     }
 
-    const webCleaned = this.cleanPrefix(message);
-    const webJson = JSON.parse(webCleaned);
     this.messages.push({
-      message: webJson,
+      message: json,
       type: "text",
     });
   }
@@ -750,19 +748,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 
