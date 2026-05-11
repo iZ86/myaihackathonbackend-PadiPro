@@ -176,7 +176,7 @@ class ChatService implements IChatService {
     }
 
     // Deconstruct variables for easier access
-    let { mobile_no, created_by, message, media_type } = chatInput;
+    let { mobile_no, created_by, message } = chatInput;
 
     let newUser: boolean = false;
     let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
