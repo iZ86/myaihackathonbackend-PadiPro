@@ -41,13 +41,13 @@ export class WhatsappService {
   }
 
   // Parse raw message form Whatsapp to reusable format (WhatsappMessage)
-  parse(rawMsg: RawMessage, contact: RawContact | undefined, meta: RawMetadata | undefined): WhatsappMessage {
+  parse(rawMsg: RawMessage, contact: RawContact, meta: RawMetadata): WhatsappMessage {
     const base = {
       from: rawMsg.from,
       messageId: rawMsg.id,
       timestamp: rawMsg.timestamp,
-      name: contact?.profile?.name,
-      waId: contact?.wa_id,
+      name: contact.profile.name,
+      waId: contact.wa_id,
       phoneNumberId: meta?.phone_number_id,
     };
 
