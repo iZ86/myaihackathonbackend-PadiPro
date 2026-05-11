@@ -264,7 +264,7 @@ export class WhatsappService {
         case "image":
           return await this.handleImage(message);
         case "audio":
-          return await this.handleAudio(message, user);
+          return await this.handleAudio(message);
         case "video":
           return await this.handleVideo(message, user);
         case "location":
@@ -327,7 +327,7 @@ export class WhatsappService {
     }
   }
 
-  private async handleAudio(msg: IAudioMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleAudio(msg: IAudioMessage): Promise<ChatInput | void> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleAudio URL invalid.");
     }
