@@ -417,7 +417,7 @@ export class WhatsappService {
     return;
   }
 
-  private async sendLocationInstructionMessage(to: string): Promise<void> {
+  public async sendLocationInstructionMessage(to: string): Promise<void> {
     const locationTutorialImagesResult: Result<LocationTutorialImages> = await mediaService.getLocationTutorialImages();
     if (locationTutorialImagesResult.isFailure()) {
       throw new Error(`sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`);
