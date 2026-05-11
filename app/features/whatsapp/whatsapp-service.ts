@@ -351,41 +351,44 @@ export class WhatsappService {
   }
 
   private async handleVideo(msg: IVideoMessage): Promise<ChatInput | void> {
-    if (msg.mediaId && msg.url) {
-      console.log(`[Whatsapp] Detected message as: Video`);
-
-      const buffer = await this.fetch(msg.mediaId, msg.url);
-      console.log(`[Whatsapp] Fetched video buffer from Whatsapp`);
-
-      const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(
-        msg.mediaId,
-        msg.mimeType ?? "video/mp4",
-        buffer,
-        msg.waId,
-        undefined,
-        msg.sha256,
-      );
-
-      if (saveVideoResult.isFailure()) {
-        throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
-      }
-      console.log(`[Whatsapp] Saved video to Firestore and Storage`);
-
-      const savedVideo: MediaData = saveVideoResult.getData();
-      const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
-      if (videoResult.isFailure()) {
-        throw new Error("handleVideo failed to retrieve video.");
-      }
-
-      const video: MediaData = videoResult.getData();
-      return {
-        mobile_no: msg.waId,
-        created_by: "WHATSAPP",
-        media_type: "video",
-        media_url: video.download_url,
-        media_name: savedVideo.mediaName,
-      };
+    if (!msg.mediaId || !msg.url) {
+      throw new Error("handleVideo URL invalid.");
     }
+
+    console.log(`[Whatsapp] Detected message as: Video`);
+
+    const buffer = await this.fetch(msg.mediaId, msg.url);
+    console.log(`[Whatsapp] Fetched video buffer from Whatsapp`);
+
+    const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(
+      msg.mediaId,
+      msg.mimeType ?? "video/mp4",
+      buffer,
+      msg.waId,
+      undefined,
+      msg.sha256,
+    );
+
+    if (saveVideoResult.isFailure()) {
+      throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
+    }
+    console.log(`[Whatsapp] Saved video to Firestore and Storage`);
+
+    const savedVideo: MediaData = saveVideoResult.getData();
+    const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
+    if (videoResult.isFailure()) {
+      throw new Error("handleVideo failed to retrieve video.");
+    }
+
+    const video: MediaData = videoResult.getData();
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      media_type: "video",
+      media_url: video.download_url,
+      media_name: savedVideo.mediaName,
+    };
+
   }
 
   private async handleLocation(msg: ILocationMessage): Promise<ChatInput> {
