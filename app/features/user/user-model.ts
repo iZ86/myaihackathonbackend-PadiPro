@@ -5,6 +5,6 @@ export interface UserData {
     _latitude: number;
     _longitude: number;
   };
-  lang_webchat?: string;
   lang_whatsapp: string;
+  lang_webchat: string;
 }
