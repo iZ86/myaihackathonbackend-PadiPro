@@ -1,4 +1,3 @@
-
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { UserData } from "./user-model";
@@ -39,7 +38,7 @@ class UserService implements IUserService {
 
     const createUserResult: boolean = await userRepository.createUser(mobile_no, name);
     if (!createUserResult) {
-      throw new Error("createUser failed to create user.")
+      throw new Error("createUser failed to create user.");
     }
 
     const user: Result<UserData> = await this.getUserByMobileNo(mobile_no);
@@ -60,7 +59,7 @@ class UserService implements IUserService {
     const coords: GeoPoint = new GeoPoint(lat, long);
     const updateUserResult: boolean = await userRepository.updateUserCoordsByMobileNo(coords, mobile_no);
     if (!updateUserResult) {
-      throw new Error("updateUserCoordsByMobileNo failed to update user.")
+      throw new Error("updateUserCoordsByMobileNo failed to update user.");
     }
 
     const user: Result<UserData> = await this.getUserByMobileNo(mobile_no);
@@ -72,22 +71,44 @@ class UserService implements IUserService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully updated.");
   }
 
-  
+  public async updateUserLangByMobileNo(lang: string, mobile_no: string, type: string): Promise<Result<UserData>> {
+    const userResult: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const updateUserResult: boolean = await userRepository.updateUserLangByMobileNo(lang, mobile_no, type);
+    if (!updateUserResult) {
+      throw new Error("updateUserLang failed to update user.");
+    }
+
+    const user: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+
+    if (user.isFailure()) {
+      throw new Error("updateUserLang failed to get updated user.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully updated.");
+  }
 
   public async getDiagnosisHistoryByMobileNo(mobile_no: string): Promise<Result<MediaData[]>> {
     const userResult: Result<UserData> = await this.getUserByMobileNo(mobile_no);
     if (userResult.isFailure()) {
       return userResult;
     }
-    const imageAndVideosResult: Result<MediaData[]> = await mediaService.getImagesAndVideosMetaDataByMobileNo(mobile_no);
+    const imageAndVideosResult: Result<MediaData[]> =
+      await mediaService.getImagesAndVideosMetaDataByMobileNo(mobile_no);
 
     if (imageAndVideosResult.isFailure()) {
       return imageAndVideosResult;
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageAndVideosResult.getData(), "Diagnosis history successfully retrieved.");
+    return Result.succeed(
+      ENUM_STATUS_CODES_SUCCESS.OK,
+      imageAndVideosResult.getData(),
+      "Diagnosis history successfully retrieved.",
+    );
   }
-
 }
 
 export default new UserService();
