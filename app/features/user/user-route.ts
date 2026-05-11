@@ -22,7 +22,7 @@ class UserRoute {
     this.router.post("/", checkAuthTokenHeader, createUserBodyValidator, asyncHandler(this.controller.createUser));
 
     this.router.put("/:mobile_no/coords", checkAuthTokenHeader, userParamValidator, updateUserCoordsByMobileNoBodyValidator, asyncHandler(this.controller.updateUserCoordsByMobileNo));
-    this.router.put("/:mobile_no/lang", checkAuthTokenHeader, userParamValidator, updateUserLangByMobileNoBodyValidator, asyncHandler(this.controller.updateUserLangByMobileNo));
+    this.router.patch("/:mobile_no/lang", checkAuthTokenHeader, userParamValidator, updateUserLangByMobileNoBodyValidator, asyncHandler(this.controller.updateUserLangByMobileNo));
   }
 }
 
