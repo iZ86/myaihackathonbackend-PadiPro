@@ -505,7 +505,7 @@ class MediaService implements IMediaService {
     const audioFile: MediaFileData = documentFileResult.getData();
 
     try {
-      this.saveAudioMetaData(
+      this.saveDocumentMetaData(
         audioFile.mediaName,
         mimeType,
         audioFile.storage_path,
