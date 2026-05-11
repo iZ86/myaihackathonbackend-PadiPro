@@ -262,7 +262,7 @@ export class WhatsappService {
         case "text":
           return await this.handleText(message);
         case "image":
-          return await this.handleImage(message, user);
+          return await this.handleImage(message);
         case "audio":
           return await this.handleAudio(message, user);
         case "video":
@@ -289,7 +289,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleImage(msg: IImageMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleImage(msg: IImageMessage): Promise<ChatInput | void> {
     if (msg.mediaId && msg.url) {
       console.log(`[Whatsapp] Detected message as: Image`);
 
