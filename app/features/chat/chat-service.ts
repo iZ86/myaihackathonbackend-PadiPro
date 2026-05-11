@@ -314,6 +314,7 @@ class ChatService implements IChatService {
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
         if(needSolution){
+          console.log("[Chat Service] respond from vertex: " +sendQueryVertex.answer.answerText);
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         }else{
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
@@ -631,7 +632,9 @@ class ChatService implements IChatService {
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
+    console.log(cleaned);
     const json = JSON.parse(cleaned);
+    console.log(json);
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "user",
       timestamp: "",
