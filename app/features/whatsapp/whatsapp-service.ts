@@ -247,11 +247,6 @@ export class WhatsappService {
     newUser: boolean,
     hasLocation: boolean,
   ): Promise<ChatInput | void> {
-    //im directly calling this send text here to make sure we can send out this msg even if the first msg the user sents out is any media
-    if (newUser) {
-      await this.sendIntroductionMessage(message);
-      return;
-    }
     if (message.type != "location" && !hasLocation) {
       await this.sendLocationInstructionMessage(user.mobile_no);
       return;
