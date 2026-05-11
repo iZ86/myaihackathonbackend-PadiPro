@@ -485,7 +485,7 @@ class ChatService implements IChatService {
       return Result.fail(user.getStatusCode(), user.getMessage());
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "handleLocation success.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "Location successfully set.");
   }
 
   // Handling document
