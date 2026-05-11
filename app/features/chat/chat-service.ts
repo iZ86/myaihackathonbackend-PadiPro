@@ -172,10 +172,7 @@ class ChatService implements IChatService {
           const locationExist: boolean = !!user.coords;
 
           const whatsappMessageFormatted = await whatsappService.handle(
-            message,
-            userResult.getData(),
-            newUser,
-            locationExist,
+            message
           );
           if (whatsappMessageFormatted != null) {
             chatInput = whatsappMessageFormatted;

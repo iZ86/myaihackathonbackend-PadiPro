@@ -242,10 +242,7 @@ export class WhatsappService {
   }
 
   async handle(
-    message: WhatsappMessage,
-    user: UserData,
-    newUser: boolean,
-    hasLocation: boolean,
+    message: WhatsappMessage
   ): Promise<ChatInput | void> {
 
     switch (message.type) {
