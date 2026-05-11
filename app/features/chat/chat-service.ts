@@ -362,7 +362,7 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
 
-      let diseaseNames: string = ""
+      let diseaseNames: string = "";
       const detections = mediaOutput.detections;
 
       if (detections.length <= 1) {
@@ -372,7 +372,7 @@ class ChatService implements IChatService {
       }
       return Result.succeed(
         ENUM_STATUS_CODES_SUCCESS.OK,
-        `The image you sent has been analyzed and shows signs of ${diseaseNames}. ${caption ?? "Would you like to know more about the diagnosis?"}`,
+        `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`,
         "updateMediaDiagnosis success.",
       );
     }
@@ -594,8 +594,10 @@ class ChatService implements IChatService {
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
     }
 
+    const webCleaned = this.cleanPrefix(message);
+    const webJson = JSON.parse(webCleaned);
     this.messages.push({
-      message: message,
+      message: webJson,
       type: "text",
     });
   }
