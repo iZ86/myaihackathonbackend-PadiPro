@@ -289,6 +289,16 @@ class ChatService implements IChatService {
     // Get response from Gemini chatbot
     const { vertexOutput, prompt, reply, language } = output;
 
+    // Update user language after processing
+    const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
+      language,
+      mobile_no,
+      type,
+    );
+    if (updateUserLangResult.isFailure()) {
+      throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
+    }
+
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
       console.log("[Chat-Serivce] prompt: " + prompt);
