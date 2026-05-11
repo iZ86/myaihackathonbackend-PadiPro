@@ -247,10 +247,6 @@ export class WhatsappService {
     newUser: boolean,
     hasLocation: boolean,
   ): Promise<ChatInput | void> {
-    if (message.type != "location" && !hasLocation) {
-      await this.sendLocationInstructionMessage(user.mobile_no);
-      return;
-    }
 
     try {
       switch (message.type) {
