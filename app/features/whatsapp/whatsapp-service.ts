@@ -377,7 +377,7 @@ export class WhatsappService {
         msg.mediaId,
         msg.mimeType ?? "video/mp4",
         buffer,
-        user.mobile_no,
+        msg.waId,
         undefined,
         msg.sha256,
       );
@@ -395,7 +395,7 @@ export class WhatsappService {
 
       const video: MediaData = videoResult.getData();
       return {
-        mobile_no: user.mobile_no,
+        mobile_no: msg.waId,
         created_by: "WHATSAPP",
         media_type: "video",
         media_url: video.download_url,
