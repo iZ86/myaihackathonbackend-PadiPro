@@ -341,7 +341,7 @@ export class WhatsappService {
       msg.mediaId,
       msg.mimeType ?? "audio/ogg",
       buffer,
-      user.mobile_no,
+      msg.waId,
       undefined,
       msg.sha256,
     );
@@ -358,7 +358,7 @@ export class WhatsappService {
 
     const audio: MediaData = audioResult.getData();
     return {
-      mobile_no: user.mobile_no,
+      mobile_no: msg.waId,
       created_by: "WHATSAPP",
       media_type: "audio",
       media_url: audio.download_url,
