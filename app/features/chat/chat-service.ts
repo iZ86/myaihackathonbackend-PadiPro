@@ -152,9 +152,10 @@ class ChatService implements IChatService {
       const rawMsg = input.messages?.[0];
       const contact = input.contacts?.[0];
       const meta = input.metadata;
-      const message = whatsappService.parse(rawMsg!, contact, meta);
+      
 
       if (contact && contact.wa_id) {
+        const message = whatsappService.parse(rawMsg!, contact, meta);
         const mobile_no: string = contact.wa_id;
 
         let newUser: boolean = false;
