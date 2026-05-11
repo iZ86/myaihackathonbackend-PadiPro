@@ -300,7 +300,7 @@ export class WhatsappService {
         msg.mediaId,
         msg.mimeType ?? "image/jpeg",
         buffer,
-        user.mobile_no,
+        msg.waId,
         msg.caption,
         msg.sha256,
       );
@@ -317,7 +317,7 @@ export class WhatsappService {
 
       const image: MediaData = imageResult.getData();
       return {
-        mobile_no: user.mobile_no,
+        mobile_no: msg.waId,
         created_by: "WHATSAPP",
         message: msg.caption,
         media_type: "image",
