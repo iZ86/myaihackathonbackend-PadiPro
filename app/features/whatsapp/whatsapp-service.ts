@@ -401,9 +401,9 @@ export class WhatsappService {
     }
   }
 
-  private async sendIntroductionMessage(message: WhatsappMessage) {
+  private async sendIntroductionMessage(mobile_no: string) {
     await this.sendText(
-      message.from,
+      mobile_no,
       `
             Welcome to PadiPro! 🌾💪
             \nI'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
