@@ -311,7 +311,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleAudio(msg: IAudioMessage): Promise<ChatInput | void> {
+  private async handleAudio(msg: IAudioMessage): Promise<ChatInput> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleAudio URL invalid.");
     }
