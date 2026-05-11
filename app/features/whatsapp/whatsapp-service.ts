@@ -404,21 +404,17 @@ export class WhatsappService {
     }
   }
 
-  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
+  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<ChatInput> {
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
 
-    const handleLocationResult: Result<UserData> = await chatService.handleLocation(
-      user.mobile_no,
-      msg.latitude,
-      msg.longitude,
-    );
-
-    if (handleLocationResult.isFailure()) {
-      throw new Error(`handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`);
-    } else if (handleLocationResult.isSuccess()) {
-      await this.sendText(msg.from, "Location updated successfully.");
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      media_type: "location",
+      longitutde: msg.longitude,
+      latitude: msg.latitude
     }
   }
 
