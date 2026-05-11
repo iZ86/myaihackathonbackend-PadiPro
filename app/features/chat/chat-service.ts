@@ -198,6 +198,18 @@ class ChatService implements IChatService {
       }
     }
 
+    if (this.isWhatsappInput(input)) {
+      if (chatInput.media_type === "location") {
+        const userResult: Result<UserData> = await this.handleLocation(mobile_no, chatInput.latitude, chatInput.longitutde);
+        if (userResult.isFailure()) {
+          throw new Error("chat failed to set user's location.");
+        } else {
+          await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage());
+          return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, userResult.getMessage());
+        }
+      }
+    }
+
 
 
     // Transcribe audio to text before saving into chat history for easier tracking
