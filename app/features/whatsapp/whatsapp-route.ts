@@ -23,9 +23,6 @@ class WhatsappRoute {
             return res.status(403).end();
         });
 
-        //receive, parse, and response to msg
-        this.router.post("/", asyncHandler(this.controller.handleWebhook.bind(this.controller)));
-
 
         //OTP service 
         this.router.post('/otp/generate', generateOTPBodyValidator, this.controller.generateOTP.bind(this.controller));
