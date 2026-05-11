@@ -502,24 +502,24 @@ class MediaService implements IMediaService {
       return documentFileResult;
     }
 
-    const audioFile: MediaFileData = documentFileResult.getData();
+    const documentFile: MediaFileData = documentFileResult.getData();
 
     try {
       this.saveDocumentMetaData(
-        audioFile.mediaName,
+        documentFile.mediaName,
         mimeType,
-        audioFile.storage_path,
-        audioFile.download_url,
+        documentFile.storage_path,
+        documentFile.download_url,
         mobile_no,
         caption,
         sha256,
       );
     } catch (error) {
-      this.deleteMediaByMediaName(audioFile.mediaName);
+      this.deleteMediaByMediaName(documentFile.mediaName);
       throw new Error("saveAudio failed to save", { cause: error });
     }
 
-    const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(audioFile.mediaName);
+    const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(documentFile.mediaName);
     if (audioData.isFailure()) {
       throw new Error("saveAudio failed to get saved audio.");
     }
@@ -536,7 +536,7 @@ class MediaService implements IMediaService {
     caption?: string,
     sha256?: string,
   ): Promise<Result<MediaData>> {
-    const saveAudioResult: boolean = await mediaRepository.saveMediaMetaData(
+    const saveDocumentResult: boolean = await mediaRepository.saveMediaMetaData(
       docName,
       mimeType,
       storagePath,
@@ -545,16 +545,16 @@ class MediaService implements IMediaService {
       caption ?? "",
       sha256 ?? "",
     );
-    if (!saveAudioResult) {
-      throw new Error("saveAudio failed to save audio.");
+    if (!saveDocumentResult) {
+      throw new Error("saveDocument failed to save audio.");
     }
 
-    const savedAudio: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
-    if (savedAudio.isFailure()) {
-      throw new Error("savedAudioMetaData failed to get saved audio.");
+    const savedDocument: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
+    if (savedDocument.isFailure()) {
+      throw new Error("savedDocumentMetaData failed to get saved audio.");
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedAudio.getData(), "Audio metadata saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "Audio metadata saved.");
   }
 
   public async saveDocumentFile(
