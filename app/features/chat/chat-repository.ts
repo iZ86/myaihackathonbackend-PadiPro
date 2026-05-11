@@ -43,6 +43,7 @@ class ChatRepository implements IChatRepository {
         console.error("Record already exists.");
         return undefined;
       }
+      throw error;
     }
   }
 
