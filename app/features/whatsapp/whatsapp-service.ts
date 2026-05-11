@@ -248,22 +248,17 @@ export class WhatsappService {
     hasLocation: boolean,
   ): Promise<ChatInput | void> {
 
-    try {
-      switch (message.type) {
-        case "text":
-          return await this.handleText(message);
-        case "image":
-          return await this.handleImage(message);
-        case "audio":
-          return await this.handleAudio(message);
-        case "video":
-          return await this.handleVideo(message);
-        case "location":
-          return await this.handleLocation(message);
-      }
-    } catch (error) {
-      await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
+    switch (message.type) {
+      case "text":
+        return await this.handleText(message);
+      case "image":
+        return await this.handleImage(message);
+      case "audio":
+        return await this.handleAudio(message);
+      case "video":
+        return await this.handleVideo(message);
+      case "location":
+        return await this.handleLocation(message);
     }
   }
 
