@@ -47,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string; } = {};
+  private userVertexSession: { [mobile_no: string]: string } = {};
   private speechClient: SpeechClient;
 
   constructor() {
