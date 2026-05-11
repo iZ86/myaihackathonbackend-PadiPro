@@ -192,6 +192,10 @@ class ChatService implements IChatService {
       if (newUser) {
         await whatsappService.sendIntroductionMessage(mobile_no);
       }
+      if (chatInput.media_type !== "location" && !locationExist) {
+        await whatsappService.sendLocationInstructionMessage(user.mobile_no);
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
+      }
     }
 
 
