@@ -401,7 +401,7 @@ export class WhatsappService {
     }
   }
 
-  private async sendIntroductionMessage(mobile_no: string) {
+  public async sendIntroductionMessage(mobile_no: string) {
     await this.sendText(
       mobile_no,
       `
