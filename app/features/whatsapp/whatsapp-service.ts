@@ -222,15 +222,15 @@ export class WhatsappService {
     const document =
       "mediaId" in source && source.mediaId
         ? {
-            id: source.mediaId,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          }
+          id: source.mediaId,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        }
         : {
-            link: source.link!,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          };
+          link: source.link!,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        };
     const payload: SendDocPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
