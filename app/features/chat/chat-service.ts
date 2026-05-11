@@ -186,6 +186,13 @@ class ChatService implements IChatService {
       newUser = true;
     }
 
+    if (userResult.isSuccess()) {
+      const user: UserData = userResult.getData();
+      const locationExist: boolean = !!user.coords;
+      if (newUser) {
+        await whatsappService.sendIntroductionMessage(mobile_no);
+      }
+    }
 
 
 
