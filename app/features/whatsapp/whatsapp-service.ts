@@ -350,7 +350,7 @@ export class WhatsappService {
     };
   }
 
-  private async handleVideo(msg: IVideoMessage): Promise<ChatInput | void> {
+  private async handleVideo(msg: IVideoMessage): Promise<ChatInput> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleVideo URL invalid.");
     }
