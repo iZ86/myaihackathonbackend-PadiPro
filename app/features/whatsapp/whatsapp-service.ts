@@ -273,41 +273,42 @@ export class WhatsappService {
   }
 
   private async handleImage(msg: IImageMessage): Promise<ChatInput | void> {
-    if (msg.mediaId && msg.url) {
-      console.log(`[Whatsapp] Detected message as: Image`);
-
-      const buffer = await this.fetch(msg.mediaId, msg.url);
-      console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
-
-      const saveImageResult: Result<MediaData> = await mediaService.saveImage(
-        msg.mediaId,
-        msg.mimeType ?? "image/jpeg",
-        buffer,
-        msg.waId,
-        msg.caption,
-        msg.sha256,
-      );
-      console.log(`[Whatsapp] Saved image to Firestore and Storage`);
-      if (saveImageResult.isFailure()) {
-        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
-      }
-
-      const savedImage: MediaData = saveImageResult.getData();
-      const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
-      if (imageResult.isFailure()) {
-        throw new Error("handleImage failed to retrieve image.");
-      }
-
-      const image: MediaData = imageResult.getData();
-      return {
-        mobile_no: msg.waId,
-        created_by: "WHATSAPP",
-        message: msg.caption,
-        media_type: "image",
-        media_url: image.download_url,
-        media_name: image.mediaName,
-      };
+    if (!msg.mediaId || !msg.url) {
+      throw new Error("handleImage URL invalid.");
     }
+    console.log(`[Whatsapp] Detected message as: Image`);
+
+    const buffer = await this.fetch(msg.mediaId, msg.url);
+    console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
+
+    const saveImageResult: Result<MediaData> = await mediaService.saveImage(
+      msg.mediaId,
+      msg.mimeType ?? "image/jpeg",
+      buffer,
+      msg.waId,
+      msg.caption,
+      msg.sha256,
+    );
+    console.log(`[Whatsapp] Saved image to Firestore and Storage`);
+    if (saveImageResult.isFailure()) {
+      throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+    }
+
+    const savedImage: MediaData = saveImageResult.getData();
+    const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
+    if (imageResult.isFailure()) {
+      throw new Error("handleImage failed to retrieve image.");
+    }
+
+    const image: MediaData = imageResult.getData();
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      message: msg.caption,
+      media_type: "image",
+      media_url: image.download_url,
+      media_name: image.mediaName,
+    };
   }
 
   private async handleAudio(msg: IAudioMessage): Promise<ChatInput | void> {
