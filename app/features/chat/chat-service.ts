@@ -148,36 +148,23 @@ class ChatService implements IChatService {
       media_type: "text"
     };
 
+    let profileName: string = "";
+
     // Extract data according to source
     if (this.isWhatsappInput(input)) {
       const rawMsg = input.messages?.[0];
       const contact = input.contacts?.[0];
       const meta = input.metadata;
-      
+
 
       if (contact && contact.wa_id) {
         const message = whatsappService.parse(rawMsg!, contact, meta);
-        const mobile_no: string = contact.wa_id;
-
-        let newUser: boolean = false;
-        let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-
-        if (userResult.isFailure()) {
-          userResult = await userService.createUser(contact.wa_id, contact.profile.name);
-          newUser = true;
+        const whatsappMessageFormatted = await whatsappService.handle(message);
+        if (whatsappMessageFormatted != null) {
+          chatInput = whatsappMessageFormatted;
+          profileName = contact.profile.name;
         }
 
-        if (userResult.isSuccess()) {
-          const user: UserData = userResult.getData();
-          const locationExist: boolean = !!user.coords;
-
-          const whatsappMessageFormatted = await whatsappService.handle(
-            message
-          );
-          if (whatsappMessageFormatted != null) {
-            chatInput = whatsappMessageFormatted;
-          }
-        }
       }
     } else if (this.isWebchatInput(input)) {
       chatInput = {
@@ -190,6 +177,16 @@ class ChatService implements IChatService {
 
     // Deconstruct variables for easier access
     let { mobile_no, created_by, message, media_type } = chatInput;
+
+    let newUser: boolean = false;
+    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+    if (userResult.isFailure()) {
+      userResult = await userService.createUser(mobile_no, profileName);
+      newUser = true;
+    }
+
+
 
 
     // Transcribe audio to text before saving into chat history for easier tracking
