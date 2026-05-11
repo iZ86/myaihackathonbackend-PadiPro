@@ -151,8 +151,8 @@ export type SendDocPayload = {
   to: string;
   type: "document";
   document:
-    | { id: string; link?: never; caption?: string; filename?: string }
-    | { link: string; id?: never; caption?: string; filename?: string };
+  | { id: string; link?: never; caption?: string; filename?: string }
+  | { link: string; id?: never; caption?: string; filename?: string };
 };
 
 //response from sending msg for better console logging
