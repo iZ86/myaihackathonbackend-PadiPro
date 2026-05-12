@@ -322,7 +322,7 @@ class ChatService implements IChatService {
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
       const needSolution: boolean = prompt.toUpperCase().includes("JSON");
-
+      console.log("needSolution: ", needSolution);
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
       const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
@@ -334,7 +334,7 @@ class ChatService implements IChatService {
         session,
       );
       const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-
+      console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
       if (
         sendQueryVertex.answer.answerText ===
         "A summary could not be generated for your search query. Here are some search results."
