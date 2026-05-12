@@ -46,3 +46,7 @@ export const whatsappConfig = {
   API_KEY: process.env.WHATSAPP_API_KEY as string,
   PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID as string
 }
+
+export const translateServiceConfig = {
+  PROJECT_ID: process.env.TRANSLATE_PROJECT_ID as string
+}
