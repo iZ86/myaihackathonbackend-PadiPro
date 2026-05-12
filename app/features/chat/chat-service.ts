@@ -182,10 +182,6 @@ class ChatService implements IChatService {
     }
 
 
-    // Default lang value.
-    let lang: string = "EN";
-
-
     try {
 
       // Deconstruct variables for easier access
@@ -210,7 +206,7 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-
+        chatInput.langCode = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat).toUpperCase() as "MS" | "EN" || chatInput.langCode;
       }
 
       if (this.isWhatsappInput(input)) {
@@ -231,7 +227,7 @@ class ChatService implements IChatService {
 
       // Transcribe audio to text before saving into chat history for easier tracking
       if (chatInput.media_type === "audio" && chatInput.media_url) {
-        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, lang, messages);
+        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, chatInput.langCode, messages);
         if (transcribeAudioResult.isSuccess()) {
           message = transcribeAudioResult.getData();
         } else if (transcribeAudioResult.isFailure()) {
@@ -259,7 +255,7 @@ class ChatService implements IChatService {
       // Send thinking message to Whatsapp
       if (created_by === "WHATSAPP") {
         let thinkingMessage = "";
-        if (lang === "BM") {
+        if (chatInput.langCode === "MS") {
           thinkingMessage = "Beri saya seketika untuk memproses mesej anda";
         } else {
           thinkingMessage = "Give me a moment to process your message...";
@@ -269,7 +265,7 @@ class ChatService implements IChatService {
 
       // Send media Gemini 3.0 for image diagnosis first if media_url exists
       if (chatInput.media_type === "image" || chatInput.media_type === "video") {
-        const mediaResult: Result<ImageDiagnosisOutput> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
+        const mediaResult: Result<ImageDiagnosisOutput> = await this.updateMediaDiagnosis(chatInput.media_name, chatInput.langCode);
         if (mediaResult.isSuccess()) {
           const { reply, chartBase64Str } = mediaResult.getData();
 
@@ -297,7 +293,7 @@ class ChatService implements IChatService {
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: messages }, "Chat response generated.");
     } catch (error) {
       let errorMessage = "";
-      if (lang === "BM") {
+      if (chatInput.langCode === "MS") {
         errorMessage = "Kami nampaknya menghadapi beberapa masalah, sila cuba lagi dalam masa sejam atau lebih.";
       } else {
         errorMessage = "We seem to be having some issues, please try again in an hour or so.";
@@ -350,7 +346,7 @@ class ChatService implements IChatService {
         "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
       ) {
         let noResultsErrorMessage = "";
-        if (language === "BM") {
+        if (chatInput.langCode === "MS") {
           noResultsErrorMessage =
             "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
         } else {
@@ -377,7 +373,7 @@ class ChatService implements IChatService {
         })();
         if (isJsonResponse) {
           // Send solution plan text
-          if (language === "BM") {
+          if (chatInput.langCode === "MS") {
             await this.sendText(
               mobile_no,
               type,
@@ -420,7 +416,7 @@ class ChatService implements IChatService {
         "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
-        if (lang === "BM") {
+        if (lang === "MS") {
           highDemandErrorMessage = "Kami sedang menghadapi permintaan tinggi, sila cuba lagi kemudian.";
         } else {
           highDemandErrorMessage = "We are currently experiencing high demand, please try again later.";
@@ -434,7 +430,7 @@ class ChatService implements IChatService {
         geminiMediaResult.getMessage() === "Resource has been exhausted (e.g. check quota)."
       ) {
         let tooManyRequestsErrorMessage = "";
-        if (lang === "BM") {
+        if (lang === "MS") {
           tooManyRequestsErrorMessage = "Anda menghantar mesej terlalu kerap, sila hantar semula dalam 1 minit.";
         } else {
           tooManyRequestsErrorMessage = "You are sending messages too frequently, please send again in 1 minute.";
@@ -454,7 +450,7 @@ class ChatService implements IChatService {
 
     // No detections
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      if (lang === "BM") {
+      if (lang === "MS") {
         imageDiagnosisOutput.reply =
           "Maaf, kami tidak dapat mengesan sebarang tanaman padi dalam imej atau video yang anda hantar, sila cuba lagi.";
       } else {
@@ -473,7 +469,7 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
 
-      if (lang === "BM") {
+      if (lang === "MS") {
         imageDiagnosisOutput.reply =
           "Imej atau video yang anda hantar menunjukkan tanaman padi yang sihat tanpa tanda-tanda penyakit. Teruskan usaha menjaga tanaman padi anda!";
       } else {
@@ -507,7 +503,7 @@ class ChatService implements IChatService {
           detections.at(-1)!.disease;
       }
 
-      if (lang === "BM") {
+      if (lang === "MS") {
         imageDiagnosisOutput.reply = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}.`;
       } else {
         imageDiagnosisOutput.reply = `The image you sent has been analyzed and shows signs of ${diseaseNames}.`;
@@ -556,7 +552,7 @@ class ChatService implements IChatService {
 
       if (!transcript) {
         let noAudioErrorMessage = "";
-        if (lang === "BM") {
+        if (lang === "MS") {
           noAudioErrorMessage = "Maaf, kami tidak dapat mendeteksi ucapan apa pun dalam audio Anda, silakan coba lagi.";
         } else {
           noAudioErrorMessage = "Sorry, we could not detect any speech in your audio, please try again.";
@@ -569,7 +565,7 @@ class ChatService implements IChatService {
       if (error instanceof GoogleError) {
         if (error.code === 3) {
           let message = "";
-          if (lang === "BM") {
+          if (lang === "MS") {
             message =
               "Maaf, audio Anda terlalu panjang (maksimal 60 detik). Silakan kirim pesan suara yang lebih pendek.";
           } else {
@@ -817,7 +813,7 @@ class ChatService implements IChatService {
         ? `, expected rainfall ${weather.precipitation?.qpf.quantity} ${weather.precipitation?.qpf.unit.toLowerCase()}`
         : "";
 
-      if (lang === "BM") {
+      if (lang === "MS") {
         weatherQuery =
           "\nSelain itu, berikut adalah kondisi cuaca saat ini yang dapat Anda referensikan saat menyesuaikan rencana solusi yang dipersonalisasi: " +
           `\nKondisi cuaca saat ini:` +
