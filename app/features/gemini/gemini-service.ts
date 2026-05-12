@@ -161,7 +161,7 @@ class GeminiService implements IGeminiService {
     }
   }
 
-  public async generateDetectionChart(detections: MediaOutputDetection[]): Promise<string> {
+  private async generateDetectionChart(detections: MediaOutputDetection[]): Promise<string> {
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width: 500,
       height: 250,
