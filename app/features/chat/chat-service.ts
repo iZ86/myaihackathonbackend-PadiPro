@@ -62,7 +62,7 @@ class ChatService implements IChatService {
       inputSchema: ChatFlowInputSchema,
       outputSchema: ChatFlowOutputSchema,
     },
-    async ({ mobile_no, created_by }) => {
+    async ({ mobile_no, created_by, langCode }) => {
       // Get chat history
       const chatHistory = await chatRepository.getChatHistory(mobile_no, created_by);
       if (!chatHistory) {
