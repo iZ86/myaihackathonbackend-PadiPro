@@ -169,8 +169,11 @@ class GeminiService implements IGeminiService {
       backgroundColour: "white",
     });
 
-    console.log('__dirname:', __dirname);
-    console.log('font path:', path.join(__dirname, 'fonts', 'arial-font', 'arial.ttf'));
+    chartJSNodeCanvas.registerFont(path.join(__dirname, '../../../../fonts/arial-font/arial.ttf'), {
+      family: 'Arial',
+      weight: 'normal',
+      style: 'normal'
+    });
 
     const configuration: ChartConfiguration = {
       type: "bar",
