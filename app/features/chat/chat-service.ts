@@ -179,35 +179,38 @@ class ChatService implements IChatService {
       chatInput = input;
     }
 
-    // Deconstruct variables for easier access
-    let { mobile_no, created_by, message } = chatInput;
-
-    let newUser: boolean = false;
-    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-
-    if (userResult.isFailure()) {
-      userResult = await userService.createUser(mobile_no, profileName);
-      newUser = true;
-    }
 
     // Default lang value.
     let lang: string = "EN";
 
-    if (userResult.isSuccess()) {
-      const user: UserData = userResult.getData();
-      const locationExist: boolean = !!user.coords;
-      if (newUser) {
-        await whatsappService.sendIntroductionMessage(mobile_no);
-      }
-      if (chatInput.media_type !== "location" && !locationExist) {
-        await whatsappService.sendLocationInstructionMessage(user.mobile_no);
-        return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
-      }
-
-      lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
-    }
 
     try {
+
+      // Deconstruct variables for easier access
+      let { mobile_no, created_by, message } = chatInput;
+
+      let newUser: boolean = false;
+      let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+
+      if (userResult.isFailure()) {
+        userResult = await userService.createUser(mobile_no, profileName);
+        newUser = true;
+      }
+
+
+      if (userResult.isSuccess()) {
+        const user: UserData = userResult.getData();
+        const locationExist: boolean = !!user.coords;
+        if (newUser) {
+          await whatsappService.sendIntroductionMessage(mobile_no);
+        }
+        if (chatInput.media_type !== "location" && !locationExist) {
+          await whatsappService.sendLocationInstructionMessage(user.mobile_no);
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
+        }
+
+      }
+
       if (this.isWhatsappInput(input)) {
         if (chatInput.media_type === "location") {
           const userResult: Result<UserData> = await this.handleLocation(
