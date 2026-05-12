@@ -349,6 +349,16 @@ class ChatService implements IChatService {
       } else {
         const vertexRawResponse = sendQueryVertex.answer.answerText;
         if (vertexRawResponse.toUpperCase().includes("JSON")) {
+          // Send solution plan text
+          if (language === "BM") {
+            await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!");
+          } else {
+            await this.sendText(
+              mobile_no,
+              type,
+              "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
+            );
+          }
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         } else {
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
@@ -470,9 +480,9 @@ class ChatService implements IChatService {
       }
 
       if (lang === "BM") {
-        imageDiagnosisOutput.reply = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.`;
+        imageDiagnosisOutput.reply = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}.`;
       } else {
-        imageDiagnosisOutput.reply = `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`;
+        imageDiagnosisOutput.reply = `The image you sent has been analyzed and shows signs of ${diseaseNames}.`;
       }
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageDiagnosisOutput, "updateMediaDiagnosis success.");
