@@ -552,7 +552,7 @@ class MediaService implements IMediaService {
 
     const savedDocument: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
     if (savedDocument.isFailure()) {
-      throw new Error("savedDocumentMetaData failed to get saved saveDocument.");
+      throw new Error("savedDocumentMetaData failed to get saved document.");
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "Document metadata saved.");
