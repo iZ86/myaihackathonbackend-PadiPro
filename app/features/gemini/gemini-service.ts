@@ -161,7 +161,7 @@ class GeminiService implements IGeminiService {
     }
   }
 
-  private async generateDetectionChart(detections: MediaOutputDetection[]): Promise<string> {
+  public async generateDetectionChart(detections: MediaOutputDetection[]): Promise<string> {
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width: 500,
       height: 250,
@@ -194,14 +194,14 @@ class GeminiService implements IGeminiService {
             title: {
               display: true,
               text: "Severity",
-              font: { size: 12, weight: "bold" },
+              font: { size: 12, weight: "bold", family: 'Arial' },
             },
             grid: { display: false },
           },
           y: {
             grid: { display: false },
             ticks: {
-              font: { size: 11, weight: "bold" },
+              font: { size: 11, weight: "bold", family: 'Arial' },
               color: "#333",
             },
           },
