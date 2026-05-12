@@ -359,11 +359,7 @@ class ChatService implements IChatService {
               "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
             );
           } else {
-            await this.sendText(
-              mobile_no,
-              type,
-              "Below is a file for the treatment plan, hope this helps!",
-            );
+            await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!");
           }
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         } else {
@@ -427,7 +423,7 @@ class ChatService implements IChatService {
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
     const imageDiagnosisOutput: ImageDiagnosisOutput = {
       reply: "",
-      chartBase64Str: "",
+      chartBase64Str: mediaOutput.chart ?? "",
     };
 
     // No detections
