@@ -52,6 +52,7 @@ export default class ChatController {
       media_name: req.body.media_name,
       media_type: req.body.media_type,
       created_by: req.body.created_by,
+      langCode: "EN"
     };
 
     const result: Result<ChatOutput | string> = await chatService.chat(input);
