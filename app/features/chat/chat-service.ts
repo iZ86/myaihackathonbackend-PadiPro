@@ -48,7 +48,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -289,7 +289,7 @@ class ChatService implements IChatService {
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
     } catch (error) {
-      this.sendText(
+      await this.sendText(
         chatInput.mobile_no,
         chatInput.created_by,
         "We seem to be having some issues, please try again in an hour or so.",
@@ -391,7 +391,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "BM") {
@@ -641,7 +641,7 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
-      whatsappService.sendText(mobile_no, message);
+      await whatsappService.sendText(mobile_no, message);
     } else {
       this.messages.push({
         message: message,
@@ -879,19 +879,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 
