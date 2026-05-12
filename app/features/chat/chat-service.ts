@@ -348,6 +348,7 @@ class ChatService implements IChatService {
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
         const vertexRawResponse = sendQueryVertex.answer.answerText;
+        console.log("vertexRawResponse:", vertexRawResponse)
         if (vertexRawResponse.toUpperCase().includes("JSON")) {
           // Send solution plan text
           if (language === "BM") {
