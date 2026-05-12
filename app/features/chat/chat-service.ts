@@ -12,6 +12,7 @@ import {
   ChatFlowOutput,
   TimelineSolution,
   ChatHistory,
+  ImageDiagnosisOutput,
 } from "./chat-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
@@ -47,7 +48,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -103,7 +104,7 @@ class ChatService implements IChatService {
             - This can be a simple acknowledgement that you are retrieving information.
             - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
             - Reply explicity in the language the user is using, do not reply in English if the user is using BM and vice versa.
-          
+
           4. language: The language in which the reply should be generated based on the query.
             - This field will be used to ensure the reply is generated in the correct language.
 
@@ -148,40 +149,24 @@ class ChatService implements IChatService {
     let chatInput: ChatInput = {
       mobile_no: "",
       created_by: "BASE",
+      media_type: "text",
     };
+
+    let profileName: string = "";
 
     // Extract data according to source
     if (this.isWhatsappInput(input)) {
       const rawMsg = input.messages?.[0];
       const contact = input.contacts?.[0];
       const meta = input.metadata;
-      const message = whatsappService.parse(rawMsg!, contact, meta);
 
       if (contact && contact.wa_id) {
-        const mobile_no: string = contact.wa_id;
-
-        let newUser: boolean = false;
-        let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-
-        if (userResult.isFailure()) {
-          userResult = await userService.createUser(contact.wa_id, contact.profile.name);
-          newUser = true;
-        }
-
-        if (userResult.isSuccess()) {
-          const user: UserData = userResult.getData();
-          const locationExist: boolean = !!user.coords;
-
-          const whatsappMessageFormatted = await whatsappService.handle(
-            message,
-            userResult.getData(),
-            newUser,
-            locationExist,
-          );
-          if (whatsappMessageFormatted != null) {
-            chatInput = whatsappMessageFormatted;
-          }
-        }
+        const message = whatsappService.parse(rawMsg!, contact, meta);
+        const whatsappMessageFormatted = await whatsappService.handle(message);
+        chatInput = whatsappMessageFormatted;
+        profileName = contact.profile.name;
+      } else {
+        throw new Error("Whatsapp contact not found.");
       }
     } else if (this.isWebchatInput(input)) {
       chatInput = {
@@ -192,90 +177,125 @@ class ChatService implements IChatService {
       chatInput = input;
     }
 
-    // Deconstruct variables for easier access
-    let { mobile_no, created_by, message, media_type, media_url, media_name } = chatInput;
-    const mediaName = media_name ?? "";
+    try {
+      // Deconstruct variables for easier access
+      let { mobile_no, created_by, message } = chatInput;
 
-    // Get the existing languages set for user based on the platform type
-    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
-    if (userResult.isFailure()) {
-      throw new Error(`Failed to retrieve user data for mobile_no: ${mobile_no}`);
-    }
-    const user: UserData = userResult.getData();
+      let newUser: boolean = false;
+      let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
-    // Update language to EN if initially unset
-    let lang: string | undefined = created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat;
-    if (!lang) {
-      const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
-        "EN",
-        mobile_no,
-        created_by,
+      if (userResult.isFailure()) {
+        userResult = await userService.createUser(mobile_no, profileName);
+        newUser = true;
+      }
+
+      // Default lang value.
+      let lang: string = "EN";
+
+      if (userResult.isSuccess()) {
+        const user: UserData = userResult.getData();
+        const locationExist: boolean = !!user.coords;
+        if (newUser) {
+          await whatsappService.sendIntroductionMessage(mobile_no);
+        }
+        if (chatInput.media_type !== "location" && !locationExist) {
+          await whatsappService.sendLocationInstructionMessage(user.mobile_no);
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
+        }
+
+        lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
+      }
+
+      if (this.isWhatsappInput(input)) {
+        if (chatInput.media_type === "location") {
+          const userResult: Result<UserData> = await this.handleLocation(
+            mobile_no,
+            chatInput.latitude,
+            chatInput.longitutde,
+          );
+          if (userResult.isFailure()) {
+            throw new Error("chat failed to set user's location.");
+          } else {
+            await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage());
+            return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, userResult.getMessage());
+          }
+        }
+      }
+
+      // Transcribe audio to text before saving into chat history for easier tracking
+      if (chatInput.media_type === "audio" && chatInput.media_url) {
+        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, lang);
+        if (transcribeAudioResult.isSuccess()) {
+          message = transcribeAudioResult.getData();
+        } else if (transcribeAudioResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+          return transcribeAudioResult;
+        }
+      }
+
+      // Save user message into chat history
+      const chatData: ChatHistory = {
+        role: "user",
+        timestamp: "",
+        message: message ?? "",
+      };
+      if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
+        chatData.media_type = chatInput.media_type;
+        chatData.media_url = chatInput.media_url;
+        chatData.media_name = chatInput.media_name;
+      }
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
+      if (!saveChatHistoryResult) {
+        throw Error(`Failed to save chat history.`);
+      }
+
+      // Send thinking message to Whatsapp
+      if (created_by === "WHATSAPP") {
+        let thinkingMessage = "";
+        if (lang === "BM") {
+          thinkingMessage = "Beri saya seketika untuk memproses mesej anda";
+        } else {
+          thinkingMessage = "Give me a moment to process your message...";
+        }
+        await this.sendText(mobile_no, created_by, thinkingMessage, false);
+      }
+
+      // Send media Gemini 3.0 for image diagnosis first if media_url exists
+      if (chatInput.media_type === "image" || chatInput.media_type === "video") {
+        const mediaResult: Result<ImageDiagnosisOutput> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
+        if (mediaResult.isSuccess()) {
+          const { reply, chartBase64Str } = mediaResult.getData();
+
+          // Send detections text
+          await this.sendText(mobile_no, created_by, reply);
+
+          // Send bar chart graph if any
+          if (chartBase64Str != "") {
+            await this.sendMedia(mobile_no, created_by, chartBase64Str, chatInput.media_type);
+          }
+        } else if (mediaResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, mediaResult.getMessage());
+          return mediaResult;
+        }
+      }
+
+      // Send text directly into Gemini 3.1 for chat response generation
+      if (message) {
+        const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
+        if (textResult.isFailure()) {
+          await this.sendText(mobile_no, created_by, textResult.getMessage());
+          return textResult;
+        }
+      }
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
+    } catch (error) {
+      this.sendText(
+        chatInput.mobile_no,
+        chatInput.created_by,
+        "We seem to be having some issues, please try again in an hour or so.",
       );
-      if (updateUserLangResult.isFailure()) {
-        throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
-      }
-      const updatedUser: UserData = updateUserLangResult.getData();
-      lang = (created_by === "WHATSAPP" ? updatedUser.lang_whatsapp : updatedUser.lang_webchat) || "EN";
+      throw error;
     }
-
-    // Transcribe audio to text before saving into chat history for easier tracking
-    if (media_type === "audio" && media_url) {
-      const transcribeAudioResult = await this.transcribeAudio(mobile_no, mediaName, created_by, lang);
-      if (transcribeAudioResult.isSuccess()) {
-        message = transcribeAudioResult.getData();
-      } else if (transcribeAudioResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
-        return transcribeAudioResult;
-      }
-    }
-
-    // Save user message into chat history
-    const chatData: ChatHistory = {
-      role: "user",
-      timestamp: "",
-      message: message ?? "",
-    };
-    if (media_type) {
-      chatData.media_type = media_type;
-      chatData.media_url = media_url;
-      chatData.media_name = media_name;
-    }
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
-    if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
-    }
-
-    // Send thinking message to Whatsapp
-    if (created_by === "WHATSAPP") {
-      let thinkingMessage = "";
-      if (lang === "BM") {
-        thinkingMessage = "Beri saya seketika untuk memproses mesej anda";
-      } else {
-        thinkingMessage = "Give me a moment to process your message...";
-      }
-      await this.sendText(mobile_no, created_by, thinkingMessage, false);
-    }
-
-    // Send media Gemini 3.0 for image diagnosis first if media_url exists
-    if (media_type === "image" || media_type === "video") {
-      const mediaResult: Result<string> = await this.updateMediaDiagnosis(mediaName, lang);
-      if (mediaResult.isSuccess()) {
-        await this.sendText(mobile_no, created_by, mediaResult.getData());
-      } else if (mediaResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, mediaResult.getMessage());
-        return mediaResult;
-      }
-    }
-
-    // Send text directly into Gemini 3.1 for chat response generation
-    if (message) {
-      const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
-      if (textResult.isFailure()) {
-        await this.sendText(mobile_no, created_by, textResult.getMessage());
-        return textResult;
-      }
-    }
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
   }
 
   // Handling text and audio messages post transcription
@@ -301,8 +321,6 @@ class ChatService implements IChatService {
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
-      const needSolution: boolean = prompt.toUpperCase().includes("JSON");
-
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
       const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
@@ -314,7 +332,7 @@ class ChatService implements IChatService {
         session,
       );
       const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-
+      console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
       if (
         sendQueryVertex.answer.answerText ===
         "A summary could not be generated for your search query. Here are some search results."
@@ -329,7 +347,19 @@ class ChatService implements IChatService {
         }
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
-        if (needSolution) {
+        const vertexRawResponse = sendQueryVertex.answer.answerText;
+        console.log("vertexRawResponse:", vertexRawResponse)
+        if (vertexRawResponse.toUpperCase().includes("JSON")) {
+          // Send solution plan text
+          if (language === "BM") {
+            await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!");
+          } else {
+            await this.sendText(
+              mobile_no,
+              type,
+              "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
+            );
+          }
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
         } else {
           await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
@@ -347,7 +377,7 @@ class ChatService implements IChatService {
   }
 
   // Diagnose diseases from images or videos uploaded
-  private async updateMediaDiagnosis(mediaName: string, lang: string): Promise<Result<string>> {
+  private async updateMediaDiagnosis(mediaName: string, lang: string): Promise<Result<ImageDiagnosisOutput>> {
     const mediaResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (mediaResult.isFailure()) {
       throw new Error(`updateMediaDiagnosis failed to retrieve media: ${mediaResult.getMessage()}`);
@@ -360,7 +390,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "BM") {
@@ -390,18 +420,20 @@ class ChatService implements IChatService {
     }
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
+    const imageDiagnosisOutput: ImageDiagnosisOutput = {
+      reply: "",
+      chartBase64Str: "",
+    };
 
     // No detections
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      let noDetectionMessage = "";
       if (lang === "BM") {
-        noDetectionMessage =
+        imageDiagnosisOutput.reply =
           "Maaf, kami tidak dapat mengesan sebarang tanaman padi dalam imej atau video yang anda hantar, sila cuba lagi.";
       } else {
-        noDetectionMessage =
+        imageDiagnosisOutput.reply =
           "Sorry, we could not detect any paddy plants in the image or video you sent, please try again.";
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, noDetectionMessage, "handleImage success.");
     }
 
     // Healthy paddy plant detected
@@ -414,15 +446,13 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
 
-      let healthyMessage = "";
       if (lang === "BM") {
-        healthyMessage =
+        imageDiagnosisOutput.reply =
           "Imej atau video yang anda hantar menunjukkan tanaman padi yang sihat tanpa tanda-tanda penyakit. Teruskan usaha menjaga tanaman padi anda!";
       } else {
-        healthyMessage =
+        imageDiagnosisOutput.reply =
           "The image you sent shows healthy paddy plants without any signs of disease. Keep up the good work in caring for your paddy plants!";
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, healthyMessage, "handleImage success.");
     }
 
     // Disease(s) detected
@@ -450,14 +480,13 @@ class ChatService implements IChatService {
           detections.at(-1)!.disease;
       }
 
-      let diseaseMessage = "";
       if (lang === "BM") {
-        diseaseMessage = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.`;
+        imageDiagnosisOutput.reply = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}.`;
       } else {
-        diseaseMessage = `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`;
+        imageDiagnosisOutput.reply = `The image you sent has been analyzed and shows signs of ${diseaseNames}.`;
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, diseaseMessage, "updateMediaDiagnosis success.");
     }
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageDiagnosisOutput, "updateMediaDiagnosis success.");
   }
 
   // Transcribe audio files
@@ -537,7 +566,7 @@ class ChatService implements IChatService {
       return Result.fail(user.getStatusCode(), user.getMessage());
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "handleLocation success.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, user.getData(), "Location successfully set.");
   }
 
   // Handling document
@@ -620,17 +649,10 @@ class ChatService implements IChatService {
     }
   }
 
-  private async sendMedia(
-    mobile_no: string,
-    type: string,
-    message: string,
-    base64URL: string,
-    mediaType: string,
-  ): Promise<void> {
+  private async sendMedia(mobile_no: string, type: string, base64str: string, mediaType: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "model",
       timestamp: "",
-      message: message ?? "",
     });
     if (!saveChatHistoryResult) {
       throw Error(`sendMedia failed to save chat history.`);
@@ -638,19 +660,19 @@ class ChatService implements IChatService {
 
     if (type.toUpperCase() === "WHATSAPP") {
       if (mediaType === "image") {
-        const buffer = Buffer.from(base64URL, "base64");
+        const buffer = Buffer.from(base64str, "base64");
         const mediaId = await whatsappService.uploadMedia(buffer, {
           filename: "image.png",
           mimeType: "image/png",
         });
-        await whatsappService.sendImage(mobile_no, { mediaId }, message);
+        await whatsappService.sendImage(mobile_no, { mediaId }, "");
       } else {
-        await whatsappService.sendVideo(mobile_no, { link: base64URL }, message);
+        await whatsappService.sendVideo(mobile_no, { link: base64str }, "");
       }
     }
 
     this.messages.push({
-      message: message,
+      message: "",
       type: "text",
     });
   }
@@ -658,25 +680,19 @@ class ChatService implements IChatService {
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
     const json = JSON.parse(cleaned);
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "user",
-      timestamp: "",
-      message: message ?? "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
-    }
+
+    const doc = await this.generateDocuments(json);
+
+    let saveDocumentResult: Result<MediaData> | undefined;
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const doc = await this.generateDocuments(json);
-
       //im keeping this at whatsappService cause it's exclusive to whatsapp
       const mediaId = await whatsappService.uploadMedia(doc, {
         filename: "timeline.docx",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
 
-      const saveDocumentResult: Result<MediaData> = await mediaService.saveDocument(
+      saveDocumentResult = await mediaService.saveDocument(
         mediaId,
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         doc,
@@ -685,16 +701,43 @@ class ChatService implements IChatService {
       console.log(`[Whatsapp] Saved document to Firestore and Storage`);
 
       if (saveDocumentResult.isFailure()) {
-        throw new Error(`handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
+        throw new Error(`[Whatsapp] handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
       }
 
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
+    } else if (type.toUpperCase() === "WEBCHAT") {
+      saveDocumentResult = await mediaService.saveDocument(
+        "timeline.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        doc,
+        mobile_no,
+      );
+      console.log(`[Webchat] Saved document to Firestore and Storage`);
+
+      if (saveDocumentResult.isFailure()) {
+        throw new Error(`[Webchat] handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
+      }
+
+      this.messages.push({
+        message: message,
+        document_url: saveDocumentResult.getData().download_url,
+        type: "text",
+      });
     }
 
-    this.messages.push({
-      message: json,
-      type: "text",
-    });
+    if (saveDocumentResult) {
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+        role: "model",
+        timestamp: "",
+        message: message ?? "",
+        media_type: "document",
+        media_url: saveDocumentResult.getData().download_url,
+        media_name: saveDocumentResult.getData().mediaName,
+      });
+      if (!saveChatHistoryResult) {
+        throw Error(`Failed to save chat history.`);
+      }
+    }
   }
 
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
@@ -835,19 +878,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 

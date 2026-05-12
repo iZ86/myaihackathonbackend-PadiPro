@@ -41,13 +41,13 @@ export class WhatsappService {
   }
 
   // Parse raw message form Whatsapp to reusable format (WhatsappMessage)
-  parse(rawMsg: RawMessage, contact: RawContact | undefined, meta: RawMetadata | undefined): WhatsappMessage {
+  parse(rawMsg: RawMessage, contact: RawContact, meta: RawMetadata): WhatsappMessage {
     const base = {
       from: rawMsg.from,
       messageId: rawMsg.id,
       timestamp: rawMsg.timestamp,
-      name: contact?.profile?.name,
-      waId: contact?.wa_id,
+      name: contact.profile.name,
+      waId: contact.wa_id,
       phoneNumberId: meta?.phone_number_id,
     };
 
@@ -222,15 +222,15 @@ export class WhatsappService {
     const document =
       "mediaId" in source && source.mediaId
         ? {
-            id: source.mediaId,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          }
+          id: source.mediaId,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        }
         : {
-            link: source.link!,
-            ...(options?.caption ? { caption: options.caption } : {}),
-            ...(options?.filename ? { filename: options.filename } : {}),
-          };
+          link: source.link!,
+          ...(options?.caption ? { caption: options.caption } : {}),
+          ...(options?.filename ? { filename: options.filename } : {}),
+        };
     const payload: SendDocPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -242,91 +242,76 @@ export class WhatsappService {
   }
 
   async handle(
-    message: WhatsappMessage,
-    user: UserData,
-    newUser: boolean,
-    hasLocation: boolean,
-  ): Promise<ChatInput | void> {
-    //im directly calling this send text here to make sure we can send out this msg even if the first msg the user sents out is any media
-    if (newUser) {
-      await this.sendIntroductionMessage(message);
-      return;
-    }
-    if (message.type != "location" && !hasLocation) {
-      await this.sendLocationInstructionMessage(user.mobile_no);
-      return;
-    }
+    message: WhatsappMessage
+  ): Promise<ChatInput> {
 
-    try {
-      switch (message.type) {
-        case "text":
-          return await this.handleText(message, user);
-        case "image":
-          return await this.handleImage(message, user);
-        case "audio":
-          return await this.handleAudio(message, user);
-        case "video":
-          return await this.handleVideo(message, user);
-        case "location":
-          return await this.handleLocation(message, user);
-      }
-    } catch (error) {
-      await this.sendText(message.from, "We seem to be having some issues, please try again in an hour or so.");
-      throw error;
+    switch (message.type) {
+      case "text":
+        return await this.handleText(message);
+      case "image":
+        return await this.handleImage(message);
+      case "audio":
+        return await this.handleAudio(message);
+      case "video":
+        return await this.handleVideo(message);
+      case "location":
+        return await this.handleLocation(message);
     }
   }
 
-  private async handleText(msg: ITextMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleText(msg: ITextMessage): Promise<ChatInput> {
     if (!msg.body) {
       throw new Error("handleText does not have message.body");
     }
 
     return {
-      mobile_no: user.mobile_no,
+      mobile_no: msg.waId,
       created_by: "WHATSAPP",
       message: msg.body,
+      media_type: "text"
     };
   }
 
-  private async handleImage(msg: IImageMessage, user: UserData): Promise<ChatInput | void> {
-    if (msg.mediaId && msg.url) {
-      console.log(`[Whatsapp] Detected message as: Image`);
-
-      const buffer = await this.fetch(msg.mediaId, msg.url);
-      console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
-
-      const saveImageResult: Result<MediaData> = await mediaService.saveImage(
-        msg.mediaId,
-        msg.mimeType ?? "image/jpeg",
-        buffer,
-        user.mobile_no,
-        msg.caption,
-        msg.sha256,
-      );
-      console.log(`[Whatsapp] Saved image to Firestore and Storage`);
-      if (saveImageResult.isFailure()) {
-        throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
-      }
-
-      const savedImage: MediaData = saveImageResult.getData();
-      const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
-      if (imageResult.isFailure()) {
-        throw new Error("handleImage failed to retrieve image.");
-      }
-
-      const image: MediaData = imageResult.getData();
-      return {
-        mobile_no: user.mobile_no,
-        created_by: "WHATSAPP",
-        message: msg.caption,
-        media_type: "image",
-        media_url: image.download_url,
-        media_name: image.mediaName,
-      };
+  private async handleImage(msg: IImageMessage): Promise<ChatInput> {
+    if (!msg.mediaId || !msg.url) {
+      throw new Error("handleImage URL invalid.");
     }
+    console.log(`[Whatsapp] Detected message as: Image`);
+
+    const buffer = await this.fetch(msg.mediaId, msg.url);
+    console.log(`[Whatsapp] Fetched image buffer from Whatsapp`);
+
+    const saveImageResult: Result<MediaData> = await mediaService.saveImage(
+      msg.mediaId,
+      msg.mimeType ?? "image/jpeg",
+      buffer,
+      msg.waId,
+      msg.caption,
+      msg.sha256,
+    );
+    console.log(`[Whatsapp] Saved image to Firestore and Storage`);
+    if (saveImageResult.isFailure()) {
+      throw new Error(`handleImage failed to saveImage: ${saveImageResult.getMessage()}`);
+    }
+
+    const savedImage: MediaData = saveImageResult.getData();
+    const imageResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedImage.mediaName);
+    if (imageResult.isFailure()) {
+      throw new Error("handleImage failed to retrieve image.");
+    }
+
+    const image: MediaData = imageResult.getData();
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      message: msg.caption,
+      media_type: "image",
+      media_url: image.download_url,
+      media_name: image.mediaName,
+    };
   }
 
-  private async handleAudio(msg: IAudioMessage, user: UserData): Promise<ChatInput | void> {
+  private async handleAudio(msg: IAudioMessage): Promise<ChatInput> {
     if (!msg.mediaId || !msg.url) {
       throw new Error("handleAudio URL invalid.");
     }
@@ -340,7 +325,7 @@ export class WhatsappService {
       msg.mediaId,
       msg.mimeType ?? "audio/ogg",
       buffer,
-      user.mobile_no,
+      msg.waId,
       undefined,
       msg.sha256,
     );
@@ -357,7 +342,7 @@ export class WhatsappService {
 
     const audio: MediaData = audioResult.getData();
     return {
-      mobile_no: user.mobile_no,
+      mobile_no: msg.waId,
       created_by: "WHATSAPP",
       media_type: "audio",
       media_url: audio.download_url,
@@ -365,65 +350,64 @@ export class WhatsappService {
     };
   }
 
-  private async handleVideo(msg: IVideoMessage, user: UserData): Promise<ChatInput | void> {
-    if (msg.mediaId && msg.url) {
-      console.log(`[Whatsapp] Detected message as: Video`);
-
-      const buffer = await this.fetch(msg.mediaId, msg.url);
-      console.log(`[Whatsapp] Fetched video buffer from Whatsapp`);
-
-      const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(
-        msg.mediaId,
-        msg.mimeType ?? "video/mp4",
-        buffer,
-        user.mobile_no,
-        undefined,
-        msg.sha256,
-      );
-
-      if (saveVideoResult.isFailure()) {
-        throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
-      }
-      console.log(`[Whatsapp] Saved video to Firestore and Storage`);
-
-      const savedVideo: MediaData = saveVideoResult.getData();
-      const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
-      if (videoResult.isFailure()) {
-        throw new Error("handleVideo failed to retrieve video.");
-      }
-
-      const video: MediaData = videoResult.getData();
-      return {
-        mobile_no: user.mobile_no,
-        created_by: "WHATSAPP",
-        media_type: "video",
-        media_url: video.download_url,
-        media_name: savedVideo.mediaName,
-      };
+  private async handleVideo(msg: IVideoMessage): Promise<ChatInput> {
+    if (!msg.mediaId || !msg.url) {
+      throw new Error("handleVideo URL invalid.");
     }
+
+    console.log(`[Whatsapp] Detected message as: Video`);
+
+    const buffer = await this.fetch(msg.mediaId, msg.url);
+    console.log(`[Whatsapp] Fetched video buffer from Whatsapp`);
+
+    const saveVideoResult: Result<MediaData> = await mediaService.saveVideo(
+      msg.mediaId,
+      msg.mimeType ?? "video/mp4",
+      buffer,
+      msg.waId,
+      undefined,
+      msg.sha256,
+    );
+
+    if (saveVideoResult.isFailure()) {
+      throw new Error(`handleVideo failed to saveVideo: ${saveVideoResult.getMessage()}`);
+    }
+    console.log(`[Whatsapp] Saved video to Firestore and Storage`);
+
+    const savedVideo: MediaData = saveVideoResult.getData();
+    const videoResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(savedVideo.mediaName);
+    if (videoResult.isFailure()) {
+      throw new Error("handleVideo failed to retrieve video.");
+    }
+
+    const video: MediaData = videoResult.getData();
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      media_type: "video",
+      media_url: video.download_url,
+      media_name: savedVideo.mediaName,
+    };
+
   }
 
-  private async handleLocation(msg: ILocationMessage, user: UserData): Promise<void> {
+  private async handleLocation(msg: ILocationMessage): Promise<ChatInput> {
     if (!msg.longitude || !msg.latitude) {
       throw new Error("handleLocation undefined longitude or latitude");
     }
 
-    const handleLocationResult: Result<UserData> = await chatService.handleLocation(
-      user.mobile_no,
-      msg.latitude,
-      msg.longitude,
-    );
-
-    if (handleLocationResult.isFailure()) {
-      throw new Error(`handleLocation failed to updateUserCoords ${handleLocationResult.getMessage()}`);
-    } else if (handleLocationResult.isSuccess()) {
-      await this.sendText(msg.from, "Location updated successfully.");
+    return {
+      mobile_no: msg.waId,
+      created_by: "WHATSAPP",
+      media_type: "location",
+      longitutde: msg.longitude,
+      latitude: msg.latitude
     }
   }
 
-  private async sendIntroductionMessage(message: WhatsappMessage) {
+  public async sendIntroductionMessage(mobile_no: string) {
     await this.sendText(
-      message.from,
+      mobile_no,
       `
             Welcome to PadiPro! 🌾💪
             \nI'm a quick diagnostics tool that offers you guidance on what issues your paddy plants may be facing, and how to solve them!
@@ -437,7 +421,7 @@ export class WhatsappService {
     return;
   }
 
-  private async sendLocationInstructionMessage(to: string): Promise<void> {
+  public async sendLocationInstructionMessage(to: string): Promise<void> {
     const locationTutorialImagesResult: Result<LocationTutorialImages> = await mediaService.getLocationTutorialImages();
     if (locationTutorialImagesResult.isFailure()) {
       throw new Error(`sendLocationInstructionMessage error ${locationTutorialImagesResult.getMessage()}`);

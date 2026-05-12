@@ -37,11 +37,13 @@ class UserRepository implements IUserRepository {
     } as UserData;
   }
 
-  public async createUser(mobile_no: string, name: string): Promise<boolean> {
+  public async createUser(mobile_no: string, name: string, lang_whatsapp: string, lang_webchat: string): Promise<boolean> {
     try {
       await db.collection("users").doc(mobile_no).set({
         mobile_no,
         name,
+        lang_whatsapp,
+        lang_webchat
       });
 
       return true;

@@ -13,7 +13,7 @@ export default class Server {
 
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
       console.error("Error details: " + error);
-      console.error("Caused by:", error.cause);
+      error.cause && error.cause !== error && console.error("Error caused by:", error.cause);
       res.sendResponse(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "An internal error occured.");
       return;
     })
