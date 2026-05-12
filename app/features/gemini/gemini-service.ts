@@ -166,6 +166,7 @@ class GeminiService implements IGeminiService {
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width: 500,
       height: 250,
+      backgroundColour: "white",
     });
 
     console.log('__dirname:', __dirname);

@@ -28,6 +28,7 @@ class MediaRepository implements IMediaRepository {
         .collection(this.collection)
         .where("from", "==", mobile_no)
         .where("mimeType", "in", ["image/jpeg", "image/png", "image/webp", "video/mp4"])
+        .where("detections", "!=", null)
         .get();
 
       if (snapshot.empty) return [];
