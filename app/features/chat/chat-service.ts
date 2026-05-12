@@ -48,7 +48,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string; } = {};
+  private userVertexSession: { [mobile_no: string]: string } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -471,11 +471,9 @@ class ChatService implements IChatService {
       }
 
       if (lang === "BM") {
-        imageDiagnosisOutput.reply =
-          "Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.";
+        imageDiagnosisOutput.reply = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.`;
       } else {
-        imageDiagnosisOutput.reply =
-          "The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.";
+        imageDiagnosisOutput.reply = `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`;
       }
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageDiagnosisOutput, "updateMediaDiagnosis success.");
