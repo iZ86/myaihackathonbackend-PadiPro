@@ -516,15 +516,15 @@ class MediaService implements IMediaService {
       );
     } catch (error) {
       this.deleteMediaByMediaName(documentFile.mediaName);
-      throw new Error("saveAudio failed to save", { cause: error });
+      throw new Error("saveDocument failed to save", { cause: error });
     }
 
     const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(documentFile.mediaName);
     if (audioData.isFailure()) {
-      throw new Error("saveAudio failed to get saved audio.");
+      throw new Error("saveDocument failed to get saved Document.");
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Audio saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Document saved.");
   }
 
   public async saveDocumentMetaData(
@@ -546,15 +546,15 @@ class MediaService implements IMediaService {
       sha256 ?? "",
     );
     if (!saveDocumentResult) {
-      throw new Error("saveDocument failed to save audio.");
+      throw new Error("saveDocument failed to save document.");
     }
 
     const savedDocument: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
     if (savedDocument.isFailure()) {
-      throw new Error("savedDocumentMetaData failed to get saved audio.");
+      throw new Error("savedDocumentMetaData failed to get saved document.");
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "Audio metadata saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "document metadata saved.");
   }
 
   public async saveDocumentFile(
@@ -587,7 +587,7 @@ class MediaService implements IMediaService {
       download_url: download_url,
     };
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Audio file saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "document file saved.");
   }
 
   public async updateImageOrVideoDiagnosis(
