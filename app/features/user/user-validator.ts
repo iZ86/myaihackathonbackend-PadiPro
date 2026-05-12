@@ -34,3 +34,15 @@ export const updateUserCoordsByMobileNoBodyValidator: any = [
     .toInt(),
   validate,
 ];
+
+export const updateUserLangByMobileNoBodyValidator: any = [
+  body('lang')
+    .trim()
+    .notEmpty().withMessage("Missing lang.")
+    .isIn(['BM', 'EN']).withMessage("lang must be a between BM or ENG."),
+  body('type')
+    .trim()
+    .notEmpty().withMessage("Missing type.")
+    .isString().withMessage("type must be a string."),
+  validate,
+];

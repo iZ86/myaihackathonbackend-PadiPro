@@ -29,10 +29,14 @@ export default class ChatController {
       if (!value?.messages?.length) return; // status update or empty ping
 
       const result: Result<ChatOutput | string> = await chatService.chat(value);
+
+      //multiple response to 1 request.
       if (result.isSuccess()) {
-        return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+        // return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+        console.log(result.getStatusCode(), result.getMessage(), result.getData());
       } else if (result.isFailure()) {
-        return res.sendResponse(result.getStatusCode(), result.getMessage());
+        // return res.sendResponse(result.getStatusCode(), result.getMessage());
+        console.log(result.getStatusCode(), result.getMessage());
       }
     } catch (err) {
       console.error("[Whatsapp] Error reading message:", err);

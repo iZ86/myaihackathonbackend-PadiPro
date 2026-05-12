@@ -57,15 +57,29 @@ export default class UserController {
     }
   }
 
-  async getDiagnosisHistoryByMobileNo(req: Request, res: Response) {
-      const mobileNo: string = String(req.params.mobile_no);
-  
-      const result: Result<MediaData[]> = await userService.getDiagnosisHistoryByMobileNo(mobileNo);
-  
-      if (result.isSuccess()) {
-        return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
-      } else if (result.isFailure()) {
-        return res.sendResponse(result.getStatusCode(), result.getMessage());
-      }
+  async updateUserLangByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
+    const lang: string = req.body.lang;
+    const type: string = req.body.type;
+
+    const result: Result<UserData> = await userService.updateUserLangByMobileNo(lang, mobileNo, type);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
     }
+  }
+
+  async getDiagnosisHistoryByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
+
+    const result: Result<MediaData[]> = await userService.getDiagnosisHistoryByMobileNo(mobileNo);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
 }
