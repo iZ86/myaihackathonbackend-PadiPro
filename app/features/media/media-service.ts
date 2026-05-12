@@ -521,7 +521,7 @@ class MediaService implements IMediaService {
 
     const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(documentFile.mediaName);
     if (audioData.isFailure()) {
-      throw new Error("saveDocument failed to get saved Document.");
+      throw new Error("saveDocument failed to get saved document.");
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Document saved.");
@@ -587,7 +587,7 @@ class MediaService implements IMediaService {
       download_url: download_url,
     };
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "document file saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, mediaFileData, "Document file saved.");
   }
 
   public async updateImageOrVideoDiagnosis(
