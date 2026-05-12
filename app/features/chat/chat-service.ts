@@ -152,6 +152,7 @@ class ChatService implements IChatService {
       mobile_no: "",
       created_by: "BASE",
       media_type: "text",
+      langCode: "EN"
     };
 
     let profileName: string = "";

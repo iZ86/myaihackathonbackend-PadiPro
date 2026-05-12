@@ -268,7 +268,8 @@ export class WhatsappService {
       mobile_no: msg.waId,
       created_by: "WHATSAPP",
       message: msg.body,
-      media_type: "text"
+      media_type: "text",
+      langCode: "EN"
     };
   }
 
@@ -308,6 +309,7 @@ export class WhatsappService {
       media_type: "image",
       media_url: image.download_url,
       media_name: image.mediaName,
+      langCode: "EN"
     };
   }
 
@@ -347,6 +349,7 @@ export class WhatsappService {
       media_type: "audio",
       media_url: audio.download_url,
       media_name: savedAudio.mediaName,
+      langCode: "EN"
     };
   }
 
@@ -387,6 +390,7 @@ export class WhatsappService {
       media_type: "video",
       media_url: video.download_url,
       media_name: savedVideo.mediaName,
+      langCode: "EN"
     };
 
   }
@@ -401,7 +405,8 @@ export class WhatsappService {
       created_by: "WHATSAPP",
       media_type: "location",
       longitutde: msg.longitude,
-      latitude: msg.latitude
+      latitude: msg.latitude,
+      langCode: "EN"
     }
   }
 

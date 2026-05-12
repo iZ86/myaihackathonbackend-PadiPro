@@ -5,6 +5,7 @@ const BaseSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
   message: z.string().describe("User message").optional(),
+  langCode: z.enum(["MS", "EN"]).describe("What language code used.")
 });
 
 const MediaSchema = BaseSchema.extend({
