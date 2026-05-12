@@ -29,6 +29,8 @@ class MediaRepository implements IMediaRepository {
         .where("from", "==", mobile_no)
         .where("mimeType", "in", ["image/jpeg", "image/png", "image/webp", "video/mp4"])
         .where("detections", "!=", null)
+        .orderBy("detections")
+        .orderBy("updated_at", "desc")
         .get();
 
       if (snapshot.empty) return [];
