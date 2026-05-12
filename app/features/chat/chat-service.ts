@@ -694,7 +694,7 @@ class ChatService implements IChatService {
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
     const json = JSON.parse(cleaned);
-
+    console.log("Send document is called here")
     const doc = await this.generateDocuments(json);
 
     let saveDocumentResult: Result<MediaData> | undefined;
