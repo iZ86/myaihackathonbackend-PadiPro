@@ -18,6 +18,7 @@ import { geminiServiceConfig } from "../../config/config";
 import { ENUM_PADDY_DISEASE } from "./gemini-enums";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import { ChartConfiguration } from "chart.js";
+import path from 'path';
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
@@ -166,6 +167,10 @@ class GeminiService implements IGeminiService {
       width: 500,
       height: 250,
     });
+
+    console.log('__dirname:', __dirname);
+    console.log('font path:', path.join(__dirname, 'fonts', 'arial-font', 'arial.ttf'));
+
     const configuration: ChartConfiguration = {
       type: "bar",
       data: {
