@@ -678,6 +678,13 @@ class ChatService implements IChatService {
     }
 
     if (type.toUpperCase() === "WHATSAPP") {
+      const buffer = Buffer.from(base64str, "base64");
+      const mediaId = await whatsappService.uploadMedia(buffer, {
+        filename: "image.png",
+        mimeType: "image/png",
+      });
+      await whatsappService.sendImage(mobile_no, { mediaId }, "");
+      /*
       if (mediaType === "image") {
         const buffer = Buffer.from(base64str, "base64");
         const mediaId = await whatsappService.uploadMedia(buffer, {
@@ -688,6 +695,7 @@ class ChatService implements IChatService {
       } else {
         await whatsappService.sendVideo(mobile_no, { link: base64str }, "");
       }
+      */
       this.messages.push({
         message: "",
         type: "text",
