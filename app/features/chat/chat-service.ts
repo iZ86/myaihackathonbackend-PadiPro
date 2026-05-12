@@ -46,7 +46,6 @@ interface IChatService {
 }
 
 class ChatService implements IChatService {
-  private messages: ChatOutputMessage[] = [];
   private userVertexSession: { [mobile_no: string]: string } = {};
   private speechClient: SpeechClient;
 
@@ -143,7 +142,8 @@ class ChatService implements IChatService {
   );
 
   public async chat(input: WhatsappRawValue | ChatInput): Promise<Result<ChatOutput>> {
-    this.messages = [];
+    const messages: ChatOutputMessage[] = [];
+
 
     let chatInput: ChatInput = {
       mobile_no: "",
@@ -204,7 +204,7 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-        
+
         lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
       }
 
@@ -214,8 +214,8 @@ class ChatService implements IChatService {
           if (userResult.isFailure()) {
             throw new Error("chat failed to set user's location.");
           } else {
-            await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage());
-            return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, userResult.getMessage());
+            await this.sendText(mobile_no, chatInput.created_by, userResult.getMessage(), messages);
+            return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: messages }, userResult.getMessage());
           }
         }
       }
@@ -227,11 +227,11 @@ class ChatService implements IChatService {
 
       // Transcribe audio to text before saving into chat history for easier tracking
       if (chatInput.media_type === "audio" && chatInput.media_url) {
-        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, lang);
+        const transcribeAudioResult = await this.transcribeAudio(mobile_no, chatInput.media_name, created_by, lang, messages);
         if (transcribeAudioResult.isSuccess()) {
           message = transcribeAudioResult.getData();
         } else if (transcribeAudioResult.isFailure()) {
-          await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage());
+          await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage(), messages);
           return transcribeAudioResult;
         }
       }
@@ -260,16 +260,16 @@ class ChatService implements IChatService {
         } else {
           thinkingMessage = "Give me a moment to process your message...";
         }
-        await this.sendText(mobile_no, created_by, thinkingMessage, false);
+        await this.sendText(mobile_no, created_by, thinkingMessage, messages, false);
       }
 
       // Send media Gemini 3.0 for image diagnosis first if media_url exists
       if (chatInput.media_type === "image" || chatInput.media_type === "video") {
         const mediaResult: Result<string> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
         if (mediaResult.isSuccess()) {
-          await this.sendText(mobile_no, created_by, mediaResult.getData());
+          await this.sendText(mobile_no, created_by, mediaResult.getData(), messages);
         } else if (mediaResult.isFailure()) {
-          await this.sendText(mobile_no, created_by, mediaResult.getMessage());
+          await this.sendText(mobile_no, created_by, mediaResult.getMessage(), messages);
           return mediaResult;
         }
       }
@@ -277,21 +277,21 @@ class ChatService implements IChatService {
 
       // Send text directly into Gemini 3.1 for chat response generation
       if (message) {
-        const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput);
+        const textResult: Result<string> = await this.handleText(mobile_no, created_by, chatInput, messages);
         if (textResult.isFailure()) {
-          await this.sendText(mobile_no, created_by, textResult.getMessage());
+          await this.sendText(mobile_no, created_by, textResult.getMessage(), messages);
           return textResult;
         }
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: messages }, "Chat response generated.");
     } catch (error) {
-      this.sendText(chatInput.mobile_no, chatInput.created_by, "We seem to be having some issues, please try again in an hour or so.");
+      this.sendText(chatInput.mobile_no, chatInput.created_by, "We seem to be having some issues, please try again in an hour or so.", messages);
       throw error;
     }
   }
 
   // Handling text and audio messages post transcription
-  private async handleText(mobile_no: string, type: string, chatInput: ChatInput): Promise<Result<string>> {
+  private async handleText(mobile_no: string, type: string, chatInput: ChatInput, messages: ChatOutputMessage[]): Promise<Result<string>> {
     // Send the text into the Gemini chatbot
     const output = await this.chatFlow(chatInput);
     if (!output?.reply) {
@@ -339,17 +339,17 @@ class ChatService implements IChatService {
           noResultsErrorMessage =
             "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
         }
-        await this.sendText(mobile_no, type, noResultsErrorMessage);
+        await this.sendText(mobile_no, type, noResultsErrorMessage, messages);
       } else {
         if (needSolution) {
-          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
+          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages);
         } else {
-          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText);
+          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
         }
       }
     } else {
       // Send base message if no Vertex required
-      await this.sendText(mobile_no, type, reply);
+      await this.sendText(mobile_no, type, reply, messages);
     }
     return Result.succeed(
       ENUM_STATUS_CODES_SUCCESS.OK,
@@ -478,6 +478,7 @@ class ChatService implements IChatService {
     mediaName: string,
     type: string,
     lang: string,
+    messages: ChatOutputMessage[]
   ): Promise<Result<string>> {
     const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
     if (userResult.isFailure()) {
@@ -530,7 +531,7 @@ class ChatService implements IChatService {
           } else {
             message = "Your audio is too long (max 60 seconds). Please send a shorter voice message.";
           }
-          await this.sendText(mobile_no, type, message);
+          await this.sendText(mobile_no, type, message, messages);
         }
       }
       throw Error("transcribeAudio failed to transcribe.", { cause: error });
@@ -553,11 +554,11 @@ class ChatService implements IChatService {
   }
 
   // Handling document
-  private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput): Promise<Result<string>> {
+  private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
     const { vertexOutput, prompt, reply, language } = flowOutput;
 
     // Send the base message generated from Gemini 3.1 first
-    await this.sendText(mobile_no, type, reply);
+    await this.sendText(mobile_no, type, reply, messages);
 
     // Run Vertex Search if Gemini 3.1 thinks we need it
     if (vertexOutput && prompt && prompt !== "") {
@@ -583,9 +584,10 @@ class ChatService implements IChatService {
           mobile_no,
           type,
           "I specialize in rice paddy disease analysis. Could you clarify how your question relates to crop health?",
+          messages
         );
       } else {
-        await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
+        await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages);
       }
     }
     return Result.succeed(
@@ -609,7 +611,8 @@ class ChatService implements IChatService {
     mobile_no: string,
     type: string,
     message: string,
-    saveToHistory: boolean = true,
+    messages: ChatOutputMessage[],
+    saveToHistory: boolean = true
   ): Promise<void> {
     if (saveToHistory) {
       const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
@@ -625,7 +628,7 @@ class ChatService implements IChatService {
     if (type.toUpperCase() === "WHATSAPP") {
       whatsappService.sendText(mobile_no, message);
     } else {
-      this.messages.push({
+      messages.push({
         message: message,
         type: "text",
       });
@@ -638,6 +641,7 @@ class ChatService implements IChatService {
     message: string,
     base64URL: string,
     mediaType: string,
+    messages: ChatOutputMessage[]
   ): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "model",
@@ -661,13 +665,13 @@ class ChatService implements IChatService {
       }
     }
 
-    this.messages.push({
+    messages.push({
       message: message,
       type: "text",
     });
   }
 
-  private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
+  private async sendDocument(mobile_no: string, type: string, message: string, messages: ChatOutputMessage[]): Promise<void> {
     const cleaned = this.cleanPrefix(message);
     const json = JSON.parse(cleaned);
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
@@ -703,7 +707,7 @@ class ChatService implements IChatService {
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
     }
 
-    this.messages.push({
+    messages.push({
       message: json,
       type: "text",
     });
