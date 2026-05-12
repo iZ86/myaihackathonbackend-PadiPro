@@ -47,7 +47,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -103,7 +103,7 @@ class ChatService implements IChatService {
             - This can be a simple acknowledgement that you are retrieving information.
             - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
             - Reply explicity in the language the user is using, do not reply in English if the user is using BM and vice versa.
-          
+
           4. language: The language in which the reply should be generated based on the query.
             - This field will be used to ensure the reply is generated in the correct language.
 
@@ -204,7 +204,7 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-        
+
         lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
       }
 
@@ -670,25 +670,19 @@ class ChatService implements IChatService {
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
     const json = JSON.parse(cleaned);
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "user",
-      timestamp: "",
-      message: message ?? "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`Failed to save chat history.`);
-    }
+
+    const doc = await this.generateDocuments(json);
+
+    let saveDocumentResult: Result<MediaData> | undefined;
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const doc = await this.generateDocuments(json);
-
       //im keeping this at whatsappService cause it's exclusive to whatsapp
       const mediaId = await whatsappService.uploadMedia(doc, {
         filename: "timeline.docx",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
 
-      const saveDocumentResult: Result<MediaData> = await mediaService.saveDocument(
+      saveDocumentResult = await mediaService.saveDocument(
         mediaId,
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         doc,
@@ -697,16 +691,42 @@ class ChatService implements IChatService {
       console.log(`[Whatsapp] Saved document to Firestore and Storage`);
 
       if (saveDocumentResult.isFailure()) {
-        throw new Error(`handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
+        throw new Error(`[Whatsapp] handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
       }
 
       await whatsappService.sendDocument(mobile_no, { mediaId: mediaId });
+    } else if (type.toUpperCase() === "WEBCHAT") {
+      saveDocumentResult = await mediaService.saveDocument(
+        "timeline.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        doc,
+        mobile_no,
+      );
+      console.log(`[Webchat] Saved document to Firestore and Storage`);
+
+      if (saveDocumentResult.isFailure()) {
+        throw new Error(`[Webchat] handleText failed to saveDocument: ${saveDocumentResult.getMessage()}`);
+      }
+
+      this.messages.push({
+        message: saveDocumentResult.getData().download_url,
+        type: "text",
+      });
     }
 
-    this.messages.push({
-      message: json,
-      type: "text",
-    });
+    if (saveDocumentResult) {
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+        role: "model",
+        timestamp: "",
+        message: message ?? "",
+        media_type: "document",
+        media_url: saveDocumentResult.getData().download_url,
+        media_name: saveDocumentResult.getData().mediaName,
+      });
+      if (!saveChatHistoryResult) {
+        throw Error(`Failed to save chat history.`);
+      }
+    }
   }
 
   private async syncUserWeather(mobile_no: string): Promise<undefined> {
