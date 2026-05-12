@@ -100,7 +100,7 @@ class MediaService implements IMediaService {
   private readonly videoCollection: string = "videos";
   private readonly audioCollection: string = "audios";
   private readonly docCollection: string = "documents";
-  private static readonly MIME_TO_EXT: { [key: string]: string } = {
+  private static readonly MIME_TO_EXT: { [key: string]: string; } = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
@@ -265,7 +265,7 @@ class MediaService implements IMediaService {
     const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
     const mediaFileData: MediaFileData = {
-      mediaName: sha256ImageName ,
+      mediaName: sha256ImageName,
       storage_path: storagePath,
       download_url: download_url,
     };
@@ -373,7 +373,7 @@ class MediaService implements IMediaService {
     const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
     const mediaFileData: MediaFileData = {
-      mediaName: sha256VideoName ,
+      mediaName: sha256VideoName,
       storage_path: storagePath,
       download_url: download_url,
     };
@@ -481,7 +481,7 @@ class MediaService implements IMediaService {
     const download_url = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
     const mediaFileData: MediaFileData = {
-      mediaName: sha256AudioName ,
+      mediaName: sha256AudioName,
       storage_path: storagePath,
       download_url: download_url,
     };
@@ -504,8 +504,10 @@ class MediaService implements IMediaService {
 
     const documentFile: MediaFileData = documentFileResult.getData();
 
+    let saveDocumentMetaDataResult: Result<MediaData> | undefined;
+
     try {
-      await this.saveDocumentMetaData(
+      saveDocumentMetaDataResult = await this.saveDocumentMetaData(
         documentFile.mediaName,
         mimeType,
         documentFile.storage_path,
@@ -519,12 +521,11 @@ class MediaService implements IMediaService {
       throw new Error("saveDocument failed to save", { cause: error });
     }
 
-    const audioData: Result<MediaData> = await this.getMediaMetaDataByMediaName(documentFile.mediaName);
-    if (audioData.isFailure()) {
-      throw new Error("saveDocument failed to get saved document.");
+    if (saveDocumentMetaDataResult) {
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, saveDocumentMetaDataResult.getData(), "Document saved.");
+    } else {
+      throw new Error("saveDocument failed to save");
     }
-
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, audioData.getData(), "Document saved.");
   }
 
   public async saveDocumentMetaData(
@@ -546,15 +547,15 @@ class MediaService implements IMediaService {
       sha256 ?? "",
     );
     if (!saveDocumentResult) {
-      throw new Error("saveDocument failed to save audio.");
+      throw new Error("saveDocument failed to save document.");
     }
 
     const savedDocument: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
     if (savedDocument.isFailure()) {
-      throw new Error("savedDocumentMetaData failed to get saved audio.");
+      throw new Error("savedDocumentMetaData failed to get saved saveDocument.");
     }
 
-    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "Audio metadata saved.");
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, savedDocument.getData(), "Document metadata saved.");
   }
 
   public async saveDocumentFile(
