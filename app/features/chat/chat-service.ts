@@ -700,7 +700,7 @@ class ChatService implements IChatService {
       */
       this.messages.push({
         message: "",
-        type: "text",
+        type: "media",
       });
     }
     // WEBCHAT: chart image is not supported — skip pushing an empty message
