@@ -26,11 +26,7 @@ const LocationSchema = BaseSchema.extend({
   longitutde: z.number().describe("Longitude of the location"),
 });
 
-export const ChatInputSchema = z.discriminatedUnion("media_type", [
-  MediaSchema,
-  TextSchema,
-  LocationSchema,
-]);
+export const ChatInputSchema = z.discriminatedUnion("media_type", [MediaSchema, TextSchema, LocationSchema]);
 
 export const ChatOutputMessageSchema = z.object({
   message: z.string().describe("The reply sent back to users"),
@@ -70,6 +66,11 @@ export const ChatFlowOutputSchema = z.object({
   language: z.enum(["BM", "EN"]).describe("The language in which the reply should be generated based on the query"),
 });
 
+export const ImageDiagnosisOutputSchema = z.object({
+  reply: z.string().describe("The reply to send back to the users"),
+  chartBase64Str: z.string().describe("The base64 string to generate the bar chart of detections"),
+});
+
 //timeline json format from vertex response
 export interface TimelineSolution {
   day: string;
@@ -85,4 +86,5 @@ export type ChatOutputMessage = z.infer<typeof ChatOutputMessageSchema>;
 export type ChatFlowInput = z.infer<typeof ChatFlowInputSchema>;
 export type ChatFlowOutput = z.infer<typeof ChatFlowOutputSchema>;
 export type ChatHistory = z.infer<typeof ChatHistorySchema>;
+export type ImageDiagnosisOutput = z.infer<typeof ImageDiagnosisOutputSchema>;
 export type Message = z.infer<typeof MessageSchema>;
