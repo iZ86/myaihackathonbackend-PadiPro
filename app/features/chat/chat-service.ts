@@ -350,7 +350,18 @@ class ChatService implements IChatService {
       } else {
         const vertexRawResponse = sendQueryVertex.answer.answerText;
         console.log("vertexRawResponse:", vertexRawResponse);
-        if (vertexRawResponse.toUpperCase().includes("JSON")) {
+        const isJsonResponse = (() => {
+          try {
+            const cleaned = vertexRawResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const start = cleaned.indexOf("[");
+            if (start === -1) return false;
+            JSON.parse(cleaned.slice(start));
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+        if (isJsonResponse) {
           // Send solution plan text
           if (language === "BM") {
             await this.sendText(
@@ -670,12 +681,12 @@ class ChatService implements IChatService {
       } else {
         await whatsappService.sendVideo(mobile_no, { link: base64str }, "");
       }
+      this.messages.push({
+        message: "",
+        type: "text",
+      });
     }
-
-    this.messages.push({
-      message: "",
-      type: "text",
-    });
+    // WEBCHAT: chart image is not supported — skip pushing an empty message
   }
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
