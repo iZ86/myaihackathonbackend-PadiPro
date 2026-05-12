@@ -34,6 +34,7 @@ export const ChatOutputMessageSchema = z.object({
     .enum(["text", "media"])
     .describe("Whether the message is text or media, if media, the message field will be a Base64 string"),
   document_url: z.string().describe("The downloadable URL of the solutions document sent, if any").optional(),
+  base64_url: z.string().describe("base64 url for the uploaded media").optional(),
 });
 
 export const ChatOutputSchema = z.object({
@@ -48,6 +49,7 @@ export const ChatHistorySchema = z.object({
   media_type: z.enum(["image", "video", "audio", "document"]).describe("Type of the media uploaded, if any").optional(),
   media_url: z.string().describe("The downloadable URL of the media sent, if any").optional(),
   media_name: z.string().describe("Name for the uploaded media").optional(),
+  base64_url: z.string().describe("base64 url for the uploaded media").optional(),
 });
 
 // Specific model for the Gemini 3.1 Genkit flow

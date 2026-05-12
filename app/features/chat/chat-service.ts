@@ -48,7 +48,7 @@ interface IChatService {
 
 class ChatService implements IChatService {
   private messages: ChatOutputMessage[] = [];
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -340,9 +340,9 @@ class ChatService implements IChatService {
       console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
       if (
         sendQueryVertex.answer.answerText ===
-          "A summary could not be generated for your search query. Here are some search results." ||
+        "A summary could not be generated for your search query. Here are some search results." ||
         sendQueryVertex.answer.answerText ===
-          "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
+        "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
       ) {
         let noResultsErrorMessage = "";
         if (language === "BM") {
@@ -411,7 +411,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "BM") {
@@ -671,39 +671,31 @@ class ChatService implements IChatService {
   }
 
   private async sendMedia(mobile_no: string, type: string, base64str: string, mediaType: string): Promise<void> {
-    const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
-      role: "model",
-      timestamp: "",
-    });
-    if (!saveChatHistoryResult) {
-      throw Error(`sendMedia failed to save chat history.`);
-    }
+    const buffer = Buffer.from(base64str, "base64");
 
     if (type.toUpperCase() === "WHATSAPP") {
-      const buffer = Buffer.from(base64str, "base64");
       const mediaId = await whatsappService.uploadMedia(buffer, {
         filename: "image.png",
         mimeType: "image/png",
       });
       await whatsappService.sendImage(mobile_no, { mediaId }, "");
-      /*
-      if (mediaType === "image") {
-        const buffer = Buffer.from(base64str, "base64");
-        const mediaId = await whatsappService.uploadMedia(buffer, {
-          filename: "image.png",
-          mimeType: "image/png",
-        });
-        await whatsappService.sendImage(mobile_no, { mediaId }, "");
-      } else {
-        await whatsappService.sendVideo(mobile_no, { link: base64str }, "");
+    } else {
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
+        role: "model",
+        media_type: "image",
+        base64_url: base64str,
+        timestamp: "",
+      });
+      if (!saveChatHistoryResult) {
+        throw Error(`sendMedia failed to save chat history.`);
       }
-      */
+
       this.messages.push({
         message: "",
+        base64_url: base64str,
         type: "media",
       });
     }
-    // WEBCHAT: chart image is not supported — skip pushing an empty message
   }
 
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
@@ -907,19 +899,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 
