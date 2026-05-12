@@ -103,11 +103,9 @@ class ChatService implements IChatService {
           3. message: The reply you will give back to the user.
             - This can be a simple acknowledgement that you are retrieving information.
             - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
-            - Reply explicity in the language the user is using, do not reply in English if the user is using BM and vice versa.
+            - Reply explicity in the language provided.
 
-          4. language: The language in which the reply should be generated based on the query.
-            - This field will be used to ensure the reply is generated in the correct language.
-            - Deduce the language based on the previous user query, for example "What is stem rot" is EN, "Apakah reput batang" is BM
+          4. language: ${langCode}
 
           Here are a few examples
           1. User: What causes leaf blast?
@@ -115,14 +113,17 @@ class ChatService implements IChatService {
               - prompt: What causes leaf blast in rice paddies?
               - message: Let me look that up for you.
               - language: en
-
-          2. User: Do you like ice cream?
+          2. User: What causes leaf blast?
+              - vertexOutput: true
+              - prompt: What causes leaf blast in rice paddies?
+              - message: Biar saya mencarinya untuk anda.
+              - language: ms
+          3. User: Do you like ice cream?
               - vertexOutput: false
               - prompt: (not generated since vertexOutput is false)
               - message: Yes, but let's stick to paddy plant diseases, I appreciate your enthusiasm though!
               - language: en
-
-          3. User: How do I treat leaft blast?
+          4. User: How do I treat leaft blast?
               - vertexOutput: true
               - prompt: Provide a timelined treatment plan for leaf blast in rice paddies, return the answer explicity in JSON format.
               - message: Let me find that information for you, stay tuned!
