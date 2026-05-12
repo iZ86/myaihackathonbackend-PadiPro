@@ -99,6 +99,7 @@ class ChatService implements IChatService {
 
           2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query.
             - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history.
+            - If the user requests a solution PLAN, ensure that the prompt specifies that Vertex should output in JSON Format. (IMPORTANT!!!)
 
           3. message: The reply you will give back to the user.
             - This can be a simple acknowledgement that you are retrieving information.
