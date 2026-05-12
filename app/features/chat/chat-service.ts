@@ -108,6 +108,7 @@ class ChatService implements IChatService {
 
           4. language: The language in which the reply should be generated based on the query.
             - This field will be used to ensure the reply is generated in the correct language.
+            - Deduce the language based on the previous user query, for example "What is stem rot" is EN, "Apakah reput batang" is BM
 
           Here are a few examples
           1. User: What causes leaf blast?
@@ -355,7 +356,10 @@ class ChatService implements IChatService {
         console.log("vertexRawResponse:", vertexRawResponse);
         const isJsonResponse = (() => {
           try {
-            const cleaned = vertexRawResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const cleaned = vertexRawResponse
+              .replace(/```json/gi, "")
+              .replace(/```/g, "")
+              .trim();
             const start = cleaned.indexOf("[");
             if (start === -1) return false;
             JSON.parse(cleaned.slice(start));
@@ -695,7 +699,7 @@ class ChatService implements IChatService {
   private async sendDocument(mobile_no: string, type: string, message: string): Promise<void> {
     const cleaned = this.cleanPrefix(message);
     const json = JSON.parse(cleaned);
-    console.log("Send document is called here")
+    console.log("Send document is called here");
     const doc = await this.generateDocuments(json);
 
     let saveDocumentResult: Result<MediaData> | undefined;
