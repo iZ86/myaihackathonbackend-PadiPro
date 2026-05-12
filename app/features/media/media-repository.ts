@@ -73,7 +73,7 @@ class MediaRepository implements IMediaRepository {
 
       await doc.ref.update({
         detections: detections,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
 
       return true;
