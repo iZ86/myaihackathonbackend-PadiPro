@@ -348,16 +348,20 @@ class ChatService implements IChatService {
         await this.sendText(mobile_no, type, noResultsErrorMessage);
       } else {
         const vertexRawResponse = sendQueryVertex.answer.answerText;
-        console.log("vertexRawResponse:", vertexRawResponse)
+        console.log("vertexRawResponse:", vertexRawResponse);
         if (vertexRawResponse.toUpperCase().includes("JSON")) {
           // Send solution plan text
           if (language === "BM") {
-            await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!");
-          } else {
             await this.sendText(
               mobile_no,
               type,
               "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
+            );
+          } else {
+            await this.sendText(
+              mobile_no,
+              type,
+              "Below is a file for the treatment plan, hope this helps!",
             );
           }
           await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText);
