@@ -36,6 +36,8 @@ import { protos } from "@google-cloud/speech";
 import { firebaseConfig, speechConfig } from "../../config/config";
 import { SpeechClient } from "@google-cloud/speech/build/src/v2";
 import { GoogleError } from "google-gax";
+import { LanguageCodeData } from "../translate/translate-model";
+import translateService from "../translate/translate-service";
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
@@ -233,6 +235,31 @@ class ChatService implements IChatService {
         } else if (transcribeAudioResult.isFailure()) {
           await this.sendText(mobile_no, created_by, transcribeAudioResult.getMessage(), messages);
           return transcribeAudioResult;
+        }
+      }
+
+
+
+      if (message) {
+        // Make sure that the text is not more than 50 characters and 10 words.
+        const truncated = message.slice(0, 50).replace(/\s+\S*$/, '');
+        const shortened = truncated.split(' ').slice(0, 10).join(' ');
+
+        const languageDetectedResult: Result<LanguageCodeData> = await translateService.detectLanguage(shortened);
+
+        if (languageDetectedResult.isFailure()) {
+          throw new Error("chat failed to detect language.");
+        }
+
+
+        const languageCodeDetected: string = languageDetectedResult.getData().languageCode;
+
+        if (chatInput.langCode !== languageCodeDetected) {
+          const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
+          chatInput.langCode = languageCodeDetected.toUpperCase() as "MS" | "EN";
+          if (updatedUserResult.isFailure()) {
+            throw new Error("chat failed to update user lang.");
+          }
         }
       }
 
