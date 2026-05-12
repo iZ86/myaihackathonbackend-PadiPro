@@ -12,10 +12,7 @@ import {
   MediaOutputSchema,
   MediaInputSchema,
 } from "./gemini-model";
-import {
-  ENUM_STATUS_CODES_FAILURE,
-  ENUM_STATUS_CODES_SUCCESS,
-} from "../../../libs/status-codes-enum";
+import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
 import { geminiServiceConfig } from "../../config/config";
 import { ENUM_PADDY_DISEASE } from "./gemini-enums";
@@ -24,7 +21,8 @@ import { ChartConfiguration } from "chart.js";
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: geminiServiceConfig.GEMINI_API_KEY })],
-  model: googleAI.model("gemini-3-flash-preview"),
+  // model: googleAI.model("gemini-3-flash-preview"),
+  model: googleAI.model("gemini-3.1-flash-lite-preview"),
 });
 
 interface IGeminiService {
@@ -108,11 +106,7 @@ class GeminiService implements IGeminiService {
       console.log(`[Chartjs] Creating detections chart base64 string`);
       let chart: string = "";
       let disease: string = output?.detections[0]?.disease ?? "";
-      if (
-        disease !== "" &&
-        disease !== "NOT DETECTED" &&
-        disease !== "HEALTHY"
-      ) {
+      if (disease !== "" && disease !== "NOT DETECTED" && disease !== "HEALTHY") {
         const detections = output?.detections ?? [];
         chart = await this.generateDetectionChart(detections);
       }
@@ -129,17 +123,10 @@ class GeminiService implements IGeminiService {
     const output = await this.chatFlow(input);
 
     if (!output?.reply) {
-      return Result.fail(
-        ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR,
-        "AI failed to generate a reply.",
-      );
+      return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to generate a reply.");
     }
 
-    return Result.succeed(
-      ENUM_STATUS_CODES_SUCCESS.OK,
-      output,
-      "Chat response generated.",
-    );
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Chat response generated.");
   }
 
   public async media(media_url: string): Promise<Result<MediaOutput>> {
@@ -150,17 +137,10 @@ class GeminiService implements IGeminiService {
     try {
       const output = await this.mediaFlow(input);
       if (!output.detections[0]?.disease) {
-        return Result.fail(
-          ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR,
-          "AI failed to read the Media.",
-        );
+        return Result.fail(ENUM_STATUS_CODES_FAILURE.INTERNAL_SERVER_ERROR, "AI failed to read the Media.");
       }
 
-      return Result.succeed(
-        ENUM_STATUS_CODES_SUCCESS.OK,
-        output,
-        "Diagnosis generated.",
-      );
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, output, "Diagnosis generated.");
     } catch (error) {
       if (error instanceof GenkitError) {
         let errorMessage: string = error.message;
@@ -172,24 +152,16 @@ class GeminiService implements IGeminiService {
           }
         }
         if (error.code === 503) {
-          return Result.fail(
-            ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE,
-            errorMessage,
-          );
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, errorMessage);
         } else if (error.code === 429) {
-          return Result.fail(
-            ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS,
-            errorMessage,
-          );
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, errorMessage);
         }
       }
       throw error;
     }
   }
 
-  private async generateDetectionChart(
-    detections: MediaOutputDetection[],
-  ): Promise<string> {
+  private async generateDetectionChart(detections: MediaOutputDetection[]): Promise<string> {
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width: 500,
       height: 250,
@@ -255,8 +227,7 @@ class GeminiService implements IGeminiService {
             callbacks: {
               label: function (context) {
                 const val = context.parsed.x ?? 0;
-                let status =
-                  val <= 0.3 ? "Mild" : val <= 0.7 ? "Moderate" : "Severe";
+                let status = val <= 0.3 ? "Mild" : val <= 0.7 ? "Moderate" : "Severe";
                 return ` Severity: ${val} (${status})`;
               },
             },
