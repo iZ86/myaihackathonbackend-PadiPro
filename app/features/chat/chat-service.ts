@@ -12,6 +12,7 @@ import {
   ChatFlowOutput,
   TimelineSolution,
   ChatHistory,
+  ImageDiagnosisOutput,
 } from "./chat-model";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
 import { Result } from "../../../libs/Result";
@@ -148,7 +149,7 @@ class ChatService implements IChatService {
     let chatInput: ChatInput = {
       mobile_no: "",
       created_by: "BASE",
-      media_type: "text"
+      media_type: "text",
     };
 
     let profileName: string = "";
@@ -159,13 +160,11 @@ class ChatService implements IChatService {
       const contact = input.contacts?.[0];
       const meta = input.metadata;
 
-
       if (contact && contact.wa_id) {
         const message = whatsappService.parse(rawMsg!, contact, meta);
         const whatsappMessageFormatted = await whatsappService.handle(message);
         chatInput = whatsappMessageFormatted;
         profileName = contact.profile.name;
-
       } else {
         throw new Error("Whatsapp contact not found.");
       }
@@ -193,7 +192,6 @@ class ChatService implements IChatService {
       // Default lang value.
       let lang: string = "EN";
 
-
       if (userResult.isSuccess()) {
         const user: UserData = userResult.getData();
         const locationExist: boolean = !!user.coords;
@@ -204,13 +202,17 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-        
+
         lang = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat) || lang;
       }
 
       if (this.isWhatsappInput(input)) {
         if (chatInput.media_type === "location") {
-          const userResult: Result<UserData> = await this.handleLocation(mobile_no, chatInput.latitude, chatInput.longitutde);
+          const userResult: Result<UserData> = await this.handleLocation(
+            mobile_no,
+            chatInput.latitude,
+            chatInput.longitutde,
+          );
           if (userResult.isFailure()) {
             throw new Error("chat failed to set user's location.");
           } else {
@@ -219,11 +221,6 @@ class ChatService implements IChatService {
           }
         }
       }
-
-
-
-
-
 
       // Transcribe audio to text before saving into chat history for easier tracking
       if (chatInput.media_type === "audio" && chatInput.media_url) {
@@ -265,15 +262,22 @@ class ChatService implements IChatService {
 
       // Send media Gemini 3.0 for image diagnosis first if media_url exists
       if (chatInput.media_type === "image" || chatInput.media_type === "video") {
-        const mediaResult: Result<string> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
+        const mediaResult: Result<ImageDiagnosisOutput> = await this.updateMediaDiagnosis(chatInput.media_name, lang);
         if (mediaResult.isSuccess()) {
-          await this.sendText(mobile_no, created_by, mediaResult.getData());
+          const { reply, chartBase64Str } = mediaResult.getData();
+
+          // Send detections text
+          await this.sendText(mobile_no, created_by, reply);
+
+          // Send bar chart graph if any
+          if (chartBase64Str != "") {
+            await this.sendMedia(mobile_no, created_by, chartBase64Str, chatInput.media_type);
+          }
         } else if (mediaResult.isFailure()) {
           await this.sendText(mobile_no, created_by, mediaResult.getMessage());
           return mediaResult;
         }
       }
-
 
       // Send text directly into Gemini 3.1 for chat response generation
       if (message) {
@@ -285,7 +289,11 @@ class ChatService implements IChatService {
       }
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { messages: this.messages }, "Chat response generated.");
     } catch (error) {
-      this.sendText(chatInput.mobile_no, chatInput.created_by, "We seem to be having some issues, please try again in an hour or so.");
+      this.sendText(
+        chatInput.mobile_no,
+        chatInput.created_by,
+        "We seem to be having some issues, please try again in an hour or so.",
+      );
       throw error;
     }
   }
@@ -359,7 +367,7 @@ class ChatService implements IChatService {
   }
 
   // Diagnose diseases from images or videos uploaded
-  private async updateMediaDiagnosis(mediaName: string, lang: string): Promise<Result<string>> {
+  private async updateMediaDiagnosis(mediaName: string, lang: string): Promise<Result<ImageDiagnosisOutput>> {
     const mediaResult: Result<MediaData> = await mediaService.getMediaMetaDataByMediaName(mediaName);
     if (mediaResult.isFailure()) {
       throw new Error(`updateMediaDiagnosis failed to retrieve media: ${mediaResult.getMessage()}`);
@@ -372,7 +380,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "BM") {
@@ -402,18 +410,20 @@ class ChatService implements IChatService {
     }
 
     const mediaOutput: MediaOutput = geminiMediaResult.getData();
+    const imageDiagnosisOutput: ImageDiagnosisOutput = {
+      reply: "",
+      chartBase64Str: "",
+    };
 
     // No detections
     if (mediaOutput.detections[0]?.disease === "NOT DETECTED") {
-      let noDetectionMessage = "";
       if (lang === "BM") {
-        noDetectionMessage =
+        imageDiagnosisOutput.reply =
           "Maaf, kami tidak dapat mengesan sebarang tanaman padi dalam imej atau video yang anda hantar, sila cuba lagi.";
       } else {
-        noDetectionMessage =
+        imageDiagnosisOutput.reply =
           "Sorry, we could not detect any paddy plants in the image or video you sent, please try again.";
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, noDetectionMessage, "handleImage success.");
     }
 
     // Healthy paddy plant detected
@@ -426,15 +436,13 @@ class ChatService implements IChatService {
         throw new Error(`updateMediaDiagnosis failed to update media diagnosis: ${media.getMessage()}`);
       }
 
-      let healthyMessage = "";
       if (lang === "BM") {
-        healthyMessage =
+        imageDiagnosisOutput.reply =
           "Imej atau video yang anda hantar menunjukkan tanaman padi yang sihat tanpa tanda-tanda penyakit. Teruskan usaha menjaga tanaman padi anda!";
       } else {
-        healthyMessage =
+        imageDiagnosisOutput.reply =
           "The image you sent shows healthy paddy plants without any signs of disease. Keep up the good work in caring for your paddy plants!";
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, healthyMessage, "handleImage success.");
     }
 
     // Disease(s) detected
@@ -462,14 +470,15 @@ class ChatService implements IChatService {
           detections.at(-1)!.disease;
       }
 
-      let diseaseMessage = "";
       if (lang === "BM") {
-        diseaseMessage = `Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.`;
+        imageDiagnosisOutput.reply =
+          "Imej atau video yang anda hantar telah dianalisis dan menunjukkan tanda-tanda ${diseaseNames}. Saya sedang menyusun pelan rawatan untuk anda sekarang.";
       } else {
-        diseaseMessage = `The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.`;
+        imageDiagnosisOutput.reply =
+          "The image you sent has been analyzed and shows signs of ${diseaseNames}. I am putting together a treatment plan for you now.";
       }
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, diseaseMessage, "updateMediaDiagnosis success.");
     }
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, imageDiagnosisOutput, "updateMediaDiagnosis success.");
   }
 
   // Transcribe audio files
@@ -632,17 +641,10 @@ class ChatService implements IChatService {
     }
   }
 
-  private async sendMedia(
-    mobile_no: string,
-    type: string,
-    message: string,
-    base64URL: string,
-    mediaType: string,
-  ): Promise<void> {
+  private async sendMedia(mobile_no: string, type: string, base64str: string, mediaType: string): Promise<void> {
     const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, type.toLowerCase(), {
       role: "model",
       timestamp: "",
-      message: message ?? "",
     });
     if (!saveChatHistoryResult) {
       throw Error(`sendMedia failed to save chat history.`);
@@ -650,19 +652,19 @@ class ChatService implements IChatService {
 
     if (type.toUpperCase() === "WHATSAPP") {
       if (mediaType === "image") {
-        const buffer = Buffer.from(base64URL, "base64");
+        const buffer = Buffer.from(base64str, "base64");
         const mediaId = await whatsappService.uploadMedia(buffer, {
           filename: "image.png",
           mimeType: "image/png",
         });
-        await whatsappService.sendImage(mobile_no, { mediaId }, message);
+        await whatsappService.sendImage(mobile_no, { mediaId }, "");
       } else {
-        await whatsappService.sendVideo(mobile_no, { link: base64URL }, message);
+        await whatsappService.sendVideo(mobile_no, { link: base64str }, "");
       }
     }
 
     this.messages.push({
-      message: message,
+      message: "",
       type: "text",
     });
   }
@@ -847,19 +849,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-          new Paragraph({
-            children: [
-              new ImageRun({
-                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                transformation: {
-                  width: 200,
-                  height: 100,
-                },
-                type: "jpg",
-              }),
-            ],
-          }),
-        ]
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                  transformation: {
+                    width: 200,
+                    height: 100,
+                  },
+                  type: "jpg",
+                }),
+              ],
+            }),
+          ]
         : []),
     );
 
