@@ -505,7 +505,7 @@ class MediaService implements IMediaService {
     const documentFile: MediaFileData = documentFileResult.getData();
 
     try {
-      this.saveDocumentMetaData(
+      await this.saveDocumentMetaData(
         documentFile.mediaName,
         mimeType,
         documentFile.storage_path,
@@ -515,7 +515,7 @@ class MediaService implements IMediaService {
         sha256,
       );
     } catch (error) {
-      this.deleteMediaByMediaName(documentFile.mediaName);
+      await this.deleteMediaByMediaName(documentFile.mediaName);
       throw new Error("saveDocument failed to save", { cause: error });
     }
 
