@@ -1,11 +1,12 @@
 import { z } from "genkit";
 import { MessageSchema } from "genkit/model";
+import { ENUM_PADDY_DISEASE } from "../gemini/gemini-enums";
 
 const BaseSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
   message: z.string().describe("User message").optional(),
-  langCode: z.string().describe("What language code used.")
+  langCode: z.string().describe("What language code used."),
 });
 
 const MediaSchema = BaseSchema.extend({
@@ -57,16 +58,22 @@ export const ChatHistorySchema = z.object({
 export const ChatFlowInputSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
-  langCode: z.string().describe("Which language to use.")
+  langCode: z.string().describe("Which language to use."),
 });
 
+// Get diseases directly from enums for consistency, Isaac pls don't kill me if this is wrong implementation
+const diseaseValues = Object.values(ENUM_PADDY_DISEASE).filter((v): v is string => typeof v === "string");
 export const ChatFlowOutputSchema = z.object({
   reply: z.string().describe("The reply you will send back to users"),
   prompt: z.string().describe("The customized prompt to send into Vertex based off the user's message").optional(),
   vertexOutput: z
     .boolean()
     .describe("Whether Vertex is required to search up relevant information to answer the user's query")
-    .optional()
+    .optional(),
+  disease: z
+    .enum(diseaseValues as [string, ...string[]])
+    .describe("The disease mentioned in the user's query or custom prompt you are generating for")
+    .optional(),
 });
 
 export const ImageDiagnosisOutputSchema = z.object({
