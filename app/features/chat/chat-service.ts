@@ -49,7 +49,7 @@ interface IChatService {
 }
 
 class ChatService implements IChatService {
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -335,6 +335,7 @@ class ChatService implements IChatService {
     // Send the text into the Gemini chatbot
 
     try {
+      // Send the text into the Gemini chatbot
       const output = await this.chatFlow(chatInput);
       if (!output?.reply) {
         throw Error(`AI failed to generate a reply.`);
@@ -400,6 +401,7 @@ class ChatService implements IChatService {
               return false;
             }
           })();
+          console.log("IS JSON RESPONSE: ", isJsonResponse);
           if (isJsonResponse) {
             // Send solution plan text
             if (chatInput.langCode === "MS") {
