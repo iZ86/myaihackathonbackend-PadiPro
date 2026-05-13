@@ -57,6 +57,12 @@ export default class WebchatController {
     const caption: string = req.body.caption;
     const fileType: string = req.body.fileType;
 
+    try {
+      await webchatService.makeFilePublic(storagePath);
+    } catch (error) {
+      throw new Error("Failed to make file public", { cause: error });
+    }
+
     let result: Result<MediaData>;
 
     switch (fileType) {

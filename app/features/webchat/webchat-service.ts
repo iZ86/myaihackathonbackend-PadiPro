@@ -84,6 +84,11 @@ class WebchatService implements IWebchatService {
     }
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, response.getData(), response.getMessage());
   }
+
+  async makeFilePublic(storagePath: string): Promise<void> {
+    const file = this.bucket.file(storagePath);
+    await file.makePublic();
+  }
 }
 
 export default new WebchatService();
