@@ -670,7 +670,7 @@ class ChatService implements IChatService {
   }
 
   // Handling document
-  private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
+  private async handleDocument(mobile_no: string, type: string, langCode: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
     const { vertexOutput, prompt, reply, language } = flowOutput;
 
     // Send the base message generated from Gemini 3.1 first
