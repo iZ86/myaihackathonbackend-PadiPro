@@ -249,6 +249,16 @@ class ChatService implements IChatService {
         const languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
 
         if (chatInput.langCode !== languageCodeDetected) {
+          if (languageCodeDetected != "MS" && languageCodeDetected != "EN") {
+            let unsupportedLanguageMessage: string;
+            if (chatInput.langCode === "MS") {
+              unsupportedLanguageMessage = "Maaf, kami hanya menyokong bahasa Inggeris dan bahasa Melayu.";
+            } else {
+              unsupportedLanguageMessage = "Sorry, we only support English and Malay language.";
+            }
+            await this.sendText(mobile_no, created_by, unsupportedLanguageMessage, messages);
+            return Result.fail(ENUM_STATUS_CODES_FAILURE.UNPROCESSABLE_CONTENT, unsupportedLanguageMessage);
+          }
           const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
           chatInput.langCode = languageCodeDetected.toUpperCase();
           if (updatedUserResult.isFailure()) {
