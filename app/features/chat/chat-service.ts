@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Chat, genkit } from "genkit/beta";
+import { Chat, genkit, GenkitError } from "genkit/beta";
 import { googleAI } from "@genkit-ai/google-genai";
 import {
   ChatInputSchema,
@@ -49,7 +49,7 @@ interface IChatService {
 }
 
 class ChatService implements IChatService {
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -93,7 +93,7 @@ class ChatService implements IChatService {
       // System Prompt
       const systemPrompt = `
           You are PadiPro, an AI assistant specialized in providing advice and solutions to farmers regarding rice paddy diseases.
-          Based on the chat history, you are to return the following based on what the user is currently asking for:
+          Based on the chat history, you are to return the following based on what the user is currently asking for the language ${langCode}:
 
           1. vertexOutput: Whether the user's current query requires you to look up information from Vertex.
             - This field may be set to false if the user's query is simple or does not relate to paddy plant diseases, else true
@@ -107,29 +107,23 @@ class ChatService implements IChatService {
             - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
             - Reply explicity in the language provided.
 
-          4. language: ${langCode}
-
           Here are a few examples
-          1. User: What causes leaf blast?
+          1. User: What causes leaf blast? (en)
               - vertexOutput: true
               - prompt: What causes leaf blast in rice paddies?
               - message: Let me look that up for you.
-              - language: en
-          2. User: What causes leaf blast?
+          2. User: What causes leaf blast? (ms)
               - vertexOutput: true
               - prompt: What causes leaf blast in rice paddies?
               - message: Biar saya mencarinya untuk anda.
-              - language: ms
-          3. User: Do you like ice cream?
+          3. User: Do you like ice cream? (en)
               - vertexOutput: false
               - prompt: (not generated since vertexOutput is false)
               - message: Yes, but let's stick to paddy plant diseases, I appreciate your enthusiasm though!
-              - language: en
-          4. User: How do I treat leaft blast?
+          4. User: How do I treat leaft blast? (en)
               - vertexOutput: true
               - prompt: Provide a timelined treatment plan for leaf blast in rice paddies, return the answer explicity in JSON format.
               - message: Let me find that information for you, stay tuned!
-              - language: en
       `;
 
       // Parse data into Gemini 3.1
@@ -208,7 +202,7 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-        chatInput.langCode = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat).toUpperCase() as "MS" | "EN" || chatInput.langCode;
+        chatInput.langCode = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat).toUpperCase() || chatInput.langCode;
       }
 
       if (this.isWhatsappInput(input)) {
@@ -238,31 +232,6 @@ class ChatService implements IChatService {
         }
       }
 
-
-
-      if (message) {
-        // Make sure that the text is not more than 50 characters and 10 words.
-        const truncated = message.slice(0, 50).replace(/\s+\S*$/, '');
-        const shortened = truncated.split(' ').slice(0, 10).join(' ');
-
-        const languageDetectedResult: Result<LanguageCodeData> = await translateService.detectLanguage(shortened);
-
-        if (languageDetectedResult.isFailure()) {
-          throw new Error("chat failed to detect language.");
-        }
-
-
-        const languageCodeDetected: string = languageDetectedResult.getData().languageCode;
-
-        if (chatInput.langCode !== languageCodeDetected) {
-          const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
-          chatInput.langCode = languageCodeDetected.toUpperCase() as "MS" | "EN";
-          if (updatedUserResult.isFailure()) {
-            throw new Error("chat failed to update user lang.");
-          }
-        }
-      }
-
       // Save user message into chat history
       const chatData: ChatHistory = {
         role: "user",
@@ -278,6 +247,42 @@ class ChatService implements IChatService {
       if (!saveChatHistoryResult) {
         throw Error(`Failed to save chat history.`);
       }
+
+
+      if (message) {
+        // Make sure that the text is not more than 50 characters and 10 words.
+        const truncated = message.slice(0, 50).replace(/\s+\S*$/, '');
+        const shortened = truncated.split(' ').slice(0, 10).join(' ');
+
+        const languageDetectedResult: Result<LanguageCodeData> = await translateService.detectLanguage(shortened);
+
+        if (languageDetectedResult.isFailure()) {
+          throw new Error("chat failed to detect language.");
+        }
+
+
+        const languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
+
+        if (chatInput.langCode !== languageCodeDetected) {
+          if (languageCodeDetected != "MS" && languageCodeDetected != "EN") {
+            let unsupportedLanguageMessage: string;
+            if (chatInput.langCode === "MS") {
+              unsupportedLanguageMessage = "Maaf, kami hanya menyokong Bahasa Inggeris dan Bahasa Melayu.";
+            } else {
+              unsupportedLanguageMessage = "Sorry, we only support English and Malay language.";
+            }
+            await this.sendText(mobile_no, created_by, unsupportedLanguageMessage, messages);
+            return Result.fail(ENUM_STATUS_CODES_FAILURE.UNPROCESSABLE_CONTENT, unsupportedLanguageMessage);
+          }
+          const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
+          chatInput.langCode = languageCodeDetected.toUpperCase();
+          if (updatedUserResult.isFailure()) {
+            throw new Error("chat failed to update user lang.");
+          }
+        }
+      }
+
+
 
       // Send thinking message to Whatsapp
       if (created_by === "WHATSAPP") {
@@ -333,97 +338,146 @@ class ChatService implements IChatService {
   // Handling text and audio messages post transcription
   private async handleText(mobile_no: string, type: string, chatInput: ChatInput, messages: ChatOutputMessage[]): Promise<Result<string>> {
     // Send the text into the Gemini chatbot
-    const output = await this.chatFlow(chatInput);
-    if (!output?.reply) {
-      throw Error(`AI failed to generate a reply.`);
-    }
 
-    // Get response from Gemini chatbot
-    const { vertexOutput, prompt, reply, language } = output;
-
-    // Update user language after processing
-    const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
-      language,
-      mobile_no,
-      type,
-    );
-    if (updateUserLangResult.isFailure()) {
-      throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
-    }
-
-    // Run Vertex Search if Gemini 3.1 thinks we need it
-    if (vertexOutput && prompt && prompt !== "") {
-      // Get weather query via Google Weather API
-      await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
-
-      // Start Vertex
-      const session: string = await this.getOrCreateVertexSession(mobile_no);
-      console.log("[Gemini] Prompt sent into Vertex", prompt + weatherQuery);
-      const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
-        prompt + weatherQuery,
-        session,
-      );
-      const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
-      console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
-      if (
-        sendQueryVertex.answer.answerText ===
-        "A summary could not be generated for your search query. Here are some search results." ||
-        sendQueryVertex.answer.answerText ===
-        "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
-      ) {
-        let noResultsErrorMessage = "";
-        if (chatInput.langCode === "MS") {
-          noResultsErrorMessage =
-            "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
-        } else {
-          noResultsErrorMessage =
-            "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
-        }
-        await this.sendText(mobile_no, type, noResultsErrorMessage, messages);
-      } else {
-        const vertexRawResponse = sendQueryVertex.answer.answerText;
-        console.log("vertexRawResponse:", vertexRawResponse);
-        const isJsonResponse = (() => {
-          try {
-            const cleaned = vertexRawResponse
-              .replace(/```json/gi, "")
-              .replace(/```/g, "")
-              .trim();
-            const start = cleaned.indexOf("[");
-            if (start === -1) return false;
-            JSON.parse(cleaned.slice(start));
-            return true;
-          } catch {
-            return false;
-          }
-        })();
-        if (isJsonResponse) {
-          // Send solution plan text
-          if (chatInput.langCode === "MS") {
-            await this.sendText(
-              mobile_no,
-              type,
-              "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
-              messages
-            );
-          } else {
-            await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!", messages);
-          }
-          await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages);
-        } else {
-          await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
-        }
+    try {
+      // Send the text into the Gemini chatbot
+      const output = await this.chatFlow(chatInput);
+      if (!output?.reply) {
+        throw Error(`AI failed to generate a reply.`);
       }
-    } else {
-      // Send base message if no Vertex required
-      await this.sendText(mobile_no, type, reply, messages);
+
+      // Get response from Gemini chatbot
+      const { vertexOutput, prompt, reply } = output;
+
+      // Update user language after processing
+      const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
+        chatInput.langCode,
+        mobile_no,
+        type,
+      );
+      if (updateUserLangResult.isFailure()) {
+        throw new Error(`Failed to update user language for mobile_no: ${mobile_no}`);
+      }
+
+      // Run Vertex Search if Gemini 3.1 thinks we need it
+      if (vertexOutput && prompt && prompt !== "") {
+        // Get weather query via Google Weather API
+        await this.syncUserWeather(mobile_no);
+        const weatherQuery: string = await this.generateWeatherQuery(mobile_no, chatInput.langCode);
+
+        // Start Vertex
+        const session: string = await this.getOrCreateVertexSession(mobile_no);
+        console.log("[Gemini] Prompt sent into Vertex", prompt + weatherQuery);
+        const sendQueryVertexResult: Result<VertexAnswerQueryData> = await vertexService.sendQueryVertex(
+          prompt + weatherQuery,
+          session,
+        );
+        const sendQueryVertex: VertexAnswerQueryData = sendQueryVertexResult.getData();
+        console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
+        if (
+          sendQueryVertex.answer.answerText ===
+          "A summary could not be generated for your search query. Here are some search results." ||
+          sendQueryVertex.answer.answerText ===
+          "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
+        ) {
+          let noResultsErrorMessage = "";
+          if (chatInput.langCode === "MS") {
+            noResultsErrorMessage =
+              "Maaf, saya tidak dapat menemukan informasi terkait pertanyaan Anda. Bisakah Anda memberikan lebih banyak detail atau mengubah pertanyaan Anda agar saya dapat membantu Anda dengan lebih baik?";
+          } else {
+            noResultsErrorMessage =
+              "Sorry, I couldn't find any information related to your question. Can you provide more details or change your question so I may better assist you?";
+          }
+          await this.sendText(mobile_no, type, noResultsErrorMessage, messages);
+        } else {
+          const vertexRawResponse = sendQueryVertex.answer.answerText;
+          console.log("vertexRawResponse:", vertexRawResponse);
+          const isJsonResponse = (() => {
+            try {
+              const cleaned = vertexRawResponse
+                .replace(/```json/gi, "")
+                .replace(/```/g, "")
+                .trim();
+              const start = cleaned.indexOf("[");
+              if (start === -1) return false;
+              JSON.parse(cleaned.slice(start));
+              return true;
+            } catch {
+              return false;
+            }
+          })();
+          console.log("IS JSON RESPONSE: ", isJsonResponse);
+          if (isJsonResponse) {
+            // Send solution plan text
+            if (chatInput.langCode === "MS") {
+              await this.sendText(
+                mobile_no,
+                type,
+                "Di bawah adalah fail untuk pelan rawatan, harap ini boleh bantu kamu!",
+                messages
+              );
+            } else {
+              await this.sendText(mobile_no, type, "Below is a file for the treatment plan, hope this helps!", messages);
+            }
+            await this.sendDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages);
+          } else {
+            await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
+          }
+        }
+      } else {
+        // Send base message if no Vertex required
+        await this.sendText(mobile_no, type, reply, messages);
+      }
+      return Result.succeed(
+        ENUM_STATUS_CODES_SUCCESS.OK,
+        "Vertex successfully analyzed text and provided solution",
+        "handleText success.",
+      );
+
+    } catch (error) {
+      if (error instanceof GenkitError) {
+        let errorMessage: string = error.message;
+        if (error.detail) {
+          if (error.detail.error) {
+            if (error.detail.error.message) {
+              errorMessage = error.detail.error.message;
+            }
+          }
+        }
+
+        if (
+          error.code === 503 &&
+          errorMessage ===
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        ) {
+          let highDemandErrorMessage = "";
+          if (chatInput.langCode === "MS") {
+            highDemandErrorMessage = "Kami sedang menghadapi permintaan tinggi, sila cuba lagi kemudian.";
+          } else {
+            highDemandErrorMessage = "We are currently experiencing high demand, please try again later.";
+          }
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE, highDemandErrorMessage);
+        }
+
+        // Users spamming too many images
+        else if (
+          error.code === ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS &&
+          errorMessage === "Resource has been exhausted (e.g. check quota)."
+        ) {
+          let tooManyRequestsErrorMessage = "";
+          if (chatInput.langCode === "MS") {
+            tooManyRequestsErrorMessage = "Anda menghantar mesej terlalu kerap, sila hantar semula dalam 1 minit.";
+          } else {
+            tooManyRequestsErrorMessage = "You are sending messages too frequently, please send again in 1 minute.";
+          }
+          return Result.fail(ENUM_STATUS_CODES_FAILURE.TOO_MANY_REQUESTS, tooManyRequestsErrorMessage);
+        }
+        throw Error(
+          `handleText error, gemini error code ${error.code}: ${errorMessage}`,
+        );
+      }
+      throw error;
     }
-    return Result.succeed(
-      ENUM_STATUS_CODES_SUCCESS.OK,
-      "Vertex successfully analyzed text and provided solution",
-      "handleText success.",
-    );
   }
 
   // Diagnose diseases from images or videos uploaded
@@ -621,8 +675,8 @@ class ChatService implements IChatService {
   }
 
   // Handling document
-  private async handleDocument(mobile_no: string, type: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
-    const { vertexOutput, prompt, reply, language } = flowOutput;
+  private async handleDocument(mobile_no: string, type: string, langCode: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
+    const { vertexOutput, prompt, reply } = flowOutput;
 
     // Send the base message generated from Gemini 3.1 first
     await this.sendText(mobile_no, type, reply, messages);
@@ -631,7 +685,7 @@ class ChatService implements IChatService {
     if (vertexOutput && prompt && prompt !== "") {
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, langCode);
 
       // Start Vertex, can consider dropping the session
       const session: string = await this.getOrCreateVertexSession(mobile_no);

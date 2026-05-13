@@ -5,7 +5,7 @@ const BaseSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
   message: z.string().describe("User message").optional(),
-  langCode: z.enum(["MS", "EN"]).describe("What language code used.")
+  langCode: z.string().describe("What language code used.")
 });
 
 const MediaSchema = BaseSchema.extend({
@@ -57,7 +57,7 @@ export const ChatHistorySchema = z.object({
 export const ChatFlowInputSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
-  langCode: z.enum(["MS", "EN"]).describe("Which language to use.")
+  langCode: z.string().describe("Which language to use.")
 });
 
 export const ChatFlowOutputSchema = z.object({
@@ -66,8 +66,7 @@ export const ChatFlowOutputSchema = z.object({
   vertexOutput: z
     .boolean()
     .describe("Whether Vertex is required to search up relevant information to answer the user's query")
-    .optional(),
-  language: z.enum(["BM", "EN"]).describe("The language in which the reply should be generated based on the query"),
+    .optional()
 });
 
 export const ImageDiagnosisOutputSchema = z.object({

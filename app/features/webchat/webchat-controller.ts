@@ -55,23 +55,28 @@ export default class WebchatController {
     const storagePath: string = req.body.storagePath;
     const downloadUrl: string = req.body.downloadUrl;
     const caption: string = req.body.caption;
-    const sha256: string = req.body.sha256;
     const fileType: string = req.body.fileType;
+
+    try {
+      await webchatService.makeFilePublic(storagePath);
+    } catch (error) {
+      throw new Error("Failed to make file public", { cause: error });
+    }
 
     let result: Result<MediaData>;
 
     switch (fileType) {
       case 'image':
-        result = await mediaService.saveImageMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption, sha256);
+        result = await mediaService.saveImageMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption);
         break;
       case 'audio':
-        result = await mediaService.saveAudioMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption, sha256);
+        result = await mediaService.saveAudioMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption);
         break;
       case 'video':
-        result = await mediaService.saveVideoMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption, sha256);
+        result = await mediaService.saveVideoMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption);
         break;
       default:
-        result = await mediaService.saveImageMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption, sha256);
+        result = await mediaService.saveImageMetaData(fileName, mimeType, storagePath, downloadUrl, mobileNo, caption);
         break;
     }
 
