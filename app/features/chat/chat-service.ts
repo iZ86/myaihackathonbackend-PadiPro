@@ -202,7 +202,7 @@ class ChatService implements IChatService {
           await whatsappService.sendLocationInstructionMessage(user.mobile_no);
           return Result.fail(ENUM_STATUS_CODES_FAILURE.FORBIDDEN, "Please set your location.");
         }
-        chatInput.langCode = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat).toUpperCase() as "MS" | "EN" || chatInput.langCode;
+        chatInput.langCode = (created_by === "WHATSAPP" ? user.lang_whatsapp : user.lang_webchat).toUpperCase() || chatInput.langCode;
       }
 
       if (this.isWhatsappInput(input)) {
