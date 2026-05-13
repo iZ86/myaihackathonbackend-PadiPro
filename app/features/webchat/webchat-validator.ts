@@ -44,7 +44,7 @@ export const saveMediaMetaDataByMobileNoBodyValidator: any = [
     .isURL().withMessage("downloadUrl must be a url."),
   body('caption')
     .trim()
-    .optional({ checkFalsy: true })
+    .optional()
     .isString().withMessage("caption must be a string."),
   body('fileType')
     .trim()
