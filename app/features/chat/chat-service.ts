@@ -232,6 +232,21 @@ class ChatService implements IChatService {
         }
       }
 
+      // Save user message into chat history
+      const chatData: ChatHistory = {
+        role: "user",
+        timestamp: "",
+        message: message ?? "",
+      };
+      if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
+        chatData.media_type = chatInput.media_type;
+        chatData.media_url = chatInput.media_url;
+        chatData.media_name = chatInput.media_name;
+      }
+      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
+      if (!saveChatHistoryResult) {
+        throw Error(`Failed to save chat history.`);
+      }
 
 
       if (message) {
@@ -267,21 +282,7 @@ class ChatService implements IChatService {
         }
       }
 
-      // Save user message into chat history
-      const chatData: ChatHistory = {
-        role: "user",
-        timestamp: "",
-        message: message ?? "",
-      };
-      if (chatInput.media_type !== "text" && chatInput.media_type !== "location") {
-        chatData.media_type = chatInput.media_type;
-        chatData.media_url = chatInput.media_url;
-        chatData.media_name = chatInput.media_name;
-      }
-      const saveChatHistoryResult = await chatRepository.saveChatHistory(mobile_no, created_by, chatData);
-      if (!saveChatHistoryResult) {
-        throw Error(`Failed to save chat history.`);
-      }
+
 
       // Send thinking message to Whatsapp
       if (created_by === "WHATSAPP") {
