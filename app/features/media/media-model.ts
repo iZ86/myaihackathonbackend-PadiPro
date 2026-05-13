@@ -7,11 +7,16 @@ export interface MediaData {
   created_at: string;
   caption?: string;
   sha256?: string;
+  detections?: Array<MediaOutputDetection>;
 }
 
+interface MediaOutputDetection {
+  disease: string;
+  severity: number;
+  score: number;
+}
 export interface DocumentData extends MediaData {
   document_disease: string;
-  document_for?: string;
 }
 
 export interface MediaFileData {
