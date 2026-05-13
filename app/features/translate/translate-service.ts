@@ -29,7 +29,9 @@ class TranslateService implements ITranslateService {
     const language = languages[0];
 
     if (language) {
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { languageCode: language } as LanguageCodeData, "detectLanguage success.");
+      if (language.languageCode) {
+        return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { languageCode: language.languageCode } as LanguageCodeData, "detectLanguage success.");
+      }
     }
     throw new Error("detectLanguage failed to detect.");
   }
