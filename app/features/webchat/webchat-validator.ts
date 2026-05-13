@@ -46,10 +46,6 @@ export const saveMediaMetaDataByMobileNoBodyValidator: any = [
     .trim()
     .optional({ checkFalsy: true })
     .isString().withMessage("caption must be a string."),
-  body('sha256')
-    .trim()
-    .notEmpty().withMessage("Missing sha256.")
-    .isString().withMessage("sha256 must be a string."),
   body('fileType')
     .trim()
     .notEmpty().withMessage("Missing fileType.")
