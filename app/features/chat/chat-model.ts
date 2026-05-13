@@ -57,7 +57,7 @@ export const ChatHistorySchema = z.object({
 export const ChatFlowInputSchema = z.object({
   mobile_no: z.string().describe("Mobile number of user"),
   created_by: z.enum(["WHATSAPP", "WEBCHAT", "BASE"]).describe("Which platform the message came from"),
-  langCode: z.enum(["MS", "EN"]).describe("Which language to use.")
+  langCode: z.string().describe("Which language to use.")
 });
 
 export const ChatFlowOutputSchema = z.object({
