@@ -66,8 +66,7 @@ export const ChatFlowOutputSchema = z.object({
   vertexOutput: z
     .boolean()
     .describe("Whether Vertex is required to search up relevant information to answer the user's query")
-    .optional(),
-  language: z.enum(["BM", "EN"]).describe("The language in which the reply should be generated based on the query"),
+    .optional()
 });
 
 export const ImageDiagnosisOutputSchema = z.object({

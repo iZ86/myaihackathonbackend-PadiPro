@@ -342,7 +342,7 @@ class ChatService implements IChatService {
       }
 
       // Get response from Gemini chatbot
-      const { vertexOutput, prompt, reply, language } = output;
+      const { vertexOutput, prompt, reply } = output;
 
       // Update user language after processing
       const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
@@ -671,7 +671,7 @@ class ChatService implements IChatService {
 
   // Handling document
   private async handleDocument(mobile_no: string, type: string, langCode: string, flowOutput: ChatFlowOutput, messages: ChatOutputMessage[]): Promise<Result<string>> {
-    const { vertexOutput, prompt, reply, language } = flowOutput;
+    const { vertexOutput, prompt, reply } = flowOutput;
 
     // Send the base message generated from Gemini 3.1 first
     await this.sendText(mobile_no, type, reply, messages);
