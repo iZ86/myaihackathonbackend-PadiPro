@@ -252,7 +252,7 @@ class ChatService implements IChatService {
           if (languageCodeDetected != "MS" && languageCodeDetected != "EN") {
             let unsupportedLanguageMessage: string;
             if (chatInput.langCode === "MS") {
-              unsupportedLanguageMessage = "Maaf, kami hanya menyokong bahasa Inggeris dan bahasa Melayu.";
+              unsupportedLanguageMessage = "Maaf, kami hanya menyokong Bahasa Inggeris dan Bahasa Melayu.";
             } else {
               unsupportedLanguageMessage = "Sorry, we only support English and Malay language.";
             }
