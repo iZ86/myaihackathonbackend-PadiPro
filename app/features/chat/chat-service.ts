@@ -246,7 +246,7 @@ class ChatService implements IChatService {
         }
 
 
-        const languageCodeDetected: string = languageDetectedResult.getData().languageCode;
+        const languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
 
         if (chatInput.langCode !== languageCodeDetected) {
           const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
