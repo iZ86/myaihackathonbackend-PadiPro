@@ -125,7 +125,7 @@ export class WhatsappService {
     return res.json() as Promise<SendReplyResponse>;
   }
 
-  async uploadMedia(buffer: Buffer, options?: { filename?: string; mimeType?: string }): Promise<string> {
+  async uploadMedia(buffer: Buffer, options?: { filename?: string; mimeType?: string; }): Promise<string> {
     const url = `${this.baseUrl}/${this.apiVersion}/${whatsappConfig.PHONE_NUMBER_ID}/media`;
     const formData = new FormData();
     const blob = new Blob([new Uint8Array(buffer)], {
@@ -143,7 +143,7 @@ export class WhatsappService {
     });
     if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`);
 
-    const data = (await res.json()) as { id: string };
+    const data = (await res.json()) as { id: string; };
     return data.id;
   }
 
@@ -160,7 +160,7 @@ export class WhatsappService {
 
   async sendImage(
     to: string,
-    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never; } | { link: string; mediaId?: never; },
     caption?: string,
   ): Promise<SendReplyResponse> {
     const image =
@@ -180,7 +180,7 @@ export class WhatsappService {
 
   async sendAudio(
     to: string,
-    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never; } | { link: string; mediaId?: never; },
   ): Promise<SendReplyResponse> {
     const audio = "mediaId" in source && source.mediaId ? { id: source.mediaId } : { link: source.link! };
 
@@ -196,7 +196,7 @@ export class WhatsappService {
 
   async sendVideo(
     to: string,
-    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
+    source: { mediaId: string; link?: never; } | { link: string; mediaId?: never; },
     caption?: string,
   ): Promise<SendReplyResponse> {
     const video =
@@ -216,8 +216,8 @@ export class WhatsappService {
 
   async sendDocument(
     to: string,
-    source: { mediaId: string; link?: never } | { link: string; mediaId?: never },
-    options?: { caption?: string; filename?: string },
+    source: { mediaId: string; link?: never; } | { link: string; mediaId?: never; },
+    options?: { caption?: string; filename?: string; },
   ): Promise<SendReplyResponse> {
     const document =
       "mediaId" in source && source.mediaId
@@ -407,7 +407,7 @@ export class WhatsappService {
       longitutde: msg.longitude,
       latitude: msg.latitude,
       langCode: "EN"
-    }
+    };
   }
 
   public async sendIntroductionMessage(mobile_no: string) {
@@ -440,10 +440,15 @@ export class WhatsappService {
   }
 
   public async generateOTP(mobile_no: string): Promise<Result<OTPExpiresAtData>> {
-    const userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
+    let userResult: Result<UserData> = await userService.getUserByMobileNo(mobile_no);
 
+    // Create user if doesn't exist
     if (userResult.isFailure()) {
-      return userResult;
+      userResult = await userService.createUser(mobile_no, "-");
+
+      if (userResult.isFailure()) {
+        throw new Error("Failed to generate OTP for new user");
+      }
     }
 
     const otp: string = Math.floor(100000 + Math.random() * 900000).toString();
