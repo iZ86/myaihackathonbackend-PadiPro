@@ -680,7 +680,7 @@ class ChatService implements IChatService {
     if (vertexOutput && prompt && prompt !== "") {
       // Get weather query via Google Weather API
       await this.syncUserWeather(mobile_no);
-      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
+      const weatherQuery: string = await this.generateWeatherQuery(mobile_no, langCode);
 
       // Start Vertex, can consider dropping the session
       const session: string = await this.getOrCreateVertexSession(mobile_no);
