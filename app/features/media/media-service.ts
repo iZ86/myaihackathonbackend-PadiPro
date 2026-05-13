@@ -161,7 +161,7 @@ class MediaService implements IMediaService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.NO_CONTENT, null, "Media file successfully deleted.");
   }
 
-  private extFromMime(mimeType: string): string {
+  public extFromMime(mimeType: string): string {
     const baseType = (mimeType.split(';')[0] ?? mimeType).trim();
     return MediaService.MIME_TO_EXT[baseType] ?? "";
   }

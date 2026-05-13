@@ -6,6 +6,8 @@ import { ChatHistory } from "../chat/chat-model";
 import chatHistory from "../chat/chat-repository";
 import { UserData } from "../user/user-model";
 import chatService from "../chat/chat-service";
+import mediaService from "../media/media-service";
+import crypto from "crypto";
 
 interface UploadUrls {
   uploadUrl: string;
@@ -14,7 +16,7 @@ interface UploadUrls {
 }
 
 interface IWebchatService {
-  generateUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<Result<UploadUrls>>;
+  generateUploadUrl(mobileNo: string, fileName: string, contentType: string, mimeType: string): Promise<Result<UploadUrls>>;
   getWebChatHistory(mobile_no: string): Promise<Result<ChatHistory[]>>;
   updateUserCoordsByMobileNo(mobile_no: string, lat: number, long: number): Promise<Result<UserData>>;
 }
@@ -41,8 +43,15 @@ class WebchatService implements IWebchatService {
       dir = 'audios';
     }
 
-    const uploadFileName = `${dir}/${mobileNo}/${fileName}`;
-    const file = this.bucket.file(uploadFileName);
+    const ext = mediaService.extFromMime(contentType);
+
+    const sha256ImageName: string = crypto
+      .createHash("sha256")
+      .update(`${fileName}${mobileNo}${Date.now()}`)
+      .digest("hex");
+    const storagePath = `${dir}/${mobileNo}/${sha256ImageName}${ext}`;
+
+    const file = this.bucket.file(storagePath);
 
     try {
       const [uploadUrl] = await file.getSignedUrl({
@@ -57,7 +66,7 @@ class WebchatService implements IWebchatService {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl, storagePath: uploadFileName }, "Upload url created");
+      return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl, storagePath: storagePath }, "Upload url created");
     } catch (error) {
       console.error('Fetch Error:', error);
       throw error;
