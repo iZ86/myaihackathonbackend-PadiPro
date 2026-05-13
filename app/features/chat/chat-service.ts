@@ -250,7 +250,7 @@ class ChatService implements IChatService {
 
         if (chatInput.langCode !== languageCodeDetected) {
           const updatedUserResult: Result<UserData> = await userService.updateUserLangByMobileNo(languageCodeDetected, mobile_no, created_by);
-          chatInput.langCode = languageCodeDetected.toUpperCase() as "MS" | "EN";
+          chatInput.langCode = languageCodeDetected.toUpperCase();
           if (updatedUserResult.isFailure()) {
             throw new Error("chat failed to update user lang.");
           }
