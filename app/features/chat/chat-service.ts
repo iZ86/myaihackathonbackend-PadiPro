@@ -49,7 +49,7 @@ interface IChatService {
 }
 
 class ChatService implements IChatService {
-  private userVertexSession: { [mobile_no: string]: string } = {};
+  private userVertexSession: { [mobile_no: string]: string; } = {};
   private speechClient: SpeechClient;
 
   constructor() {
@@ -398,6 +398,7 @@ class ChatService implements IChatService {
             return false;
           }
         })();
+        console.log("IS JSON RESPONSE: ", isJsonResponse);
         if (isJsonResponse) {
           // Send solution plan text
           if (chatInput.langCode === "MS") {
