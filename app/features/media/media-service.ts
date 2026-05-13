@@ -1,6 +1,6 @@
 import { Result } from "../../../libs/Result";
 import { ENUM_STATUS_CODES_FAILURE, ENUM_STATUS_CODES_SUCCESS } from "../../../libs/status-codes-enum";
-import { LocationTutorialImages, MediaData, MediaFileData } from "./media-model";
+import { DocumentData, LocationTutorialImages, MediaData, MediaFileData } from "./media-model";
 import mediaRepository from "./media-repository";
 import * as admin from "firebase-admin";
 import crypto from "crypto";
@@ -8,6 +8,7 @@ import { MediaOutputDetection } from "../gemini/gemini-model";
 import userService from "../user/user-service";
 import { UserData } from "../user/user-model";
 import { firebaseConfig } from "../../config/config";
+import { Document, DocumentDataSchema } from "genkit";
 
 interface IMediaService {
   getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>>;
@@ -71,8 +72,7 @@ interface IMediaService {
     mimeType: string,
     buffer: Buffer,
     mobile_no: string,
-    caption?: string,
-    sha256?: string,
+    document_disease: string,
   ): Promise<Result<MediaData>>;
   saveDocumentMetaData(
     docName: string,
@@ -80,6 +80,7 @@ interface IMediaService {
     storagePath: string,
     downloadUrl: string,
     mobile_no: string,
+    document_disease: string,
     caption?: string,
     sha256?: string,
   ): Promise<Result<MediaData>>;
@@ -90,6 +91,7 @@ interface IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>>;
   updateImageOrVideoDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<Result<MediaData>>;
+  updateImageOrVideoSolution(mediaName: string, documentMediaName: string): Promise<Result<MediaData>>;
   getLocationTutorialImages(): Promise<Result<LocationTutorialImages>>;
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
 }
@@ -100,7 +102,7 @@ class MediaService implements IMediaService {
   private readonly videoCollection: string = "videos";
   private readonly audioCollection: string = "audios";
   private readonly docCollection: string = "documents";
-  private static readonly MIME_TO_EXT: { [key: string]: string; } = {
+  private static readonly MIME_TO_EXT: { [key: string]: string } = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
@@ -111,9 +113,8 @@ class MediaService implements IMediaService {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
   };
 
-
-  public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData>> {
-    const media: MediaData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
+  public async getMediaMetaDataByMediaName(mediaName: string): Promise<Result<MediaData | DocumentData>> {
+    const media: MediaData | DocumentData | undefined = await mediaRepository.getMediaMetaDataByMediaName(mediaName);
     if (!media) {
       return Result.fail(ENUM_STATUS_CODES_FAILURE.NOT_FOUND, "Media meta data not found.");
     }
@@ -162,7 +163,7 @@ class MediaService implements IMediaService {
   }
 
   public extFromMime(mimeType: string): string {
-    const baseType = (mimeType.split(';')[0] ?? mimeType).trim();
+    const baseType = (mimeType.split(";")[0] ?? mimeType).trim();
     return MediaService.MIME_TO_EXT[baseType] ?? "";
   }
 
@@ -494,9 +495,8 @@ class MediaService implements IMediaService {
     mimeType: string,
     buffer: Buffer,
     mobile_no: string,
-    caption?: string,
-    sha256?: string,
-  ): Promise<Result<MediaData>> {
+    document_disease: string,
+  ): Promise<Result<MediaData | DocumentData>> {
     const documentFileResult: Result<MediaFileData> = await this.saveDocumentFile(docName, mimeType, buffer, mobile_no);
     if (documentFileResult.isFailure()) {
       return documentFileResult;
@@ -504,7 +504,7 @@ class MediaService implements IMediaService {
 
     const documentFile: MediaFileData = documentFileResult.getData();
 
-    let saveDocumentMetaDataResult: Result<MediaData> | undefined;
+    let saveDocumentMetaDataResult: Result<MediaData | DocumentData> | undefined;
 
     try {
       saveDocumentMetaDataResult = await this.saveDocumentMetaData(
@@ -513,8 +513,7 @@ class MediaService implements IMediaService {
         documentFile.storage_path,
         documentFile.download_url,
         mobile_no,
-        caption,
-        sha256,
+        document_disease,
       );
     } catch (error) {
       await this.deleteMediaByMediaName(documentFile.mediaName);
@@ -536,7 +535,7 @@ class MediaService implements IMediaService {
     mobile_no: string,
     caption?: string,
     sha256?: string,
-  ): Promise<Result<MediaData>> {
+  ): Promise<Result<MediaData | DocumentData>> {
     const saveDocumentResult: boolean = await mediaRepository.saveMediaMetaData(
       docName,
       mimeType,
@@ -550,7 +549,7 @@ class MediaService implements IMediaService {
       throw new Error("saveDocument failed to save document.");
     }
 
-    const savedDocument: Result<MediaData> = await this.getMediaMetaDataByMediaName(docName);
+    const savedDocument: Result<MediaData | DocumentData> = await this.getMediaMetaDataByMediaName(docName);
     if (savedDocument.isFailure()) {
       throw new Error("savedDocumentMetaData failed to get saved document.");
     }
@@ -614,6 +613,39 @@ class MediaService implements IMediaService {
     }
 
     const updateResult: boolean = await mediaRepository.updateImageDiagnosis(mediaName, detections);
+    if (!updateResult) {
+      throw new Error("updateMediaDiagnosis failed to update.");
+    }
+
+    const updatedMedia: Result<MediaData> = await this.getMediaMetaDataByMediaName(mediaName);
+
+    if (updatedMedia.isFailure()) {
+      throw new Error("updateMediaDiagnosis failed to get updated data.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedMedia.getData(), "Updated media diagnosis.");
+  }
+
+  public async updateImageOrVideoSolution(mediaName: string, documentMediaName: string): Promise<Result<MediaData>> {
+    const mediaResult: Result<MediaData> = await this.getMediaMetaDataByMediaName(mediaName);
+
+    if (mediaResult.isFailure()) {
+      return mediaResult;
+    }
+
+    const media: MediaData = mediaResult.getData();
+
+    const mimeType: string = media.mimeType;
+    const ext: string = this.extFromMime(mimeType);
+
+    if (!(ext === ".jpg" || ext === ".png" || ext === ".webp" || ext === ".mp4")) {
+      return Result.fail(
+        ENUM_STATUS_CODES_FAILURE.UNPROCESSABLE_CONTENT,
+        "Media to be updated must be either .jpg, .png, .webp, or .mp4.",
+      );
+    }
+
+    const updateResult: boolean = await mediaRepository.updateImageSolution(mediaName, documentMediaName);
     if (!updateResult) {
       throw new Error("updateMediaDiagnosis failed to update.");
     }

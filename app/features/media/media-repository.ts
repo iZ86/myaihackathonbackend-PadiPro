@@ -1,11 +1,12 @@
 import { db } from "../../database/db-connection";
-import { MediaData, LocationTutorialImages } from "./media-model";
+import { MediaData, LocationTutorialImages, DocumentData } from "./media-model";
 import { MediaOutputDetection } from "../gemini/gemini-model";
 
 interface IMediaRepository {
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]>;
   getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined>;
   updateImageDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<boolean>;
+  updateImageSolution(mediaName: string, documentMediaName: string): Promise<boolean>;
   deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
   saveMediaMetaData(
     imageName: string,
@@ -44,7 +45,7 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined> {
+  public async getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | DocumentData | undefined> {
     try {
       const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
 
@@ -73,6 +74,29 @@ class MediaRepository implements IMediaRepository {
 
       await doc.ref.update({
         detections: detections,
+        updated_at: new Date().toISOString(),
+      });
+
+      return true;
+    } catch (error) {
+      throw new Error(`updateImageDiagnosis repository error`, { cause: error });
+    }
+  }
+
+  public async updateImageSolution(mediaName: string, documentMediaName: string): Promise<boolean> {
+    try {
+      const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
+
+      if (snapshot.empty) {
+        console.warn(`No record found for media_id: ${mediaName}`);
+        return false;
+      }
+
+      const doc = snapshot.docs[0];
+      if (!doc) return false;
+
+      await doc.ref.update({
+        document: documentMediaName,
         updated_at: new Date().toISOString(),
       });
 
