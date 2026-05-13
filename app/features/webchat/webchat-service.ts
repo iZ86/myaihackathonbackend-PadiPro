@@ -60,11 +60,13 @@ class WebchatService implements IWebchatService {
         expires: Date.now() + 5 * 60 * 1000, // 5 min
       });
 
-      const [downloadUrl] = await file.getSignedUrl({
+      await file.getSignedUrl({
         version: 'v4',
         action: 'read',
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
+
+      const downloadUrl = `https://storage.googleapis.com/${this.bucket.name}/${storagePath}`;
 
       return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, { uploadUrl, downloadUrl, storagePath: storagePath }, "Upload url created");
     } catch (error) {
