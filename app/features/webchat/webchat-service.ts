@@ -41,7 +41,7 @@ class WebchatService implements IWebchatService {
       dir = 'audios';
     }
 
-    const uploadFileName = `${dir}/${mobileNo}/${Date.now()}-${fileName}`;
+    const uploadFileName = `${dir}/${mobileNo}/${fileName}`;
     const file = this.bucket.file(uploadFileName);
 
     try {
