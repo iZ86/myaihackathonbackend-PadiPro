@@ -346,7 +346,7 @@ class ChatService implements IChatService {
 
       // Update user language after processing
       const updateUserLangResult: Result<UserData> = await userService.updateUserLangByMobileNo(
-        language,
+        chatInput.langCode,
         mobile_no,
         type,
       );
@@ -358,7 +358,7 @@ class ChatService implements IChatService {
       if (vertexOutput && prompt && prompt !== "") {
         // Get weather query via Google Weather API
         await this.syncUserWeather(mobile_no);
-        const weatherQuery: string = await this.generateWeatherQuery(mobile_no, language);
+        const weatherQuery: string = await this.generateWeatherQuery(mobile_no, chatInput.langCode);
 
         // Start Vertex
         const session: string = await this.getOrCreateVertexSession(mobile_no);
