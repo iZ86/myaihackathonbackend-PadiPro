@@ -448,7 +448,7 @@ class ChatService implements IChatService {
             if (disease) {
               documentDisease = disease;
             }
-            await this.handleDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages, documentDisease);
+            await this.handleDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages, documentDisease, chatInput.langCode);
           } else {
             await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
           }
@@ -778,11 +778,12 @@ class ChatService implements IChatService {
     vertexResponse: string,
     messages: ChatOutputMessage[],
     documentDisease: string,
+    langCode: string
   ): Promise<Result<string>> {
     // Create the document first
     const cleaned = this.cleanPrefix(vertexResponse);
     const json = JSON.parse(cleaned);
-    const doc = await this.generateDocuments(json);
+    const doc = await this.generateDocuments(json, langCode);
 
     let mediaId = "timeline.docx";
 
@@ -1051,15 +1052,22 @@ class ChatService implements IChatService {
     }));
   }
 
-  private buildChildren(timeline: TimelineSolution[], base64URL?: string): Paragraph[] {
+  private buildChildren(timeline: TimelineSolution[], langCode: string, base64URL?: string): Paragraph[] {
     const children: Paragraph[] = [];
 
     // Title
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
-        children: [new TextRun({ text: "Timeline for Solution", bold: true })],
-        spacing: { after: 320 },
+        children: [
+          ...(langCode === "MS")
+            ?[
+              new TextRun({ text: "Garis Masa Penyelesaian", bold: true })
+            ]:[
+              new TextRun({ text: "Timeline for Solution", bold: true })
+            ],
+        ],
+        spacing: { after: 320 }
       }),
       ...(base64URL
         ? [
@@ -1148,9 +1156,9 @@ class ChatService implements IChatService {
     return children;
   }
 
-  public async generateDocuments(timeline: TimelineSolution[], base64URL?: string): Promise<Buffer> {
+  public async generateDocuments(timeline: TimelineSolution[], langCode: string, base64URL?: string): Promise<Buffer> {
     const clean = this.cleanTimeline(timeline);
-    const children = this.buildChildren(clean, base64URL);
+    const children = this.buildChildren(clean, langCode, base64URL);
 
     const doc = new Document({
       styles: {
