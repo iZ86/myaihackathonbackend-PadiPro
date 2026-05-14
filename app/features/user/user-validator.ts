@@ -21,6 +21,15 @@ export const createUserBodyValidator: any = [
   validate,
 ];
 
+export const updateUserNameByMobileNoBodyValidator: any = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage("Missing name.")
+    .isString().withMessage("name must be a string."),
+  validate,
+];
+
+
 export const updateUserCoordsByMobileNoBodyValidator: any = [
   body('lat')
     .trim()

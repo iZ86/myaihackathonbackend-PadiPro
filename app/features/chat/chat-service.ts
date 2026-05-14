@@ -268,10 +268,16 @@ class ChatService implements IChatService {
           throw new Error("chat failed to detect language.");
         }
 
-        const languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
+
+        let languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
 
         if (chatInput.langCode !== languageCodeDetected) {
+
+          if (languageCodeDetected == "ID") {
+            languageCodeDetected = "MS";
+          }
           if (languageCodeDetected != "MS" && languageCodeDetected != "EN") {
+
             let unsupportedLanguageMessage: string;
             if (chatInput.langCode === "MS") {
               unsupportedLanguageMessage = "Maaf, kami hanya menyokong Bahasa Inggeris dan Bahasa Melayu.";

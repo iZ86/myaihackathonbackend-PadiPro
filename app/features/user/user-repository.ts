@@ -5,6 +5,10 @@ import { GeoPoint } from "firebase-admin/firestore";
 interface IUserRepository {
   getUsers(): Promise<UserData[]>;
   getUserByMobileNo(mobile_no: string): Promise<UserData | undefined>;
+  createUser(mobile_no: string, name: string, lang_whatsapp: string, lang_webchat: string): Promise<boolean>;
+  updateUserNameByMobileNo(mobile_no: string, name: string): Promise<boolean>;
+  updateUserCoordsByMobileNo(coords: GeoPoint, mobile_no: string): Promise<boolean>;
+  updateUserLangByMobileNo(lang: string, mobile_no: string, type: string): Promise<boolean>;
 }
 
 class UserRepository implements IUserRepository {
@@ -49,6 +53,21 @@ class UserRepository implements IUserRepository {
       return true;
     } catch (error) {
       console.error("Create user error:", error);
+      return false;
+    }
+  }
+
+  public async updateUserNameByMobileNo(mobile_no: string, name: string): Promise<boolean> {
+    try {
+      const docRef = db.collection("users").doc(mobile_no);
+
+      await docRef.update({
+        name: name,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Update user error:", error);
       return false;
     }
   }

@@ -10,6 +10,9 @@ interface IUserService {
   getUsers(): Promise<Result<UserData[]>>;
   getUserByMobileNo(mobile_no: string): Promise<Result<UserData>>;
   createUser(mobile_no: string, name: string): Promise<Result<UserData>>;
+  updateUserNameByMobileNo(mobile_no: string, name: string): Promise<Result<UserData>>;
+  updateUserCoordsByMobileNo(lat: number, long: number, mobile_no: string): Promise<Result<UserData>>;
+  updateUserLangByMobileNo(lang: string, mobile_no: string, type: string): Promise<Result<UserData>>;
   getDiagnosisHistoryByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
 }
 
@@ -48,6 +51,26 @@ class UserService implements IUserService {
     }
 
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User successfully created.");
+  }
+
+  public async updateUserNameByMobileNo(mobile_no: string, name: string): Promise<Result<UserData>> {
+    const userResult: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+    if (userResult.isFailure()) {
+      return userResult;
+    }
+
+    const updateUserResult: boolean = await userRepository.updateUserNameByMobileNo(mobile_no, name);
+    if (!updateUserResult) {
+      throw new Error("updateUserNameByMobileNo failed to update user.");
+    }
+
+    const user: Result<UserData> = await this.getUserByMobileNo(mobile_no);
+
+    if (user.isFailure()) {
+      throw new Error("updateUserNameByMobileNo failed to get updated user.");
+    }
+
+    return Result.succeed(ENUM_STATUS_CODES_SUCCESS.CREATED, user.getData(), "User name successfully updated.");
   }
 
   public async updateUserCoordsByMobileNo(lat: number, long: number, mobile_no: string): Promise<Result<UserData>> {
