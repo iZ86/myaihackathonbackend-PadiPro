@@ -824,8 +824,8 @@ class ChatService implements IChatService {
       // Match same disease and within 15 minutes ago
       if (record.detections[0]?.disease === documentDisease && new Date(record.created_at) > fifteenMinutesAgo) {
         const updateDiagnosisSolutionResult = await mediaService.updateImageOrVideoSolution(
-          record.download_url,
-          mediaName,
+          record.mediaName,
+          download_url,
         );
         if (updateDiagnosisSolutionResult.isFailure()) {
           throw new Error(`[Chat] updateDiagnosisSolution failed: ${updateDiagnosisSolutionResult.getMessage()}`);
