@@ -6,7 +6,7 @@ interface IMediaRepository {
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<MediaData[]>;
   getMediaMetaDataByMediaName(mediaName: string): Promise<MediaData | undefined>;
   updateImageDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<boolean>;
-  updateImageSolution(mediaName: string, documentMediaName: string): Promise<boolean>;
+  updateImageSolution(mediaName: string, documentUrl: string): Promise<boolean>;
   deleteMediaMetaDataByMediaName(mediaName: string): Promise<boolean>;
   saveMediaMetaData(
     imageName: string,
@@ -83,7 +83,7 @@ class MediaRepository implements IMediaRepository {
     }
   }
 
-  public async updateImageSolution(mediaName: string, documentMediaName: string): Promise<boolean> {
+  public async updateImageSolution(mediaName: string, documentUrl: string): Promise<boolean> {
     try {
       const snapshot = await db.collection(this.collection).where("mediaName", "==", mediaName).limit(1).get();
 
@@ -96,7 +96,7 @@ class MediaRepository implements IMediaRepository {
       if (!doc) return false;
 
       await doc.ref.update({
-        document: documentMediaName,
+        document: documentUrl,
         updated_at: new Date().toISOString(),
       });
 

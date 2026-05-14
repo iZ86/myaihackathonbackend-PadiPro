@@ -268,16 +268,13 @@ class ChatService implements IChatService {
           throw new Error("chat failed to detect language.");
         }
 
-
         let languageCodeDetected: string = languageDetectedResult.getData().languageCode.toUpperCase();
 
         if (chatInput.langCode !== languageCodeDetected) {
-
           if (languageCodeDetected == "ID") {
             languageCodeDetected = "MS";
           }
           if (languageCodeDetected != "MS" && languageCodeDetected != "EN") {
-
             let unsupportedLanguageMessage: string;
             if (chatInput.langCode === "MS") {
               unsupportedLanguageMessage = "Maaf, kami hanya menyokong Bahasa Inggeris dan Bahasa Melayu.";
@@ -827,7 +824,7 @@ class ChatService implements IChatService {
       // Match same disease and within 15 minutes ago
       if (record.detections[0]?.disease === documentDisease && new Date(record.created_at) > fifteenMinutesAgo) {
         const updateDiagnosisSolutionResult = await mediaService.updateImageOrVideoSolution(
-          record.mediaName,
+          record.download_url,
           mediaName,
         );
         if (updateDiagnosisSolutionResult.isFailure()) {
