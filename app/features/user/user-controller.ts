@@ -43,6 +43,19 @@ export default class UserController {
     }
   }
 
+  async updateUserNameByMobileNo(req: Request, res: Response) {
+    const mobileNo: string = String(req.params.mobile_no);
+    const name: string = req.body.name;
+
+    const result: Result<UserData> = await userService.updateUserNameByMobileNo(mobileNo, name);
+
+    if (result.isSuccess()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage(), result.getData());
+    } else if (result.isFailure()) {
+      return res.sendResponse(result.getStatusCode(), result.getMessage());
+    }
+  }
+
   async updateUserCoordsByMobileNo(req: Request, res: Response) {
     const mobileNo: string = String(req.params.mobile_no);
     const lat: number = req.body.lat;
