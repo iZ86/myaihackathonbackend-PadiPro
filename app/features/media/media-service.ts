@@ -91,7 +91,7 @@ interface IMediaService {
     mobile_no: string,
   ): Promise<Result<MediaFileData>>;
   updateImageOrVideoDiagnosis(mediaName: string, detections: Array<MediaOutputDetection>): Promise<Result<MediaData>>;
-  updateImageOrVideoSolution(mediaName: string, documentMediaName: string): Promise<Result<MediaData>>;
+  updateImageOrVideoSolution(mediaName: string, documentUrl: string): Promise<Result<MediaData>>;
   getLocationTutorialImages(): Promise<Result<LocationTutorialImages>>;
   getImagesAndVideosMetaDataByMobileNo(mobile_no: string): Promise<Result<MediaData[]>>;
 }
@@ -626,7 +626,7 @@ class MediaService implements IMediaService {
     return Result.succeed(ENUM_STATUS_CODES_SUCCESS.OK, updatedMedia.getData(), "Updated media diagnosis.");
   }
 
-  public async updateImageOrVideoSolution(mediaName: string, documentMediaName: string): Promise<Result<MediaData>> {
+  public async updateImageOrVideoSolution(mediaName: string, documentUrl: string): Promise<Result<MediaData>> {
     const mediaResult: Result<MediaData> = await this.getMediaMetaDataByMediaName(mediaName);
 
     if (mediaResult.isFailure()) {
@@ -645,7 +645,7 @@ class MediaService implements IMediaService {
       );
     }
 
-    const updateResult: boolean = await mediaRepository.updateImageSolution(mediaName, documentMediaName);
+    const updateResult: boolean = await mediaRepository.updateImageSolution(mediaName, documentUrl);
     if (!updateResult) {
       throw new Error("updateMediaDiagnosis failed to update.");
     }
