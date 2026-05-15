@@ -322,12 +322,10 @@ class ChatService implements IChatService {
             // If any diseases were found
             await this.sendText(mobile_no, created_by, reply, messages);
             await this.sendMedia(mobile_no, created_by, chartBase64Str, chatInput.media_type, messages);
-          } else if (chatInput.message) {
-            // No diseases were found
-            if (!chatInput.message) {
-              await this.sendText(mobile_no, created_by, reply, messages);
-            }
+          } else if (!chatInput.message) {
+            await this.sendText(mobile_no, created_by, reply, messages);
           }
+
         } else if (mediaResult.isFailure()) {
           await this.sendText(mobile_no, created_by, mediaResult.getMessage(), messages);
           return mediaResult;
