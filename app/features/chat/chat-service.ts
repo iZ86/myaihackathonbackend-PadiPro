@@ -462,7 +462,13 @@ class ChatService implements IChatService {
               chatInput.langCode,
             );
           } else {
-            await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
+            let cleanedVertexAnswer = "";
+            if (type === "WHATSAPP") {
+              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace("**", "*");
+            } else {
+              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace("**", "");
+            }
+            await this.sendText(mobile_no, type, cleanedVertexAnswer, messages);
           }
         }
       } else {
