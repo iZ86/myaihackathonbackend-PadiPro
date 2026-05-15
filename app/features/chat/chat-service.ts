@@ -109,7 +109,7 @@ class ChatService implements IChatService {
             - Do not include any information in the message that should be sent into Vertex, the message is solely for the user and should not include any technical details about the backend processes.
             - Reply explicity in the language provided.
 
-          4. disease: THe disease detected in the user message, or the prompt you are about to parse into Vertex Search
+          4. disease: The disease detected in the user message, or the prompt you are about to parse into Vertex Search
             - If user is asking anything about disease X, return X
             - If user is asking anything about diseases X and Y, return X
             - If user is asking for a solution (regardless if it's a plan with timeline) for disease X, return X 
@@ -317,12 +317,16 @@ class ChatService implements IChatService {
         if (mediaResult.isSuccess()) {
           const { reply, chartBase64Str } = mediaResult.getData();
 
-          // Send detections text
-          await this.sendText(mobile_no, created_by, reply, messages);
-
-          // Send bar chart graph if any
+          // Logic if any detections were found resulting in generation of diagnosis bar chart
           if (chartBase64Str != "") {
+            // If any diseases were found
+            await this.sendText(mobile_no, created_by, reply, messages);
             await this.sendMedia(mobile_no, created_by, chartBase64Str, chatInput.media_type, messages);
+          } else if (chatInput.message) {
+            // No diseases were found
+            if (!chatInput.message) {
+              await this.sendText(mobile_no, created_by, reply, messages);
+            }
           }
         } else if (mediaResult.isFailure()) {
           await this.sendText(mobile_no, created_by, mediaResult.getMessage(), messages);
