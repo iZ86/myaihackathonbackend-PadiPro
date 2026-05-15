@@ -102,6 +102,7 @@ class ChatService implements IChatService {
           2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query.
             - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history.
             - If the user requests a solution PLAN, ensure that the prompt specifies that Vertex should output in JSON Format. (IMPORTANT!!!)
+            - If the user requests a solution PLAN, but the previous diagnosis did not detect any diseases (NOT DETECTED or HEALTHY), simply tell them there is no need for any changes and do NOT set vertexOutput to true
 
           3. message: The reply you will give back to the user.
             - This can be a simple acknowledgement that you are retrieving information.
@@ -448,7 +449,14 @@ class ChatService implements IChatService {
             if (disease) {
               documentDisease = disease;
             }
-            await this.handleDocument(mobile_no, type, sendQueryVertex.answer.answerText, messages, documentDisease, chatInput.langCode);
+            await this.handleDocument(
+              mobile_no,
+              type,
+              sendQueryVertex.answer.answerText,
+              messages,
+              documentDisease,
+              chatInput.langCode,
+            );
           } else {
             await this.sendText(mobile_no, type, sendQueryVertex.answer.answerText, messages);
           }
@@ -778,7 +786,7 @@ class ChatService implements IChatService {
     vertexResponse: string,
     messages: ChatOutputMessage[],
     documentDisease: string,
-    langCode: string
+    langCode: string,
   ): Promise<Result<string>> {
     // Create the document first
     const cleaned = this.cleanPrefix(vertexResponse);
@@ -823,7 +831,11 @@ class ChatService implements IChatService {
       }
 
       // Match same disease and within 15 minutes ago
-      if (record.detections[0]?.disease === documentDisease && new Date(record.created_at) > fifteenMinutesAgo && record.document === undefined) {
+      if (
+        record.detections[0]?.disease === documentDisease &&
+        new Date(record.created_at) > fifteenMinutesAgo &&
+        record.document === undefined
+      ) {
         const updateDiagnosisSolutionResult = await mediaService.updateImageOrVideoSolution(
           record.mediaName,
           download_url,
@@ -1060,14 +1072,11 @@ class ChatService implements IChatService {
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
         children: [
-          ...(langCode === "MS")
-            ?[
-              new TextRun({ text: "Garis Masa Penyelesaian", bold: true })
-            ]:[
-              new TextRun({ text: "Timeline for Solution", bold: true })
-            ],
+          ...(langCode === "MS"
+            ? [new TextRun({ text: "Garis Masa Penyelesaian", bold: true })]
+            : [new TextRun({ text: "Timeline for Solution", bold: true })]),
         ],
-        spacing: { after: 320 }
+        spacing: { after: 320 },
       }),
       ...(base64URL
         ? [
