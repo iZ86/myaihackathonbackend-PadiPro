@@ -8,6 +8,7 @@ export interface MediaData {
   caption?: string;
   sha256?: string;
   detections?: Array<MediaOutputDetection>;
+  document?: string;
 }
 
 interface MediaOutputDetection {
