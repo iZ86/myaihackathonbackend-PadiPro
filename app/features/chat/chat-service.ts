@@ -464,9 +464,9 @@ class ChatService implements IChatService {
           } else {
             let cleanedVertexAnswer = "";
             if (type === "WHATSAPP") {
-              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace("**", "*");
+              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace(/\*\*/g, "*");
             } else {
-              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace("**", "");
+              cleanedVertexAnswer = sendQueryVertex.answer.answerText.replace(/\*\*/g, "");
             }
             await this.sendText(mobile_no, type, cleanedVertexAnswer, messages);
           }
