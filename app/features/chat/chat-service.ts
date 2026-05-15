@@ -399,9 +399,9 @@ class ChatService implements IChatService {
         console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
         if (
           sendQueryVertex.answer.answerText ===
-            "A summary could not be generated for your search query. Here are some search results." ||
+          "A summary could not be generated for your search query. Here are some search results." ||
           sendQueryVertex.answer.answerText ===
-            "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
+          "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
         ) {
           let noResultsErrorMessage = "";
           if (chatInput.langCode === "MS") {
@@ -492,7 +492,7 @@ class ChatService implements IChatService {
         if (
           error.code === 503 &&
           errorMessage ===
-            "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
         ) {
           let highDemandErrorMessage = "";
           if (chatInput.langCode === "MS") {
@@ -536,7 +536,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "MS") {
@@ -1088,19 +1088,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                  transformation: {
-                    width: 200,
-                    height: 100,
-                  },
-                  type: "jpg",
-                }),
-              ],
-            }),
-          ]
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                transformation: {
+                  width: 200,
+                  height: 100,
+                },
+                type: "jpg",
+              }),
+            ],
+          }),
+        ]
         : []),
     );
 
