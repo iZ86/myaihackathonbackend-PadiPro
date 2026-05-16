@@ -101,7 +101,7 @@ class ChatService implements IChatService {
 
           2. prompt: If vertexOutput is true, you are to generate a contextualized query to send into Vertex to retrieve relevant information to answer the user's query.
             - You should only include information that is relevant to the user's current query and avoid including irrelevant information that may be in the chat history.
-            - If the user requests a solution PLAN, ensure that the prompt specifies that Vertex should output in JSON Format. (IMPORTANT!!!)
+            - If the user requests a solution PLAN, ensure that the prompt specifies that Vertex should output in JSON Format. Do NOT specify what keys to include, simply just say "in JSON format" (IMPORTANT!!!)
             - If the user requests a solution PLAN, but the previous diagnosis did not detect any diseases (NOT DETECTED or HEALTHY), simply tell them there is no need for any changes and do NOT set vertexOutput to true
 
           3. message: The reply you will give back to the user.
@@ -325,7 +325,6 @@ class ChatService implements IChatService {
           } else if (!chatInput.message) {
             await this.sendText(mobile_no, created_by, reply, messages);
           }
-
         } else if (mediaResult.isFailure()) {
           await this.sendText(mobile_no, created_by, mediaResult.getMessage(), messages);
           return mediaResult;
@@ -399,9 +398,9 @@ class ChatService implements IChatService {
         console.log("vertextAnswer: ", sendQueryVertex.answer.answerText);
         if (
           sendQueryVertex.answer.answerText ===
-          "A summary could not be generated for your search query. Here are some search results." ||
+            "A summary could not be generated for your search query. Here are some search results." ||
           sendQueryVertex.answer.answerText ===
-          "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
+            "Ringkasan tidak dapat dibuat untuk permintaan pencarian Anda. Berikut beberapa hasil pencarian."
         ) {
           let noResultsErrorMessage = "";
           if (chatInput.langCode === "MS") {
@@ -492,7 +491,7 @@ class ChatService implements IChatService {
         if (
           error.code === 503 &&
           errorMessage ===
-          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+            "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
         ) {
           let highDemandErrorMessage = "";
           if (chatInput.langCode === "MS") {
@@ -536,7 +535,7 @@ class ChatService implements IChatService {
       if (
         geminiMediaResult.getStatusCode() === ENUM_STATUS_CODES_FAILURE.SERVICE_UNAVAILABLE &&
         geminiMediaResult.getMessage() ===
-        "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+          "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
       ) {
         let highDemandErrorMessage = "";
         if (lang === "MS") {
@@ -1088,19 +1087,19 @@ class ChatService implements IChatService {
       }),
       ...(base64URL
         ? [
-          new Paragraph({
-            children: [
-              new ImageRun({
-                data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
-                transformation: {
-                  width: 200,
-                  height: 100,
-                },
-                type: "jpg",
-              }),
-            ],
-          }),
-        ]
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: Uint8Array.from(atob(base64URL), (c) => c.charCodeAt(0)),
+                  transformation: {
+                    width: 200,
+                    height: 100,
+                  },
+                  type: "jpg",
+                }),
+              ],
+            }),
+          ]
         : []),
     );
 
